@@ -1,0 +1,52 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { ApiResponse, PaginatedResponse } from '../models/common.model';
+
+@Injectable({ providedIn: 'root' })
+export class ApiService {
+  private baseUrl = environment.apiUrl;
+
+  constructor(private http: HttpClient) {}
+
+  get<T>(path: string, params?: Record<string, string>): Observable<ApiResponse<T>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          httpParams = httpParams.set(key, value);
+        }
+      });
+    }
+    return this.http.get<ApiResponse<T>>(`${this.baseUrl}${path}`, { params: httpParams });
+  }
+
+  getList<T>(path: string, params?: Record<string, string>): Observable<ApiResponse<PaginatedResponse<T>>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          httpParams = httpParams.set(key, value);
+        }
+      });
+    }
+    return this.http.get<ApiResponse<PaginatedResponse<T>>>(`${this.baseUrl}${path}`, { params: httpParams });
+  }
+
+  post<T>(path: string, body: any): Observable<ApiResponse<T>> {
+    return this.http.post<ApiResponse<T>>(`${this.baseUrl}${path}`, body);
+  }
+
+  put<T>(path: string, body: any): Observable<ApiResponse<T>> {
+    return this.http.put<ApiResponse<T>>(`${this.baseUrl}${path}`, body);
+  }
+
+  patch<T>(path: string, body: any): Observable<ApiResponse<T>> {
+    return this.http.patch<ApiResponse<T>>(`${this.baseUrl}${path}`, body);
+  }
+
+  delete<T>(path: string): Observable<ApiResponse<T>> {
+    return this.http.delete<ApiResponse<T>>(`${this.baseUrl}${path}`);
+  }
+}

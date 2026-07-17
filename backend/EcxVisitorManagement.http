@@ -1,0 +1,6 @@
+@EcxVisitorManagement_HostAddress = http://localhost:5281
+
+GET {{EcxVisitorManagement_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

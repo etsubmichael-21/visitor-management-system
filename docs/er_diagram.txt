@@ -1,0 +1,144 @@
+============================================================================
+ECX VISITOR MANAGEMENT SYSTEM — ENTITY RELATIONSHIP DIAGRAM
+============================================================================
+                        PostgreSQL 15+ | July 2026
+
+                        ┌─────────────────────────────────┐
+                        │             users               │
+                        │─────────────────────────────────│
+                        │ PK id              integer      │──────┐
+                        │    full_name        varchar(100)│      │
+                        │    email            varchar(100)│      │
+                        │    password_hash    varchar(255)│      │
+                        │    role             user_role   │      │
+                        │    is_active        boolean      │      │
+                        │    last_login       timestamptz  │      │
+                        │    created_at       timestamptz  │      │
+                        │    updated_at       timestamptz  │      │
+                        └─────────────────────────────────┘      │
+                                                                  │ 1
+                                                                  │
+                        ┌─────────────────────────────────┐      │
+                        │          audit_logs             │      │
+                        │─────────────────────────────────│      │
+                        │ PK id              integer      │      │
+                        │ FK user_id         integer      │──────┘
+                        │    action           varchar(100)│
+                        │    entity_name      varchar(100)│
+                        │    entity_id        integer      │
+                        │    old_values       jsonb       │
+                        │    new_values       jsonb       │
+                        │    ip_address       varchar(45) │
+                        │    user_agent       text         │
+                        │    created_at       timestamptz  │
+                        └─────────────────────────────────┘
+
+
+   ┌─────────────────────────┐         ┌──────────────────────────┐
+   │       departments       │         │       employees          │
+   │─────────────────────────│         │──────────────────────────│
+   │ PK id        integer    │──┐      │ PK id         integer    │
+   │    name      varchar(100)│  │      │    full_name  varchar(100)│
+   │    description text      │  │      │    phone      varchar(20) │
+   │    location  varchar(100)│  │      │    email      varchar(100)│
+   │    phone     varchar(20) │  │   ┌──│ FK department_id integer  │
+   │    email     varchar(100)│  │   │  │    position   varchar(100)│
+   │    is_active boolean     │  │   │  │    office_number varchar(20)
+   │    created_at timestamptz│  │   │  │    status     employee_status
+   │    updated_at timestamptz│  │   │  │    created_at timestamptz │
+   └─────────────────────────┘  │   │  │    updated_at timestamptz │
+                                │   │  └──────────────────────────┘
+                                │   │         │ 1         1 │
+                                │   │         │             │
+                                │   │         │             │
+                                │   └─────────┘     ┌───────┘
+                                │                   │
+                                │                   │
+   ┌─────────────────────────┐  │  ┌────────────────┴──────────┐
+   │    employee_schedules   │  │  │         visits            │
+   │─────────────────────────│  │  │───────────────────────────│
+   │ PK id        integer    │  │  │ PK id          integer    │
+   │ FK employee_id integer  │──┘  │ FK visitor_id  integer    │
+   │    day_of_week varchar(9)│     │ FK employee_id integer    │
+   │    start_time time      │      │    purpose     varchar(500)
+   │    end_time   time      │      │    visit_date  date       │
+   │    break_start time     │      │    check_in_time timestamptz
+   │    break_end   time     │      │    check_out_time timestamptz
+   │    is_available boolean  │      │    status      visit_status
+   │    max_appointments int │      │    badge_number varchar(50)
+   │    notes       text     │      │    security_officer vc(100)
+   │    created_at timestamptz│     │    remark      text       │
+   │    updated_at timestamptz│     │    created_at  timestamptz │
+   └─────────────────────────┘      │    updated_at  timestamptz │
+                                    └───────────────────────────┘
+                                        │              │
+                                        │ M            │ M
+                                        │              │
+                              ┌─────────┘              └─────────┐
+                              │                                  │
+                    ┌─────────┴──────────┐            ┌──────────┴─────────┐
+                    │      visitors      │            │   appointments     │
+                    │────────────────────│            │────────────────────│
+                    │ PK id   integer    │            │ PK id    integer   │
+                    │    full_name vc(100)│           │ FK visitor_id int  │
+                    │    phone  varchar(20)│          │ FK employee_id int │
+                    │    email  varchar(100)│          │    requested_date date
+                    │    address text     │            │    requested_start_time timetz
+                    │    national_id vc(50)│           │    requested_end_time timetz
+                    │    organization vc(100)│         │    purpose vc(500)│
+                    │    gender varchar(10)│           │    status appointment_status
+                    │    photo_url text   │            │    employee_response timestamptz
+                    │    is_active boolean│            │    approval_date timestamptz
+                    │    created_at timestamptz│       │    reminder_email_sent boolean
+                    │    updated_at timestamptz│       │    reminder_sms_sent boolean
+                    └────────────────────┘            │    visitor_confirmed boolean
+                                                      │    check_in_allowed boolean
+                                                      │    appointment_code varchar(20)
+                                                      │    created_at timestamptz
+                                                      │    updated_at timestamptz
+                                                      └────────────────────────┘
+                                                              │
+                                                              │ 1
+                                                              │
+                                       ┌──────────────────────┼──────────────────────┐
+                                       │                      │                      │
+                              ┌────────┴────────┐   ┌─────────┴────────┐   ┌────────┴────────┐
+                              │  notifications  │   │   email_queue   │   │    sms_queue    │
+                              │─────────────────│   │─────────────────│   │─────────────────│
+                              │ PK id  integer  │   │ PK id  integer  │   │ PK id  integer  │
+                              │ FK emp_id int   │   │ FK app_id int   │   │ FK app_id int   │
+                              │ FK app_id int   │   │  recipient_email │   │  recipient_phone│
+                              │  title vc(200)  │   │  subject vc(255) │   │  message text   │
+                              │  message text   │   │  body text       │   │  status queue_st│
+                              │  type notif_type│   │  status queue_st │   │  retry_count int│
+                              │  priority n_pri │   │  retry_count int │   │  sent_at timestp│
+                              │  is_read boolean│   │  sent_at timestp │   │  error_msg text │
+                              │  read_at timest │   │  error_msg text  │   │  created_at tim │
+                              │  created_at tim │   │  created_at tim  │   └────────────────┘
+                              └────────────────┘   └─────────────────┘
+
+
+============================================================================
+RELATIONSHIP LEGEND
+============================================================================
+
+    ─── 1       One
+    ─── M       Many
+    ─── FK      Foreign Key
+    PK          Primary Key
+
+============================================================================
+RELATIONSHIP LIST
+============================================================================
+
+    1.  departments(1) ────M employees           (department has many employees)
+    2.  employees(1) ──────M visits               (employee hosts many visits)
+    3.  visitors(1) ───────M visits               (visitor makes many visits)
+    4.  employees(1) ──────M employee_schedules   (employee has many schedule entries)
+    5.  visitors(1) ───────M appointments         (visitor makes many appointments)
+    6.  employees(1) ──────M appointments         (employee receives many appointments)
+    7.  appointments(1) ───M notifications        (appointment triggers notifications)
+    8.  employees(1) ──────M notifications        (employee receives notifications)
+    9.  appointments(1) ───M email_queue          (appointment triggers emails)
+    10. appointments(1) ───M sms_queue            (appointment triggers SMS)
+    11. users(1) ──────────M audit_logs           (user creates audit entries)

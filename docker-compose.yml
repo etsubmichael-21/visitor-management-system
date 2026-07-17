@@ -1,0 +1,69 @@
+# =============================================================================
+# ECX Visitor Management System — Docker Compose
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ecx-vms-db
+    environment:
+      POSTGRES_DB: visitor_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docs/visitor_management.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./docs/migration_v2.sql:/docker-entrypoint-initdb.d/02-migration.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ASP.NET Core Backend API
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecx-vms-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__VisitorManagement=Host=postgres;Port=5432;Database=visitor_management;Username=postgres;Password=postgres
+      - Jwt__Key=ECXVisitorManagementSuperSecretKeyForJwtToken2026!@#$%
+      - Jwt__Issuer=ECXVisitorManagement
+      - Jwt__Audience=ECXVisitorManagementClient
+    ports:
+      - "5001:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Visitor Portal (Nginx)
+  visitor-portal:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ecx-vms-visitor-portal
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
+
+  # Employee Portal (Nginx)
+  employee-portal:
+    build:
+      context: ./frontend-employee
+      dockerfile: Dockerfile
+    container_name: ecx-vms-employee-portal
+    ports:
+      - "4201:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

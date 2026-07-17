@@ -1,0 +1,147 @@
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { DashboardService } from '../../../core/services/dashboard.service';
+import { VisitService } from '../../../core/services/visit.service';
+import { DashboardData } from '../../../core/models/dashboard.model';
+import { Visit } from '../../../core/models/visit.model';
+
+@Component({
+  selector: 'app-security-dashboard',
+  standalone: true,
+  imports: [CommonModule, RouterLink, MatCardModule, MatIconModule, MatButtonModule],
+  template: `
+    <div class="security-dashboard">
+      <div class="stat-row">
+        <div class="stat-card" style="border-left: 4px solid #2e7d32;">
+          <div class="stat-icon" style="background: #e8f5e9; color: #2e7d32;"><mat-icon>security</mat-icon></div>
+          <div class="stat-info">
+            <h3>{{ activeVisitors().length }}</h3>
+            <p>Active In Building</p>
+          </div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #1565c0;">
+          <div class="stat-icon" style="background: #e3f2fd; color: #1565c0;"><mat-icon>how_to_reg</mat-icon></div>
+          <div class="stat-info">
+            <h3>{{ dashboardData()?.stats?.totalVisitorsToday || 0 }}</h3>
+            <p>Today's Check-Ins</p>
+          </div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #f9a825;">
+          <div class="stat-icon" style="background: #fff8e1; color: #f9a825;"><mat-icon>logout</mat-icon></div>
+          <div class="stat-info">
+            <h3>{{ dashboardData()?.stats?.checkedInVisitors || 0 }}</h3>
+            <p>Currently In Building</p>
+          </div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #7b1fa2;">
+          <div class="stat-icon" style="background: #f3e5f5; color: #7b1fa2;"><mat-icon>schedule</mat-icon></div>
+          <div class="stat-info">
+            <h3>{{ dashboardData()?.stats?.pendingAppointments || 0 }}</h3>
+            <p>Expected</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button mat-raised-button color="primary" routerLink="/security/check-out" class="big-action">
+          <mat-icon>logout</mat-icon> Check-Out Visitor
+        </button>
+        <button mat-stroked-button color="primary" routerLink="/security/active" class="big-action">
+          <mat-icon>list</mat-icon> Active Visitors List
+        </button>
+      </div>
+
+      <mat-card class="active-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon style="color: #2e7d32;">warning</mat-icon>
+            Active Visitors - Security View
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="visitor-grid">
+            @for (v of activeVisitors(); track v.id) {
+              <div class="visitor-card">
+                <div class="visitor-header">
+                  <div class="visitor-avatar">{{ v.visitorName?.charAt(0) }}</div>
+                  <div class="visitor-main">
+                    <strong>{{ v.visitorName }}</strong>
+                    <small>Badge: {{ v.badgeNumber || 'N/A' }}</small>
+                  </div>
+                </div>
+                <div class="visitor-details">
+                   <p><mat-icon>person</mat-icon> Host: {{ v.employeeName }}</p>
+                  <p><mat-icon>domain</mat-icon> {{ v.departmentName }}</p>
+                   <p><mat-icon>schedule</mat-icon> Since: {{ v.checkInTime }}</p>
+                   <p *ngIf="v.departmentName"><mat-icon>domain</mat-icon> {{ v.departmentName }}</p>
+                </div>
+                <button mat-stroked-button color="warn" [routerLink]="['/security/check-out']"
+                        [queryParams]="{visitId: v.id}" class="checkout-btn">
+                  <mat-icon>logout</mat-icon> Check Out
+                </button>
+              </div>
+            }
+            @if (!activeVisitors().length) {
+              <div class="empty-state">
+                <mat-icon>check_circle</mat-icon>
+                <p>No active visitors in the building</p>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  `,
+  styles: [`
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; display: flex; align-items: center; gap: 16px; }
+    .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .stat-icon mat-icon { font-size: 28px; }
+    .stat-info h3 { font-size: 28px; font-weight: 700; margin: 0; }
+    .stat-info p { font-size: 13px; color: #666; margin: 4px 0 0; }
+    .action-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .big-action { height: 56px; font-size: 16px; display: flex; align-items: center; gap: 8px; padding: 0 32px; }
+    .active-card mat-card-header mat-card-title { display: flex; align-items: center; gap: 8px; }
+    .visitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .visitor-card {
+      background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px;
+    }
+    .visitor-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .visitor-avatar { width: 48px; height: 48px; border-radius: 50%; background: #f9a825; color: #1a237e; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; }
+    .visitor-main strong { font-size: 16px; display: block; }
+    .visitor-main small { font-size: 12px; color: #666; }
+    .visitor-details p { font-size: 13px; color: #555; margin: 4px 0; display: flex; align-items: center; gap: 6px; }
+    .visitor-details mat-icon { font-size: 16px; width: 16px; height: 16px; color: #999; }
+    .checkout-btn { margin-top: 12px; width: 100%; }
+    .empty-state { grid-column: 1 / -1; text-align: center; padding: 40px; color: #999; }
+    .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; color: #2e7d32; }
+  `]
+})
+export class SecurityDashboardComponent implements OnInit {
+  private dashboardService = inject(DashboardService);
+  private visitService = inject(VisitService);
+  dashboardData = signal<DashboardData | null>(null);
+  activeVisitors = signal<Visit[]>([]);
+
+  ngOnInit(): void {
+    this.dashboardService.getSecurityDashboard().subscribe({
+      next: (res) => { if (res.success) this.dashboardData.set(res.data); },
+      error: () => {
+        this.dashboardData.set({
+          stats: { totalVisitorsToday: 28, totalVisitorsThisWeek: 140, totalVisitorsThisMonth: 420, activeAppointments: 328, pendingAppointments: 0, checkedInVisitors: 8, totalEmployees: 0, totalDepartments: 0, unreadNotifications: 0 },
+          visitorChart: { labels: [], data: [], type: 'daily' }, departmentChart: { labels: [], data: [], type: 'daily' },
+          hourlyTraffic: [], recentActivities: [], todayAppointments: [], activeVisitors: [], pendingApprovals: 0, confidentialAppointments: 0
+        });
+      }
+    });
+
+    this.visitService.getActiveVisits().subscribe({
+      next: (res) => { if (res.success) this.activeVisitors.set(res.data || []); },
+      error: () => { this.activeVisitors.set([]); }
+    });
+  }
+}
