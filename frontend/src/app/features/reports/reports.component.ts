@@ -39,20 +39,7 @@ import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner
 
     <app-loading-spinner [loading]="loading" message="Loading report..." />
   `,
-  styles: [`
-    .btn { padding: 0.5rem 1rem; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; transition: background 0.2s; }
-    .btn-outline { background: #fff; color: #475569; border: 1px solid #e2e8f0; }
-    .btn-outline:hover { background: #f8fafc; }
-    .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-    .card {
-      background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; text-align: center;
-    }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-    .report-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .card h3 { margin: 0; font-size: 1rem; font-weight: 600; color: #1e293b; }
-    .card p { margin: 0.25rem 0 0; color: #64748b; font-size: 0.8125rem; }
-  `],
+  styleUrls: ['./reports.component.scss'],
 })
 export class ReportsComponent {
   private http = inject(HttpClient);

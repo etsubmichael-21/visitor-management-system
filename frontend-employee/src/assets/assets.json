@@ -1,0 +1,14 @@
+{
+  "logo": {
+    "primary": "images/ecx-logo.png",
+    "svg": "images/ecx-logo.svg"
+  },
+  "favicon": "icons/favicon.svg",
+  "colors": {
+    "primary": "#0F6B3A",
+    "primaryDark": "#0C5A31",
+    "gold": "#D4A017",
+    "background": "#F8F9FA",
+    "text": "#1F2937"
+  }
+}

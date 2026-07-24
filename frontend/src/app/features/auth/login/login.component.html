@@ -1,0 +1,48 @@
+<div class="login-page">
+  <div class="bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+  <div class="login-card">
+    <div class="card-content">
+      <div class="logo-section">
+        <div class="logo-ring">
+          <img src="assets/images/ecx-logo.png" alt="ECX" class="logo">
+        </div>
+      </div>
+      <h1>Welcome Back</h1>
+      <p class="subtitle">Sign in to your account</p>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="username" placeholder="Enter email" type="email">
+          <mat-icon matPrefix>email</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" formControlName="password" placeholder="Enter password">
+          <mat-icon matPrefix>lock_outline</mat-icon>
+        </mat-form-field>
+
+        <button mat-flat-button type="submit" class="login-btn" [disabled]="loading || loginForm.invalid">
+          @if (loading) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <span>Sign In</span>
+          }
+        </button>
+
+        @if (error) {
+          <p class="error-text">{{ error }}</p>
+        }
+      </form>
+
+      <div class="login-footer">
+        <p>Demo: <strong>yididiya19@gmail.com</strong> / <strong>Admin@123</strong></p>
+      </div>
+    </div>
+  </div>
+</div>

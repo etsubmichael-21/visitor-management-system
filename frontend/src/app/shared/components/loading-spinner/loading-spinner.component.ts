@@ -14,46 +14,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
       </div>
     </div>
   `,
-  styles: [`
-    .spinner-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-    }
-
-    .spinner-container.overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(255, 255, 255, 0.85);
-      z-index: 100;
-    }
-
-    .spinner-container.fullpage {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(255, 255, 255, 0.9);
-      z-index: 9999;
-    }
-
-    .spinner-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .spinner-message {
-      font-size: 14px;
-      color: #64748b;
-    }
-  `],
+  styleUrls: ['./loading-spinner.component.scss'],
 })
 export class LoadingSpinnerComponent {
   @Input() diameter = 40;

@@ -32,6 +32,7 @@ public class DepartmentResponseDto
     public int PendingAppointments { get; set; }
     public int TotalAppointmentsThisMonth { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
 }
 
 public class DepartmentStatsDto

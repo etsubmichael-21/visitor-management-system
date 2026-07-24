@@ -1,0 +1,155 @@
+.about-page { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+.about-hero {
+  text-align: center;
+  padding: 60px 0 40px;
+}
+
+.about-hero h1 {
+  font-size: 40px;
+  font-weight: 800;
+  color: #0C5A31;
+}
+
+.accent { color: #D4A017; }
+
+.about-hero p {
+  color: #6B7280;
+  font-size: 18px;
+  margin-top: 12px;
+}
+
+.about-content { padding: 0 0 40px; }
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.about-card { padding: 12px; text-align: center; }
+.about-card h3 { font-size: 18px; font-weight: 600; color: #1e293b; margin: 12px 0 8px; }
+.about-card p { color: #6B7280; font-size: 14px; line-height: 1.7; }
+
+.card-icon { font-size: 40px; width: 40px; height: 40px; }
+.card-icon.green { color: #0F6B3A; }
+.card-icon.gold { color: #D4A017; }
+.card-icon.blue { color: #1565c0; }
+
+.timeline-section {
+  padding: 40px 0;
+  text-align: center;
+}
+
+.timeline-section h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0C5A31;
+  margin-bottom: 32px;
+}
+
+.timeline {
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+  padding-left: 32px;
+  text-align: left;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #c1e3d0;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 32px;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -28px;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #0F6B3A;
+  border: 3px solid #c1e3d0;
+}
+
+.timeline-year {
+  font-size: 12px;
+  font-weight: 700;
+  color: #D4A017;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.timeline-content h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 4px 0;
+}
+
+.timeline-content p {
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 1.6;
+}
+
+.team-section {
+  padding: 40px 0 60px;
+  text-align: center;
+}
+
+.team-section h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0C5A31;
+  margin-bottom: 32px;
+}
+
+.team-grid {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.team-member { text-align: center; }
+
+.member-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e8f5e9, #c1e3d0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+
+.member-avatar mat-icon {
+  font-size: 36px;
+  width: 36px;
+  height: 36px;
+  color: #0F6B3A;
+}
+
+.team-member h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.member-role {
+  font-size: 13px;
+  color: #D4A017;
+  font-weight: 500;
+}

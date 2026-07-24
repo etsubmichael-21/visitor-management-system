@@ -92,17 +92,7 @@ import { VisitorService, Visitor } from '../../../core/services/visitor.service'
       </mat-card>
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .filter-card { margin-bottom: 16px; }
-    .filters mat-form-field { width: 100%; }
-    .table-container { overflow-x: auto; }
-    .name-cell { display: flex; align-items: center; gap: 12px; }
-    .avatar { width: 36px; height: 36px; border-radius: 50%; background: #2e7d32; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
-    .name-cell strong { display: block; font-size: 14px; }
-    .name-cell small { font-size: 12px; color: #666; }
-  `]
+  styleUrls: ['./visitor-list.component.scss']
 })
 export class VisitorListComponent implements OnInit {
   private visitorService = inject(VisitorService);

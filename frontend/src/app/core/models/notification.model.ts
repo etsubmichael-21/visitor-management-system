@@ -25,6 +25,5 @@ export interface NotificationQuery {
 }
 
 export interface NotificationCount {
-  total: number;
-  unread: number;
+  count: number;
 }

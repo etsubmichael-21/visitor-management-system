@@ -52,6 +52,7 @@ public class DepartmentService : IDepartmentService
     private static DepartmentResponseDto MapToDto(Department d) => new()
     {
         Id = d.Id, Name = d.Name, Description = d.Description, Location = d.Location, Phone = d.Phone,
-        Email = d.Email, IsActive = d.IsActive, EmployeeCount = d.Employees?.Count ?? 0, CreatedAt = d.CreatedAt
+        Email = d.Email, IsActive = d.IsActive, EmployeeCount = d.Employees?.Count ?? 0, CreatedAt = d.CreatedAt,
+        UpdatedAt = d.UpdatedAt
     };
 }

@@ -23,7 +23,7 @@ export class AuthService {
   }
 
   login(request: LoginRequest): Observable<ApiResponse<LoginResponse>> {
-    return this.http.post<ApiResponse<LoginResponse>>(`${this.apiUrl}`, request).pipe(
+    return this.http.post<ApiResponse<LoginResponse>>(`${this.apiUrl}/auth/login`, request).pipe(
       tap(response => {
         if (response.success && response.data) {
           this.setToken(response.data.token);

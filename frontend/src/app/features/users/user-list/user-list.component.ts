@@ -41,16 +41,7 @@ import { NotificationService } from '../../../shared/services/notification.servi
       </ng-template>
     </app-data-table>
   `,
-  styles: [`
-    .btn { padding: 0.5rem 1rem; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.375rem; transition: background 0.2s; }
-    .btn-primary { background: #3b82f6; color: #fff; }
-    .btn-primary:hover { background: #2563eb; }
-    .action-btns { display: flex; gap: 0.375rem; justify-content: flex-end; }
-    .btn-icon { background: none; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 0.875rem; text-decoration: none; transition: background 0.15s; }
-    .btn-icon:hover { background: #f1f5f9; }
-    .btn-icon-green:hover { background: #dcfce7; border-color: #86efac; }
-    .btn-icon-warning:hover { background: #fee2e2; border-color: #fca5a5; }
-  `],
+  styleUrls: ['./user-list.component.scss'],
 })
 export class UserListComponent implements OnInit {
   private userService = inject(UserService);

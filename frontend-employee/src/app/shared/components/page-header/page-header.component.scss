@@ -1,0 +1,10 @@
+
+    .page-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #0F6B3A;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-icon { font-size: 32px; width: 32px; height: 32px; }
+    h1 { font-size: 24px; font-weight: 500; color: #0C5A31; margin: 0; }
+    .subtitle { font-size: 13px; color: #666; margin: 2px 0 0; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }

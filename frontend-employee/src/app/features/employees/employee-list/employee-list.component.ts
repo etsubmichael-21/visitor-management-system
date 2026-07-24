@@ -114,21 +114,7 @@ import { Department } from '../../../core/models/common.model';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .page-header a { display: flex; align-items: center; gap: 8px; }
-    .filter-card { margin-bottom: 16px; }
-    .filters { display: flex; gap: 16px; flex-wrap: wrap; }
-    .filters mat-form-field { flex: 1; min-width: 200px; }
-    .table-container { overflow-x: auto; }
-    .name-cell { display: flex; align-items: center; gap: 12px; }
-    .avatar { width: 36px; height: 36px; border-radius: 50%; background: #1a237e; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
-    .name-cell strong { display: block; font-size: 14px; }
-    .name-cell small { font-size: 12px; color: #666; }
-    .clickable-row { cursor: pointer; }
-    .clickable-row:hover { background-color: #f5f5f5; }
-  `]
+  styleUrls: ['./employee-list.component.scss']
 })
 export class EmployeeListComponent implements OnInit {
   private employeeService = inject(EmployeeService);

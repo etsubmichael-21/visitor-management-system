@@ -148,12 +148,12 @@ import { Employee } from '../../../core/models/employee.model';
               <mat-card-content>
                 <div class="timeline">
                   <div class="timeline-item">
-                    <div class="timeline-dot" style="background: #1a237e;"></div>
+                    <div class="timeline-dot" style="background: #0F6B3A;"></div>
                     <div><small>Created</small><p>{{ appointment()!.createdAt }}</p></div>
                   </div>
                   @if (appointment()!.updatedAt) {
                     <div class="timeline-item">
-                      <div class="timeline-dot" style="background: #2e7d32;"></div>
+                      <div class="timeline-dot" style="background: #0F6B3A;"></div>
                       <div><small>Last Updated</small><p>{{ appointment()!.updatedAt }}</p></div>
                     </div>
                   }
@@ -165,31 +165,7 @@ import { Employee } from '../../../core/models/employee.model';
       }
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .page-header a { display: flex; align-items: center; gap: 4px; cursor: pointer; }
-    .detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
-    .apt-header { padding: 16px 0; }
-    .apt-header h2 { margin: 0 0 8px; }
-    .confidential { color: #7b1fa2; margin-left: 12px; vertical-align: middle; }
-    .confidential-label { color: #7b1fa2; font-size: 12px; font-weight: 500; vertical-align: middle; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 0; }
-    .info-item small { font-size: 11px; color: #999; display: block; }
-    .info-item p { margin: 2px 0 0; font-size: 14px; }
-    .info-item.full { grid-column: 1 / -1; }
-    .info-item.rejection { background: #ffebee; padding: 12px; border-radius: 4px; }
-    .action-panel { display: flex; flex-direction: column; gap: 16px; }
-    .action-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
-    .full-width { width: 100%; }
-    .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .timeline { padding: 8px 0; }
-    .timeline-item { display: flex; gap: 12px; padding: 8px 0; }
-    .timeline-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
-    .timeline-item small { font-size: 11px; color: #999; display: block; }
-    .timeline-item p { margin: 2px 0 0; font-size: 13px; }
-    @media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
-  `]
+  styleUrls: ['./appointment-detail.component.scss']
 })
 export class AppointmentDetailComponent implements OnInit {
   private appointmentService = inject(AppointmentService);

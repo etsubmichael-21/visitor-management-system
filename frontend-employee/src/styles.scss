@@ -38,25 +38,25 @@ $ecx-theme: mat.m2-define-light-theme((
 }
 
 :root {
-  --ecx-green: #2e7d32;
-  --ecx-green-light: #4caf50;
-  --ecx-green-dark: #1b5e20;
-  --ecx-gold: #f9a825;
-  --ecx-gold-light: #fdd835;
-  --ecx-gold-dark: #f57f17;
-  --ecx-navy: #1a237e;
-  --ecx-navy-dark: #0d1b5e;
-  --ecx-bg: #fafafa;
-  --ecx-bg-alt: #f5f5f5;
-  --ecx-sidebar-bg: #1a237e;
+  --ecx-green: #0F6B3A;
+  --ecx-green-light: #15803D;
+  --ecx-green-dark: #0C5A31;
+  --ecx-gold: #D4A017;
+  --ecx-gold-light: #ecbe4e;
+  --ecx-gold-dark: #b88a0f;
+  --ecx-navy: #0C5A31;
+  --ecx-navy-dark: #0A4E2B;
+  --ecx-bg: #F8F9FA;
+  --ecx-bg-alt: #F3F4F6;
+  --ecx-sidebar-bg: #0F6B3A;
   --ecx-sidebar-text: #ffffff;
   --ecx-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   --ecx-card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --ecx-text-primary: #212121;
-  --ecx-text-secondary: #616161;
-  --ecx-text-hint: #9e9e9e;
-  --ecx-border: #e0e0e0;
-  --ecx-divider: #eeeeee;
+  --ecx-text-primary: #1F2937;
+  --ecx-text-secondary: #6B7280;
+  --ecx-text-hint: #9CA3AF;
+  --ecx-border: #E5E7EB;
+  --ecx-divider: #F3F4F6;
 }
 
 * {
@@ -81,7 +81,7 @@ html, body {
 
 .mat-mdc-raised-button.mat-accent {
   background-color: var(--ecx-gold) !important;
-  color: #333 !important;
+  color: #1F2937 !important;
 }
 
 .mat-mdc-flat-button.mat-primary {
@@ -173,7 +173,7 @@ html, body {
 }
 
 .ecx-sidebar {
-  background: linear-gradient(180deg, var(--ecx-navy) 0%, var(--ecx-navy-dark) 100%);
+  background: linear-gradient(180deg, var(--ecx-green) 0%, var(--ecx-green-dark) 100%);
   color: var(--ecx-sidebar-text);
 }
 
@@ -192,48 +192,48 @@ html, body {
 }
 
 .ecx-status-badge.pending {
-  background-color: #fff3e0;
-  color: #e65100;
+  background-color: #fef3cd;
+  color: #D4A017;
 }
 
 .ecx-status-badge.approved {
-  background-color: #e8f5e9;
+  background-color: #d1fae5;
   color: var(--ecx-green);
 }
 
 .ecx-status-badge.rejected {
-  background-color: #ffebee;
-  color: #c62828;
+  background-color: #fee2e2;
+  color: #DC3545;
 }
 
 .ecx-status-badge.completed {
-  background-color: #e3f2fd;
-  color: #1565c0;
+  background-color: #d1fae5;
+  color: var(--ecx-green-dark);
 }
 
 .ecx-status-badge.checked-in {
-  background-color: #e8f5e9;
+  background-color: #d1fae5;
   color: var(--ecx-green);
 }
 
 .ecx-status-badge.checked-out {
-  background-color: #f3e5f5;
-  color: #6a1b9a;
+  background-color: #f3f4f6;
+  color: #6B7280;
 }
 
 .ecx-status-badge.cancelled {
-  background-color: #fafafa;
-  color: #616161;
+  background-color: #f3f4f6;
+  color: #6B7280;
 }
 
 .ecx-status-badge.active {
-  background-color: #e8f5e9;
+  background-color: #d1fae5;
   color: var(--ecx-green);
 }
 
 .ecx-status-badge.inactive {
-  background-color: #fafafa;
-  color: #616161;
+  background-color: #f3f4f6;
+  color: #6B7280;
 }
 
 .notification-bell {
@@ -245,7 +245,7 @@ html, body {
 }
 
 .notification-bell .mat-badge-content {
-  background-color: #c62828;
+  background-color: #DC3545;
   color: white;
   font-size: 10px;
   font-weight: 600;

@@ -16,8 +16,8 @@ import { Visit } from '../../../core/models/visit.model';
   template: `
     <div class="security-dashboard">
       <div class="stat-row">
-        <div class="stat-card" style="border-left: 4px solid #2e7d32;">
-          <div class="stat-icon" style="background: #e8f5e9; color: #2e7d32;"><mat-icon>security</mat-icon></div>
+        <div class="stat-card" style="border-left: 4px solid #0F6B3A;">
+          <div class="stat-icon" style="background: #e8f5e9; color: #0F6B3A;"><mat-icon>security</mat-icon></div>
           <div class="stat-info">
             <h3>{{ activeVisitors().length }}</h3>
             <p>Active In Building</p>
@@ -30,8 +30,8 @@ import { Visit } from '../../../core/models/visit.model';
             <p>Today's Check-Ins</p>
           </div>
         </div>
-        <div class="stat-card" style="border-left: 4px solid #f9a825;">
-          <div class="stat-icon" style="background: #fff8e1; color: #f9a825;"><mat-icon>logout</mat-icon></div>
+        <div class="stat-card" style="border-left: 4px solid #D4A017;">
+          <div class="stat-icon" style="background: #fff8e1; color: #D4A017;"><mat-icon>logout</mat-icon></div>
           <div class="stat-info">
             <h3>{{ dashboardData()?.stats?.checkedInVisitors || 0 }}</h3>
             <p>Currently In Building</p>
@@ -58,7 +58,7 @@ import { Visit } from '../../../core/models/visit.model';
       <mat-card class="active-card">
         <mat-card-header>
           <mat-card-title>
-            <mat-icon style="color: #2e7d32;">warning</mat-icon>
+            <mat-icon style="color: #0F6B3A;">warning</mat-icon>
             Active Visitors - Security View
           </mat-card-title>
         </mat-card-header>
@@ -96,30 +96,7 @@ import { Visit } from '../../../core/models/visit.model';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; display: flex; align-items: center; gap: 16px; }
-    .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-    .stat-icon mat-icon { font-size: 28px; }
-    .stat-info h3 { font-size: 28px; font-weight: 700; margin: 0; }
-    .stat-info p { font-size: 13px; color: #666; margin: 4px 0 0; }
-    .action-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-    .big-action { height: 56px; font-size: 16px; display: flex; align-items: center; gap: 8px; padding: 0 32px; }
-    .active-card mat-card-header mat-card-title { display: flex; align-items: center; gap: 8px; }
-    .visitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-    .visitor-card {
-      background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px;
-    }
-    .visitor-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-    .visitor-avatar { width: 48px; height: 48px; border-radius: 50%; background: #f9a825; color: #1a237e; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; }
-    .visitor-main strong { font-size: 16px; display: block; }
-    .visitor-main small { font-size: 12px; color: #666; }
-    .visitor-details p { font-size: 13px; color: #555; margin: 4px 0; display: flex; align-items: center; gap: 6px; }
-    .visitor-details mat-icon { font-size: 16px; width: 16px; height: 16px; color: #999; }
-    .checkout-btn { margin-top: 12px; width: 100%; }
-    .empty-state { grid-column: 1 / -1; text-align: center; padding: 40px; color: #999; }
-    .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; color: #2e7d32; }
-  `]
+  styleUrls: ['./security-dashboard.component.scss']
 })
 export class SecurityDashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);

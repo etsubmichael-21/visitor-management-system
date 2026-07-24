@@ -1,0 +1,62 @@
+
+    .appointment-list { padding: 0; }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #0F6B3A;
+    }
+    .page-header h1 { font-size: 24px; font-weight: 500; color: #0C5A31; margin: 0; }
+    .page-header button { display: flex; align-items: center; gap: 8px; }
+
+    .filter-card { margin-bottom: 16px; }
+    .filters { display: flex; gap: 16px; flex-wrap: wrap; }
+    .filters mat-form-field { flex: 1; min-width: 180px; }
+    .active-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+    .appointment-tabs { margin-bottom: 0; }
+
+    .tab-label { font-weight: 500; }
+    .tab-count {
+      margin-left: 8px;
+      background: rgba(15, 107, 58, 0.12);
+      color: #0F6B3A;
+      border-radius: 12px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+      line-height: 22px;
+    }
+
+    :host ::ng-deep .mat-mdc-tab .mdc-tab-indicator__content--underline {
+      border-color: #0F6B3A;
+    }
+    :host ::ng-deep .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+      color: #0F6B3A;
+    }
+
+    .table-container { overflow-x: auto; }
+
+    .clickable-row { cursor: pointer; }
+    .clickable-row:hover { background-color: #f1f8e9; }
+
+    .confidential-icon { color: #7b1fa2; font-size: 18px; width: 18px; height: 18px; margin-left: 8px; vertical-align: middle; }
+
+    .visit-time { color: #0F6B3A; font-weight: 500; }
+    .no-data { color: #9e9e9e; }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 16px;
+      color: #9e9e9e;
+    }
+    .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; margin-bottom: 12px; }
+    .empty-state p { margin: 0; font-size: 16px; }

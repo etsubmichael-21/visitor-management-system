@@ -1,0 +1,6 @@
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #0F6B3A; }
+.page-header h1 { font-size: 24px; font-weight: 500; color: #0C5A31; }
+.filter-card { margin-bottom: 16px; }
+.filters { display: flex; gap: 16px; }
+.filters mat-form-field { flex: 1; }
+.table-container { overflow-x: auto; }

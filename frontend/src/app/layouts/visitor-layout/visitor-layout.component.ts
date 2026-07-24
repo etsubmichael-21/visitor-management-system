@@ -41,7 +41,7 @@ import { User } from '../../core/models/auth.model';
         </button>
 
         <a routerLink="/dashboard" class="toolbar-brand">
-          <mat-icon class="brand-icon">apartment</mat-icon>
+          <img src="assets/images/ecx-logo.png" alt="ECX Logo" class="brand-logo">
           <span class="brand-text">ECX <span class="accent">Visitor Portal</span></span>
         </a>
 
@@ -80,9 +80,7 @@ import { User } from '../../core/models/auth.model';
       <mat-sidenav-container class="visitor-sidenav-container">
         <mat-sidenav #sidenav [mode]="sidenavMode" [opened]="sidenavOpened" class="visitor-sidenav">
           <div class="sidenav-header">
-            <div class="user-avatar">
-              <mat-icon>person</mat-icon>
-            </div>
+            <img src="assets/images/ecx-logo.png" alt="ECX Logo" class="sidebar-logo">
             <div class="user-info">
               <div class="user-name">{{ user?.firstName }} {{ user?.lastName }}</div>
               <div class="user-email">{{ user?.email }}</div>
@@ -138,110 +136,7 @@ import { User } from '../../core/models/auth.model';
       </mat-sidenav-container>
     </div>
   `,
-  styles: [`
-    .visitor-layout {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    .visitor-toolbar {
-      background: #1b5e20;
-      color: white;
-      z-index: 1000;
-      padding: 0 16px;
-    }
-
-    .toolbar-brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: white;
-      text-decoration: none;
-      margin-left: 8px;
-    }
-
-    .brand-icon {
-      color: #d4a017;
-    }
-
-    .brand-text {
-      font-size: 17px;
-      font-weight: 700;
-    }
-
-    .accent {
-      color: #d4a017;
-    }
-
-    .toolbar-spacer {
-      flex: 1;
-    }
-
-    .visitor-sidenav-container {
-      flex: 1;
-    }
-
-    .visitor-sidenav {
-      width: 260px;
-      background: #ffffff;
-      border-right: 1px solid #e0e0e0;
-    }
-
-    .sidenav-header {
-      padding: 24px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: linear-gradient(135deg, #f1f8e9, #e8f5e9);
-    }
-
-    .user-avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: #2e7d32;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-    }
-
-    .user-name {
-      font-weight: 600;
-      font-size: 14px;
-      color: #1b5e20;
-    }
-
-    .user-email {
-      font-size: 12px;
-      color: #666;
-    }
-
-    .active-nav {
-      background: rgba(46, 125, 50, 0.08) !important;
-      color: #2e7d32 !important;
-    }
-
-    .active-nav mat-icon {
-      color: #2e7d32 !important;
-    }
-
-    .visitor-content {
-      background: #f5f5f5;
-      padding: 24px;
-    }
-
-    .user-menu-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    @media (max-width: 768px) {
-      .brand-text { display: none; }
-    }
-  `],
+  styleUrls: ['./visitor-layout.component.scss'],
 })
 export class VisitorLayoutComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
@@ -261,7 +156,7 @@ export class VisitorLayoutComponent implements OnInit, OnDestroy {
     });
 
     this.notificationService.pollUnreadCount().pipe(takeUntil(this.destroy$)).subscribe((count) => {
-      this.unreadCount = count.unread;
+      this.unreadCount = count.count;
     });
 
     this.checkScreenSize();

@@ -11,7 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
   template: `
     <div class="confirm-dialog">
       <h2 mat-dialog-title>
-        <mat-icon [style.color]="data.color || '#f9a825'">{{ data.icon || 'warning' }}</mat-icon>
+        <mat-icon [style.color]="data.color || '#D4A017'">{{ data.icon || 'warning' }}</mat-icon>
         {{ data.title }}
       </h2>
       <mat-dialog-content>
@@ -25,10 +25,7 @@ import { MatIconModule } from '@angular/material/icon';
       </mat-dialog-actions>
     </div>
   `,
-  styles: [`
-    .confirm-dialog h2 { display: flex; align-items: center; gap: 8px; }
-    mat-dialog-content p { font-size: 14px; color: #555; }
-  `]
+  styleUrls: ['./confirm-dialog.component.scss']
 })
 export class ConfirmDialogComponent {
   dialogRef = inject(MatDialogRef);

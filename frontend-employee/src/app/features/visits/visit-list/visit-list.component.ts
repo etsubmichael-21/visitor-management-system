@@ -99,14 +99,7 @@ import { Visit } from '../../../core/models/visit.model';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .filter-card { margin-bottom: 16px; }
-    .filters { display: flex; gap: 16px; }
-    .filters mat-form-field { flex: 1; }
-    .table-container { overflow-x: auto; }
-  `]
+  styleUrls: ['./visit-list.component.scss']
 })
 export class VisitListComponent implements OnInit {
   private visitService = inject(VisitService);

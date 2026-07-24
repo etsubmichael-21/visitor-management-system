@@ -98,29 +98,7 @@ import { Visit } from '../../../core/models/visit.model';
       }
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .search-card { margin-bottom: 16px; }
-    .full-width { width: 100%; }
-    .visitor-results { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
-    .visitor-checkout-card { cursor: pointer; transition: all 0.2s; }
-    .visitor-checkout-card:hover, .visitor-checkout-card.selected { border: 2px solid #2e7d32; }
-    .visitor-row { display: flex; align-items: center; gap: 16px; }
-    .visitor-avatar { width: 48px; height: 48px; border-radius: 50%; background: #f9a825; color: #1a237e; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; flex-shrink: 0; }
-    .visitor-info { flex: 1; }
-    .visitor-info strong { font-size: 16px; display: block; }
-    .visitor-info p { font-size: 13px; color: #555; margin: 2px 0; }
-    .visitor-info small { font-size: 12px; color: #999; }
-    .items { display: flex; align-items: center; gap: 4px; color: #f57f17; font-size: 12px; }
-    .items mat-icon { font-size: 16px; width: 16px; height: 16px; }
-    .checkout-form-card { border: 2px solid #c62828; }
-    .visitor-summary { background: #fafafa; padding: 12px; border-radius: 4px; margin-bottom: 16px; }
-    .visitor-summary p { margin: 4px 0; font-size: 14px; }
-    .checkbox-row { margin: 16px 0; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; }
-    .form-actions button { display: flex; align-items: center; gap: 8px; }
-  `]
+  styleUrls: ['./check-out.component.scss']
 })
 export class CheckOutComponent implements OnInit {
   private visitService = inject(VisitService);

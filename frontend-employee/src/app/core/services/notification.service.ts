@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Notification, NotificationFilter } from '../models/notification.model';
+import { Notification, NotificationFilter, UnreadCountResponse } from '../models/notification.model';
 import { ApiResponse, PaginatedResponse } from '../models/common.model';
 
 @Injectable({ providedIn: 'root' })
@@ -20,8 +20,8 @@ export class NotificationService {
     return this.api.getList<Notification>('/notifications', params);
   }
 
-  getUnreadCount(): Observable<ApiResponse<number>> {
-    return this.api.get<number>('/notifications/unread/count');
+  getUnreadCount(): Observable<ApiResponse<UnreadCountResponse>> {
+    return this.api.get<UnreadCountResponse>('/notifications/unread/count');
   }
 
   markAsRead(id: number): Observable<ApiResponse<Notification>> {

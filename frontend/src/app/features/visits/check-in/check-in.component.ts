@@ -68,31 +68,7 @@ import { NotificationService } from '../../../shared/services/notification.servi
       </div>
     </div>
   `,
-  styles: [`
-    .form-page { max-width: 600px; }
-    .page-header { margin-bottom: 1.5rem; }
-    .page-title { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0; }
-    .page-subtitle { color: #64748b; font-size: 0.875rem; margin: 0.25rem 0 0; }
-    .form-card { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
-    .form-group { display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 1rem; }
-    .form-label { font-size: 0.875rem; font-weight: 600; color: #334155; }
-    .form-control { padding: 0.625rem 0.875rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; outline: none; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
-    .form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-    .form-control.ng-invalid.ng-touched { border-color: #ef4444; }
-    .form-error { margin: 0; color: #ef4444; font-size: 0.75rem; }
-    .form-hint { font-size: 0.75rem; color: #3b82f6; text-decoration: none; }
-    .form-hint:hover { text-decoration: underline; }
-    select.form-control { cursor: pointer; }
-    .form-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f1f5f9; }
-    .btn { padding: 0.625rem 1.25rem; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; transition: background 0.2s; }
-    .btn-primary { background: #3b82f6; color: #fff; }
-    .btn-primary:hover:not(:disabled) { background: #2563eb; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-secondary { background: #e2e8f0; color: #475569; }
-    .btn-secondary:hover { background: #cbd5e1; }
-  `],
+  styleUrls: ['./check-in.component.scss'],
 })
 export class CheckInComponent implements OnInit {
   private fb = inject(FormBuilder);

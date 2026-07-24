@@ -1,0 +1,41 @@
+
+    .confidential-banner {
+      display: flex; align-items: center; gap: 16px;
+      background: linear-gradient(135deg, #f3e5f5, #ede7f6);
+      padding: 16px 20px; border-radius: 8px; margin-bottom: 24px;
+      border: 1px solid #ce93d8;
+    }
+    .confidential-banner mat-icon { color: #7b1fa2; font-size: 32px; width: 32px; height: 32px; }
+    .confidential-banner strong { font-size: 16px; color: #4a148c; }
+    .confidential-banner p { font-size: 13px; color: #666; margin: 2px 0 0; }
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px; display: flex; align-items: center; gap: 16px;
+    }
+    .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .stat-icon mat-icon { font-size: 28px; }
+    .stat-info h3 { font-size: 28px; font-weight: 700; margin: 0; }
+    .stat-info p { font-size: 13px; color: #666; margin: 4px 0 0; }
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .dept-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .dept-name { min-width: 100px; font-size: 13px; }
+    .dept-bar-container { flex: 1; height: 24px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+    .dept-bar { height: 100%; background: linear-gradient(90deg, #D4A017, #fbc02d); border-radius: 4px; }
+    .dept-count { min-width: 70px; text-align: right; font-size: 12px; color: #666; }
+    .apt-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+    .apt-item:last-child { border-bottom: none; }
+    .apt-time { font-weight: 600; color: #0F6B3A; min-width: 60px; font-size: 13px; }
+    .apt-info { flex: 1; }
+    .apt-info strong { font-size: 14px; display: block; }
+    .apt-info p { font-size: 12px; color: #666; margin: 2px 0; }
+    .activity-card { margin-bottom: 16px; }
+    .activity-list { max-height: 300px; overflow-y: auto; }
+    .activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .activity-content strong { font-size: 14px; display: block; }
+    .activity-content p { font-size: 12px; color: #666; margin: 2px 0; }
+    .activity-content small { font-size: 11px; color: #999; }
+    .empty-state { text-align: center; color: #999; padding: 24px; }
+    @media (max-width: 768px) { .chart-row { grid-template-columns: 1fr; } }

@@ -16,33 +16,7 @@ import { NgIf } from '@angular/common';
       </div>
     </div>
   `,
-  styles: [`
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    .page-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1e293b;
-      margin: 0;
-    }
-    .page-subtitle {
-      margin: 0.25rem 0 0;
-      color: #64748b;
-      font-size: 0.875rem;
-    }
-    .page-header-actions {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-  `],
+  styleUrls: ['./page-header.component.scss'],
 })
 export class PageHeaderComponent {
   @Input() title = '';

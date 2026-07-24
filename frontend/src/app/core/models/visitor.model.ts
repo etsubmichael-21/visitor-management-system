@@ -47,8 +47,11 @@ export interface UpdateProfileRequest {
 }
 
 export interface VisitorStats {
-  totalVisits: number;
+  totalAppointments: number;
   pendingAppointments: number;
   approvedAppointments: number;
-  upcomingVisits: number;
+  completedAppointments: number;
+  cancelledAppointments: number;
+  upcomingAppointments: number;
+  totalVisits: number;
 }

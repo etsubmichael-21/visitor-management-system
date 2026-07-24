@@ -129,31 +129,7 @@ import { ReportData, Department } from '../../core/models/common.model';
       }
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .filter-card { margin-bottom: 16px; }
-    .filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
-    .filters mat-form-field { min-width: 180px; }
-    .generate-btn { height: 56px; display: flex; align-items: center; gap: 8px; }
-    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
-    .summary-card { text-align: center; padding: 16px; background: #f5f5f5; border-radius: 8px; }
-    .summary-card h3 { font-size: 28px; color: #1a237e; margin: 0; }
-    .summary-card p { font-size: 12px; color: #666; margin: 4px 0 0; }
-    .chart-section { margin: 24px 0; }
-    .chart-section h3 { font-size: 16px; margin-bottom: 12px; }
-    .bar-chart { display: flex; align-items: flex-end; gap: 12px; height: 200px; padding: 0 8px; }
-    .bar-item { display: flex; flex-direction: column; align-items: center; flex: 1; }
-    .bar { width: 100%; background: linear-gradient(180deg, #1a237e, #283593); border-radius: 4px 4px 0 0; min-height: 4px; }
-    .bar-value { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
-    .bar-label { font-size: 11px; color: #666; margin-top: 4px; }
-    .table-section { margin-top: 24px; }
-    .table-section h3 { font-size: 16px; margin-bottom: 12px; }
-    .report-table { width: 100%; border-collapse: collapse; }
-    .report-table th, .report-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e0e0e0; font-size: 13px; }
-    .report-table th { background: #f5f5f5; font-weight: 600; }
-    .empty-state { text-align: center; color: #999; padding: 24px; }
-  `]
+  styleUrls: ['./reports.component.scss']
 })
 export class ReportsComponent implements OnInit {
   private reportService = inject(ReportService);

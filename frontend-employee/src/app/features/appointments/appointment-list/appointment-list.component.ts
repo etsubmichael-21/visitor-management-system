@@ -199,69 +199,7 @@ interface TabConfig {
       </mat-card>
     </div>
   `,
-  styles: [`
-    .appointment-list { padding: 0; }
-
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 2px solid #2e7d32;
-    }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; margin: 0; }
-    .page-header button { display: flex; align-items: center; gap: 8px; }
-
-    .filter-card { margin-bottom: 16px; }
-    .filters { display: flex; gap: 16px; flex-wrap: wrap; }
-    .filters mat-form-field { flex: 1; min-width: 180px; }
-    .active-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-
-    .appointment-tabs { margin-bottom: 0; }
-
-    .tab-label { font-weight: 500; }
-    .tab-count {
-      margin-left: 8px;
-      background: rgba(46, 125, 50, 0.12);
-      color: #2e7d32;
-      border-radius: 12px;
-      padding: 0 8px;
-      font-size: 12px;
-      font-weight: 600;
-      min-width: 20px;
-      text-align: center;
-      line-height: 22px;
-    }
-
-    :host ::ng-deep .mat-mdc-tab .mdc-tab-indicator__content--underline {
-      border-color: #2e7d32;
-    }
-    :host ::ng-deep .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
-      color: #2e7d32;
-    }
-
-    .table-container { overflow-x: auto; }
-
-    .clickable-row { cursor: pointer; }
-    .clickable-row:hover { background-color: #f1f8e9; }
-
-    .confidential-icon { color: #7b1fa2; font-size: 18px; width: 18px; height: 18px; margin-left: 8px; vertical-align: middle; }
-
-    .visit-time { color: #2e7d32; font-weight: 500; }
-    .no-data { color: #9e9e9e; }
-
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 16px;
-      color: #9e9e9e;
-    }
-    .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; margin-bottom: 12px; }
-    .empty-state p { margin: 0; font-size: 16px; }
-  `]
+  styleUrls: ['./appointment-list.component.scss']
 })
 export class AppointmentListComponent implements OnInit {
   private appointmentService = inject(AppointmentService);
@@ -346,37 +284,6 @@ export class AppointmentListComponent implements OnInit {
         }
       }
     });
-  }
-
-  loadTabCounts(): void {
-    const statusGroups: { label: string; statuses: AppointmentStatus[] }[] = [
-      { label: 'Active', statuses: ['Approved', 'Rescheduled'] },
-      { label: 'Pending', statuses: ['Pending'] },
-      { label: 'Completed', statuses: ['Completed'] },
-      { label: 'Rejected', statuses: ['Rejected'] },
-      { label: 'Cancelled', statuses: ['Cancelled'] }
-    ];
-
-    const counts: Record<string, number> = {};
-    let completed = 0;
-
-    for (const group of statusGroups) {
-      for (const status of group.statuses) {
-        this.appointmentService.getAll({ status, limit: '1' } as any).subscribe({
-          next: (res) => {
-            if (res.success && res.data) {
-              const count = res.data.totalCount || 0;
-              if (group.label === 'Active') {
-                counts['Active'] = (counts['Active'] || 0) + count;
-              } else {
-                counts[group.label] = count;
-              }
-              this.tabCounts.set({ ...counts });
-            }
-          }
-        });
-      }
-    }
   }
 
   onTabChange(index: number): void {

@@ -24,7 +24,7 @@ import { AuthService } from '../../../core/services/auth.service';
         <mat-card-header>
           <mat-card-title>
             <div class="forgot-header">
-              <mat-icon class="forgot-icon">lock_reset</mat-icon>
+              <img src="assets/images/ecx-logo.png" alt="ECX Logo" class="forgot-logo">
               <h2>Forgot Password</h2>
               <p>Enter your email to receive a password reset link</p>
             </div>
@@ -80,81 +80,7 @@ import { AuthService } from '../../../core/services/auth.service';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .forgot-container {
-      width: 100%;
-      max-width: 420px;
-    }
-    .forgot-card { padding: 16px; }
-    .forgot-header {
-      text-align: center;
-      width: 100%;
-      margin-bottom: 8px;
-    }
-    .forgot-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      color: #f9a825;
-      margin-bottom: 8px;
-    }
-    .forgot-header h2 {
-      font-size: 24px;
-      font-weight: 500;
-      color: #1a237e;
-      margin: 0;
-    }
-    .forgot-header p {
-      color: #666;
-      margin-top: 4px;
-      font-size: 14px;
-    }
-    .success-message {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #2e7d32;
-      background: #e8f5e9;
-      padding: 12px;
-      border-radius: 4px;
-      margin-bottom: 16px;
-      font-size: 14px;
-    }
-    .error-message {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #c62828;
-      background: #ffebee;
-      padding: 12px;
-      border-radius: 4px;
-      margin-bottom: 16px;
-      font-size: 14px;
-    }
-    .reset-btn {
-      width: 100%;
-      height: 48px;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    mat-card-actions {
-      display: flex;
-      justify-content: center;
-      padding: 8px 16px 16px !important;
-    }
-    .back-link {
-      color: #1a237e;
-      text-decoration: none;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .back-link:hover { text-decoration: underline; }
-  `]
+  styleUrls: ['./forgot-password.component.scss']
 })
 export class ForgotPasswordComponent {
   private fb = inject(FormBuilder);

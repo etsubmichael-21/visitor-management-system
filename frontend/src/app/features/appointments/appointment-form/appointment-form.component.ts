@@ -164,97 +164,7 @@ import { Employee } from '../../../core/models/employee.model';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .appointment-form-page { max-width: 700px; margin: 0 auto; }
-
-    .page-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .back-btn { color: #64748b; }
-
-    .page-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: #1b5e20;
-    }
-
-    .page-subtitle {
-      color: #64748b;
-      font-size: 14px;
-      margin-top: 2px;
-    }
-
-    .form-card { padding: 12px; }
-
-    .form-section {
-      margin-bottom: 28px;
-    }
-
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 15px;
-      font-weight: 600;
-      color: #2e7d32;
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #e8f5e9;
-    }
-
-    .time-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .error-banner {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: #ffebee;
-      color: #c62828;
-      border-radius: 8px;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-
-    .success-banner {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: #e8f5e9;
-      color: #2e7d32;
-      border-radius: 8px;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      padding-top: 16px;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .form-actions button[type="submit"] {
-      height: 42px;
-      padding: 0 28px;
-      font-weight: 600;
-      background: #2e7d32 !important;
-    }
-
-    @media (max-width: 768px) {
-      .time-row { grid-template-columns: 1fr; }
-    }
-  `],
+  styleUrls: ['./appointment-form.component.scss'],
 })
 export class AppointmentFormComponent implements OnInit {
   private appointmentService = inject(AppointmentService);
@@ -264,7 +174,7 @@ export class AppointmentFormComponent implements OnInit {
   private router = inject(Router);
 
   form: AppointmentRequest = {
-    employeeId: '',
+    employeeId: 0,
     requestedDate: '',
     requestedStartTime: '',
     requestedEndTime: '',
@@ -273,7 +183,7 @@ export class AppointmentFormComponent implements OnInit {
     notes: '',
   };
 
-  departmentId = '';
+  departmentId = 0;
 
   departments: Department[] = [];
   employees: Employee[] = [];
@@ -287,12 +197,14 @@ export class AppointmentFormComponent implements OnInit {
   ngOnInit(): void {
     this.departmentService.getDepartments().subscribe({
       next: (depts) => (this.departments = depts),
-      error: () => {},
+      error: () => {
+        this.errorMessage = 'Failed to load departments. Make sure you are logged in.';
+      },
     });
   }
 
   onDepartmentChange(deptId: number): void {
-    this.form.employeeId = '';
+    this.form.employeeId = 0;
     this.employees = [];
     if (!deptId) return;
 
@@ -311,7 +223,20 @@ export class AppointmentFormComponent implements OnInit {
 
   onSubmit(): void {
     if (this.selectedDate) {
-      this.form.requestedDate = this.selectedDate.toISOString().split('T')[0];
+      const dateStr = this.selectedDate.toISOString().split('T')[0];
+      this.form.requestedDate = dateStr;
+
+      const combineToISO = (time: string): string => {
+        const [h, m] = time.split(':').map(Number);
+        const dt = new Date(this.selectedDate!);
+        dt.setHours(h, m, 0, 0);
+        return dt.toISOString();
+      };
+
+      this.form.requestedStartTime = combineToISO(this.form.requestedStartTime);
+      if (this.form.requestedEndTime) {
+        this.form.requestedEndTime = combineToISO(this.form.requestedEndTime);
+      }
     }
     const user = this.authService.currentUser;
     if (user?.visitorId) {

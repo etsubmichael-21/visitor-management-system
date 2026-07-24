@@ -38,7 +38,7 @@ export class NotificationService {
     return interval(intervalMs).pipe(
       startWith(0),
       switchMap(() =>
-        this.getUnreadCount().pipe(catchError(() => of({ total: 0, unread: 0 })))
+        this.getUnreadCount().pipe(catchError(() => of({ count: 0 })))
       )
     );
   }

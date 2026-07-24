@@ -57,21 +57,7 @@ import { AuthService } from '../../../core/services/auth.service';
       </div>
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .page-header a { display: flex; align-items: center; gap: 8px; }
-    .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-    .dept-card { transition: transform 0.2s; }
-    .dept-card:hover { transform: translateY(-2px); }
-    .dept-icon { width: 48px; height: 48px; border-radius: 12px; background: #e8f5e9; display: flex; align-items: center; justify-content: center; margin-right: 12px; }
-    .dept-icon mat-icon { color: #2e7d32; }
-    .dept-desc { color: #666; font-size: 14px; margin: 8px 0; }
-    .dept-meta { display: flex; gap: 16px; margin: 8px 0; }
-    .dept-meta span { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #555; }
-    .dept-meta mat-icon { font-size: 16px; width: 16px; height: 16px; color: #999; }
-    .dept-contact small { color: #1a237e; font-weight: 500; }
-  `]
+  styleUrls: ['./department-list.component.scss']
 })
 export class DepartmentListComponent implements OnInit {
   private departmentService = inject(DepartmentService);

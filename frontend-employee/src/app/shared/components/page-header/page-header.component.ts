@@ -25,21 +25,11 @@ import { MatButtonModule } from '@angular/material/button';
       </div>
     </div>
   `,
-  styles: [`
-    .page-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32;
-    }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .header-icon { font-size: 32px; width: 32px; height: 32px; }
-    h1 { font-size: 24px; font-weight: 500; color: #1b5e20; margin: 0; }
-    .subtitle { font-size: 13px; color: #666; margin: 2px 0 0; }
-    .header-actions { display: flex; gap: 8px; align-items: center; }
-  `]
+  styleUrls: ['./page-header.component.scss']
 })
 export class PageHeaderComponent {
   @Input() title = '';
   @Input() subtitle = '';
   @Input() icon = '';
-  @Input() iconColor = '#2e7d32';
+  @Input() iconColor = '#0F6B3A';
 }

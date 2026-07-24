@@ -22,3 +22,7 @@ export interface NotificationFilter {
   page?: number;
   limit?: number;
 }
+
+export interface UnreadCountResponse {
+  count: number;
+}

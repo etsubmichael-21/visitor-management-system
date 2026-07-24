@@ -28,7 +28,7 @@ import { AuthService } from '../../../core/services/auth.service';
     <mat-card class="auth-card">
       <mat-card-content>
         <div class="icon-container">
-          <mat-icon>vpn_key</mat-icon>
+          <img src="assets/images/ecx-logo.png" alt="ECX Logo" style="width: 32px; height: 32px; object-fit: contain;">
         </div>
         <h2>Reset Password</h2>
         <p class="auth-subtitle">Enter your new password below</p>
@@ -83,91 +83,7 @@ import { AuthService } from '../../../core/services/auth.service';
       </mat-card-content>
     </mat-card>
   `,
-  styles: [`
-    .auth-card {
-      padding: 40px 36px;
-      border-radius: 16px;
-      text-align: center;
-    }
-
-    .icon-container {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: #e8f5e9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px;
-    }
-
-    .icon-container mat-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: #2e7d32;
-    }
-
-    h2 {
-      font-size: 22px;
-      font-weight: 700;
-      color: #1b5e20;
-      margin-bottom: 8px;
-    }
-
-    .auth-subtitle {
-      color: #64748b;
-      font-size: 14px;
-      margin-bottom: 24px;
-    }
-
-    .error-banner {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: #ffebee;
-      color: #c62828;
-      border-radius: 8px;
-      font-size: 14px;
-      margin-bottom: 20px;
-      text-align: left;
-    }
-
-    .success-banner {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: #e8f5e9;
-      color: #2e7d32;
-      border-radius: 8px;
-      font-size: 14px;
-      margin-bottom: 20px;
-      text-align: left;
-    }
-
-    .auth-btn {
-      width: 100%;
-      height: 48px;
-      font-size: 16px;
-      font-weight: 600;
-      background: #2e7d32 !important;
-    }
-
-    .auth-footer {
-      margin-top: 24px;
-    }
-
-    .auth-footer a {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      color: #2e7d32;
-      font-size: 14px;
-      font-weight: 500;
-    }
-  `],
+  styleUrls: ['./reset-password.component.scss'],
 })
 export class ResetPasswordComponent implements OnInit {
   private authService = inject(AuthService);

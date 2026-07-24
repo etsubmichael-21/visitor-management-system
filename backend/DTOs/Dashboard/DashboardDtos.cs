@@ -111,3 +111,15 @@ public class EmployeeAvailabilityDto
     public string Status { get; set; } = string.Empty;
     public bool IsAvailable { get; set; }
 }
+
+public class VisitorDashboardDto
+{
+    public int TotalAppointments { get; set; }
+    public int PendingAppointments { get; set; }
+    public int ApprovedAppointments { get; set; }
+    public int CompletedAppointments { get; set; }
+    public int CancelledAppointments { get; set; }
+    public int UpcomingAppointments { get; set; }
+    public int TotalVisits { get; set; }
+    public List<AppointmentResponseDto> RecentAppointments { get; set; } = new();
+}

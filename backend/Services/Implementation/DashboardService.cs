@@ -99,4 +99,45 @@ public class DashboardService : IDashboardService
             PendingCheckOuts = await _context.Visits.CountAsync(v => v.Status == "CheckedIn")
         };
     }
+
+    public async Task<VisitorDashboardDto> GetVisitorDashboardAsync(int visitorId)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var appointments = await _context.Appointments
+            .Where(a => a.VisitorId == visitorId)
+            .Include(a => a.Employee).ThenInclude(e => e.Department)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync();
+
+        var recentAppointments = appointments.Take(5).Select(a => new AppointmentResponseDto
+        {
+            Id = a.Id,
+            VisitorId = a.VisitorId,
+            EmployeeId = a.EmployeeId,
+            EmployeeName = a.Employee.FullName,
+            DepartmentName = a.Employee.Department.Name,
+            Purpose = a.Purpose,
+            Status = a.Status,
+            RequestedDate = a.RequestedDate,
+            RequestedStartTime = a.RequestedStartTime,
+            RequestedEndTime = a.RequestedEndTime,
+            CheckInAllowed = a.CheckInAllowed,
+            IsConfidential = a.IsConfidential,
+            AppointmentCode = a.AppointmentCode,
+            Notes = a.Notes,
+            CreatedAt = a.CreatedAt
+        }).ToList();
+
+        return new VisitorDashboardDto
+        {
+            TotalAppointments = appointments.Count,
+            PendingAppointments = appointments.Count(a => a.Status == "Pending"),
+            ApprovedAppointments = appointments.Count(a => a.Status == "Approved"),
+            CompletedAppointments = appointments.Count(a => a.Status == "Completed"),
+            CancelledAppointments = appointments.Count(a => a.Status == "Cancelled" || a.Status == "Rejected"),
+            UpcomingAppointments = appointments.Count(a => a.Status == "Approved" && a.RequestedDate >= today),
+            TotalVisits = await _context.Visits.CountAsync(v => v.VisitorId == visitorId),
+            RecentAppointments = recentAppointments
+        };
+    }
 }

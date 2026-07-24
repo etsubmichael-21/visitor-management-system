@@ -76,7 +76,7 @@ public class DepartmentsController : ControllerBase
     [HttpGet("active")]
     public async Task<IActionResult> GetActive()
     {
-        var result = await _departmentService.GetAllAsync(new PageRequest { PageSize = 100 });
-        return Ok(ApiResponse<PagedResponse<DepartmentResponseDto>>.Ok(result));
+        var result = await _departmentService.GetActiveDepartmentsAsync();
+        return Ok(ApiResponse<IReadOnlyList<DepartmentResponseDto>>.Ok(result));
     }
 }

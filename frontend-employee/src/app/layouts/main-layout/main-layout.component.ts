@@ -36,7 +36,7 @@ interface NavItem {
       <mat-sidenav #sidenav [mode]="sidenavMode" [opened]="sidenavOpened" class="ecx-sidebar">
         <div class="sidebar-header">
           <div class="logo-area">
-            <mat-icon class="logo-icon">apartment</mat-icon>
+            <img src="assets/images/ecx-logo.png" alt="ECX Logo" class="sidebar-logo-img">
             <div>
               <h2 class="logo-title">ECX</h2>
               <span class="portal-label">Employee Portal</span>
@@ -154,227 +154,7 @@ interface NavItem {
       </mat-sidenav-content>
     </mat-sidenav-container>
   `,
-  styles: [`
-    :host { display: block; height: 100vh; }
-    .layout-container { height: 100vh; }
-    .ecx-sidebar {
-      width: 260px;
-      background: linear-gradient(180deg, #1a237e 0%, #0d1b5e 100%);
-      color: white;
-      border: none;
-    }
-    .sidebar-header {
-      padding: 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      position: relative;
-      overflow: hidden;
-    }
-    .brand-accent {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #f9a825, #2e7d32, #f9a825);
-    }
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .logo-icon {
-      font-size: 40px;
-      width: 40px;
-      height: 40px;
-      color: #f9a825;
-      background: rgba(249,168,37,0.15);
-      border-radius: 10px;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .logo-title {
-      font-size: 22px;
-      font-weight: 700;
-      margin: 0;
-      color: white;
-      letter-spacing: 2px;
-    }
-    .portal-label { font-size: 11px; color: rgba(255,255,255,0.6); display: block; margin-top: 2px; }
-    .user-card {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 16px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #f9a825;
-      color: #1a237e;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 14px;
-    }
-    .user-info { display: flex; flex-direction: column; }
-    .user-name { font-size: 14px; font-weight: 500; color: white; }
-    .user-role { font-size: 11px; color: rgba(255,255,255,0.6); }
-    .sidebar-nav {
-      padding: 8px 0;
-      flex: 1;
-      overflow-y: auto;
-    }
-    .sidebar-nav a {
-      color: rgba(255,255,255,0.8);
-      margin: 2px 8px;
-      border-radius: 8px;
-      height: 44px;
-    }
-    .sidebar-nav a:hover {
-      background: rgba(255,255,255,0.1);
-      color: white;
-    }
-    .sidebar-nav .active-link {
-      background: rgba(249,168,37,0.2) !important;
-      color: #f9a825 !important;
-    }
-    .sidebar-footer {
-      border-top: 1px solid rgba(255,255,255,0.1);
-      padding: 8px 0;
-    }
-    .sidebar-footer a {
-      color: rgba(255,255,255,0.8);
-      margin: 2px 8px;
-      border-radius: 8px;
-      height: 44px;
-    }
-    .sidebar-footer a:hover {
-      background: rgba(255,255,255,0.1);
-      color: white;
-    }
-    .top-toolbar {
-      background: white;
-      color: #333;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .page-title {
-      font-size: 18px;
-      font-weight: 500;
-      margin-left: 8px;
-    }
-    .toolbar-spacer { flex: 1; }
-    .content-area {
-      padding: 24px;
-      background: #f5f5f5;
-      min-height: calc(100vh - 64px);
-    }
-    .notification-bell {
-      color: #f9a825 !important;
-      position: relative;
-    }
-    .notification-bell mat-icon {
-      color: #f9a825;
-    }
-    .notif-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px 8px;
-    }
-    .notif-title {
-      font-weight: 600;
-      font-size: 15px;
-      color: #333;
-    }
-    .mark-read-btn {
-      font-size: 12px !important;
-      line-height: 1 !important;
-    }
-    .notif-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 16px;
-      color: #999;
-      gap: 8px;
-    }
-    .notif-empty mat-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: #ccc;
-    }
-    .notif-empty span { font-size: 13px; }
-    .notif-item { height: auto !important; padding: 8px 16px !important; }
-    .notif-item-content {
-      display: flex;
-      gap: 10px;
-      width: 100%;
-    }
-    .notif-item-icon {
-      flex-shrink: 0;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      margin-top: 2px;
-    }
-    .notif-type-info { color: #1565c0; }
-    .notif-type-warning { color: #f57f17; }
-    .notif-type-reminder { color: #2e7d32; }
-    .notif-type-alert { color: #c62828; }
-    .notif-item-text {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-    .notif-item-title {
-      font-size: 13px;
-      font-weight: 500;
-      color: #333;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .notif-item-message {
-      font-size: 12px;
-      color: #666;
-      line-height: 1.3;
-    }
-    .notif-item-time {
-      font-size: 11px;
-      color: #999;
-    }
-    .notif-view-all {
-      color: #1a237e !important;
-      font-weight: 500;
-      justify-content: center;
-    }
-    .notif-view-all mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      margin-right: 4px;
-    }
-    .menu-user-info {
-      padding: 12px 16px;
-      display: flex;
-      flex-direction: column;
-    }
-    .menu-user-info strong { font-size: 14px; }
-    .menu-user-info small { font-size: 12px; color: #666; }
-    @media (max-width: 768px) {
-      .content-area { padding: 16px; }
-    }
-  `]
+  styleUrls: ['./main-layout.component.scss']
 })
 export class MainLayoutComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
@@ -450,24 +230,24 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.checkScreenSize();
-    window.addEventListener('resize', () => this.checkScreenSize());
+    window.addEventListener('resize', this.checkScreenSize);
     this.loadUnreadCount();
     this.loadRecentNotifications();
     this.pollingSub = interval(30000).pipe(
       switchMap(() => this.notificationService.getUnreadCount())
     ).subscribe({
       next: (res) => {
-        if (res.success) this.unreadCount.set(res.data);
+        if (res.success) this.unreadCount.set(res.data.count);
       }
     });
   }
 
   ngOnDestroy(): void {
     this.pollingSub?.unsubscribe();
-    window.removeEventListener('resize', () => this.checkScreenSize());
+    window.removeEventListener('resize', this.checkScreenSize);
   }
 
-  private checkScreenSize(): void {
+  private checkScreenSize = (): void => {
     if (window.innerWidth < 768) {
       this.sidenavMode = 'over';
       this.sidenavOpened = false;
@@ -475,12 +255,12 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       this.sidenavMode = 'side';
       this.sidenavOpened = true;
     }
-  }
+  };
 
   private loadUnreadCount(): void {
     this.notificationService.getUnreadCount().subscribe({
       next: (res) => {
-        if (res.success) this.unreadCount.set(res.data);
+        if (res.success) this.unreadCount.set(res.data.count);
       }
     });
   }

@@ -42,7 +42,7 @@ export type AppointmentStatus =
 
 export interface AppointmentRequest {
   visitorId?: number;
-  employeeId: string;
+  employeeId: number;
   requestedDate: string;
   requestedStartTime: string;
   requestedEndTime?: string;

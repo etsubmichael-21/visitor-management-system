@@ -11,4 +11,5 @@ public interface IDashboardService
     Task<EmployeeDashboardDto> GetEmployeeDashboardAsync(int employeeId);
     Task<ReceptionistDashboardDto> GetReceptionistDashboardAsync();
     Task<SecurityDashboardDto> GetSecurityDashboardAsync();
+    Task<VisitorDashboardDto> GetVisitorDashboardAsync(int visitorId);
 }

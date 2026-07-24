@@ -17,22 +17,11 @@ import { MatIconModule } from '@angular/material/icon';
       </div>
     </div>
   `,
-  styles: [`
-    .stat-card {
-      background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      padding: 20px; display: flex; align-items: center; gap: 16px;
-      border-left: 4px solid; transition: transform 0.2s;
-    }
-    .stat-card:hover { transform: translateY(-2px); }
-    .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-    .stat-icon mat-icon { font-size: 28px; }
-    .stat-info h3 { font-size: 28px; font-weight: 700; margin: 0; }
-    .stat-info p { font-size: 13px; color: #666; margin: 4px 0 0; }
-  `]
+  styleUrls: ['./stat-card.component.scss']
 })
 export class StatCardComponent {
   @Input() value: number | string = 0;
   @Input() label = '';
   @Input() icon = 'info';
-  @Input() color = '#1a237e';
+  @Input() color = '#0F6B3A';
 }

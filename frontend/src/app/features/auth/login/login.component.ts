@@ -1,12 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -15,244 +13,102 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [
     RouterLink,
-    FormsModule,
-    MatCardModule,
+    ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule,
     MatProgressSpinnerModule,
   ],
   template: `
-    <div class="login-container">
-      <mat-card class="login-card">
-        <div class="login-header">
-          <div class="logo-icon">
-            <mat-icon>apartment</mat-icon>
+    <div class="login-wrapper">
+      <div class="login-card">
+        <div class="card-header">
+          <div class="avatar-icon">
+            <mat-icon>person</mat-icon>
           </div>
-          <h1 class="app-title">ECX Visitor Management</h1>
-          <p class="app-subtitle">Visitor Portal</p>
+          <h2>Sign In</h2>
+          <p>Enter your credentials to access your account</p>
         </div>
 
-        @if (errorMessage) {
+        @if (error) {
           <div class="error-banner">
             <mat-icon>error_outline</mat-icon>
-            <span>{{ errorMessage }}</span>
+            <span>{{ error }}</span>
           </div>
         }
 
-        <form (ngSubmit)="onLogin()">
-          <mat-form-field appearance="outline" class="full-width">
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+          <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
-            <input matInput [(ngModel)]="credentials.email" name="email" type="email" required email>
+            <input matInput formControlName="username" type="email" placeholder="you@example.com" autocomplete="email">
             <mat-icon matPrefix>email</mat-icon>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline">
             <mat-label>Password</mat-label>
-            <input matInput [(ngModel)]="credentials.password" name="password" [type]="showPassword ? 'text' : 'password'" required>
+            <input matInput [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Enter password" autocomplete="current-password">
             <mat-icon matPrefix>lock</mat-icon>
-            <button mat-icon-button matSuffix type="button" (click)="showPassword = !showPassword" [matTooltip]="showPassword ? 'Hide password' : 'Show password'" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+            <button mat-icon-button matSuffix type="button" (click)="showPassword = !showPassword">
               <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
           </mat-form-field>
 
-          <div class="forgot-password">
-            <a routerLink="/auth/forgot-password">Forgot Password?</a>
-          </div>
-
-          <button mat-flat-button color="primary" type="submit" class="sign-in-btn" [disabled]="loading">
+          <button mat-flat-button type="submit" class="submit-btn" [disabled]="loading || loginForm.invalid">
             @if (loading) {
               <mat-spinner diameter="20"></mat-spinner>
             } @else {
-              <span>Sign In</span>
+              Sign In
             }
           </button>
         </form>
-      </mat-card>
 
-      <div class="login-footer">
-        <p>&copy; 2024 ECX. All rights reserved.</p>
+        <div class="card-footer">
+          <p class="demo-text">
+            <mat-icon>info</mat-icon>
+            Demo: <strong>yididiya19&#64;gmail.com</strong> / <strong>Admin&#64;123</strong>
+          </p>
+          <p class="register-link">
+            Don't have an account? <a routerLink="/auth/register">Create one</a>
+          </p>
+        </div>
       </div>
     </div>
   `,
-  styles: [`
-    .login-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 24px;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
-    }
-
-    .login-card {
-      width: 100%;
-      max-width: 400px;
-      padding: 40px 32px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      border: none;
-    }
-
-    .login-header {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    .logo-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 64px;
-      height: 64px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #1a5f2a 0%, #2e7d32 100%);
-      margin-bottom: 20px;
-    }
-
-    .logo-icon mat-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: white;
-    }
-
-    .app-title {
-      font-size: 22px;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin: 0 0 6px 0;
-      letter-spacing: -0.3px;
-    }
-
-    .app-subtitle {
-      font-size: 14px;
-      color: #6b7280;
-      margin: 0;
-      font-weight: 400;
-    }
-
-    .error-banner {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      background: #fef2f2;
-      color: #dc2626;
-      border: 1px solid #fecaca;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-bottom: 20px;
-    }
-
-    .error-banner mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-    }
-
-    .full-width {
-      width: 100%;
-    }
-
-    .forgot-password {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: -8px;
-      margin-bottom: 24px;
-    }
-
-    .forgot-password a {
-      font-size: 13px;
-      color: #2e7d32;
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.2s ease;
-    }
-
-    .forgot-password a:hover {
-      color: #1a5f2a;
-      text-decoration: underline;
-    }
-
-    .sign-in-btn {
-      width: 100%;
-      height: 48px;
-      font-size: 15px;
-      font-weight: 600;
-      background: #2e7d32;
-      border-radius: 8px;
-      letter-spacing: 0.3px;
-      transition: background-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .sign-in-btn:hover:not(:disabled) {
-      background: #1a5f2a;
-      box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
-    }
-
-    .sign-in-btn:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-
-    .login-footer {
-      margin-top: 24px;
-      text-align: center;
-    }
-
-    .login-footer p {
-      font-size: 12px;
-      color: #9ca3af;
-      margin: 0;
-    }
-
-    @media (max-width: 480px) {
-      .login-card {
-        padding: 32px 24px;
-      }
-
-      .app-title {
-        font-size: 20px;
-      }
-
-      .logo-icon {
-        width: 56px;
-        height: 56px;
-      }
-
-      .logo-icon mat-icon {
-        font-size: 28px;
-        width: 28px;
-        height: 28px;
-      }
-    }
-  `],
+  styleUrls: ['./login.component.scss'],
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private fb = inject(FormBuilder);
 
-  credentials = { email: '', password: '' };
-  showPassword = false;
+  loginForm!: FormGroup;
   loading = false;
-  errorMessage = '';
+  error = '';
+  showPassword = false;
 
-  onLogin(): void {
+  ngOnInit(): void {
+    this.loginForm = this.fb.group({
+      username: ['', [Validators.required, Validators.email]],
+      password: ['', Validators.required],
+    });
+  }
+
+  onSubmit(): void {
+    if (this.loginForm.invalid) return;
     this.loading = true;
-    this.errorMessage = '';
-    this.authService.login(this.credentials).subscribe({
+    this.error = '';
+    this.authService.login({
+      email: this.loginForm.value.username,
+      password: this.loginForm.value.password,
+    }).subscribe({
       next: () => {
         this.loading = false;
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.loading = false;
-        this.errorMessage = err.message || 'Invalid email or password. Please try again.';
+        this.error = err.error?.detail || 'Invalid email or password. Please try again.';
       },
     });
   }

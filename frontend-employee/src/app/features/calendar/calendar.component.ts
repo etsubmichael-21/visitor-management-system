@@ -117,7 +117,7 @@ import { EmployeeUnavailability } from '../../core/models/unavailability.model';
                 </div>
               }
               @for (event of day.events; track event.id) {
-                <div class="event-dot" [style.background]="event.status === 'Approved' ? '#2e7d32' : event.status === 'Pending' ? '#f9a825' : '#666'"
+                <div class="event-dot" [style.background]="event.status === 'Approved' ? '#0F6B3A' : event.status === 'Pending' ? '#D4A017' : '#666'"
                      [title]="event.purpose + ' - ' + event.visitorName">
                    <small>{{ event.requestedStartTime }} {{ event.visitorName }}</small>
                 </div>
@@ -148,53 +148,7 @@ import { EmployeeUnavailability } from '../../core/models/unavailability.model';
       }
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .unavailability-form { margin-bottom: 16px; }
-    .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
-    .form-row mat-form-field { flex: 1; min-width: 180px; }
-    .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
-    .unavailability-list { margin-bottom: 16px; }
-    .unavail-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-    .unavail-item:last-child { border-bottom: none; }
-    .unavail-icon { width: 40px; height: 40px; border-radius: 8px; background: #ffebee; color: #c62828; display: flex; align-items: center; justify-content: center; }
-    .unavail-info { flex: 1; }
-    .unavail-info strong { font-size: 14px; display: block; }
-    .unavail-info p { font-size: 12px; color: #666; margin: 2px 0; }
-    .unavail-info small { font-size: 11px; color: #999; }
-    .calendar-header { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 16px; }
-    .calendar-header h2 { margin: 0; font-size: 20px; }
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid #e0e0e0; }
-    .weekday-header { padding: 8px; text-align: center; background: #f5f5f5; border-bottom: 1px solid #e0e0e0; }
-    .weekday-header strong { font-size: 12px; color: #666; text-transform: uppercase; }
-    .calendar-day {
-      min-height: 100px; padding: 8px; border: 1px solid #e0e0e0;
-      cursor: pointer; transition: background 0.2s;
-    }
-    .calendar-day:hover { background: #f5f5f5; }
-    .calendar-day.other-month { background: #fafafa; }
-    .calendar-day.other-month .day-number { color: #bbb; }
-    .calendar-day.today { background: #e8f5e9; }
-    .calendar-day.today .day-number { color: #2e7d32; font-weight: 700; }
-    .calendar-day.unavailable { background: #fff3e0; }
-    .calendar-day.unavailable .day-number { color: #e65100; }
-    .day-number { font-size: 14px; display: block; margin-bottom: 4px; }
-    .unavail-badge { color: #c62828; }
-    .unavail-badge mat-icon { font-size: 16px; width: 16px; height: 16px; }
-    .event-dot {
-      background: #2e7d32; color: white; padding: 2px 6px; border-radius: 4px;
-      font-size: 10px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .event-dot small { color: white; }
-    .events-panel { margin-top: 16px; }
-    .event-item { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-    .event-item:last-child { border-bottom: none; }
-    .event-time { font-weight: 600; color: #1a237e; min-width: 60px; }
-    .event-info { flex: 1; }
-    .event-info strong { font-size: 14px; display: block; }
-    .event-info p { font-size: 12px; color: #666; margin: 2px 0; }
-  `]
+  styleUrls: ['./calendar.component.scss']
 })
 export class CalendarComponent implements OnInit {
   private appointmentService = inject(AppointmentService);

@@ -35,18 +35,6 @@ import { Component } from '@angular/core';
       </div>
     </div>
   `,
-  styles: [`
-    .settings-page { max-width: 600px; }
-    .page-header { margin-bottom: 1.5rem; }
-    .page-title { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0; }
-    .page-subtitle { color: #64748b; font-size: 0.875rem; margin: 0.25rem 0 0; }
-    .card { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .card h3 { margin: 0 0 1rem; font-size: 1rem; font-weight: 600; color: #1e293b; }
-    .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9; }
-    .setting-row:last-child { border-bottom: none; }
-    .setting-label { display: block; font-size: 0.875rem; font-weight: 500; color: #1e293b; }
-    .setting-desc { display: block; font-size: 0.75rem; color: #94a3b8; margin-top: 0.125rem; }
-    .setting-value { font-size: 0.875rem; color: #64748b; }
-  `],
+  styleUrls: ['./settings.component.scss'],
 })
 export class SettingsComponent {}

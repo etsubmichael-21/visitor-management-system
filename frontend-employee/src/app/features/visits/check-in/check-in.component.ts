@@ -175,21 +175,7 @@ import { Department } from '../../../core/models/common.model';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .main-card { padding: 16px; }
-    .checkin-options { margin-bottom: 24px; }
-    .full-width { width: 100%; }
-    .section-title { font-size: 16px; font-weight: 500; color: #1a237e; margin: 24px 0 12px; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
-    .selected-appointment { background: #e8f5e9; padding: 16px; border-radius: 8px; margin: 12px 0; }
-    .selected-appointment h3 { margin: 0 0 8px; color: #2e7d32; }
-    .selected-appointment p { margin: 4px 0; font-size: 14px; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e0e0e0; }
-    .form-actions button { display: flex; align-items: center; gap: 8px; }
-    @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
-  `]
+  styleUrls: ['./check-in.component.scss']
 })
 export class CheckInComponent implements OnInit {
   private fb = inject(FormBuilder);

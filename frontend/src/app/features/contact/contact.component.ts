@@ -80,7 +80,7 @@ import { MatSelectModule } from '@angular/material/select';
           }
 
           <div class="hours-card">
-            <mat-icon style="color: #d4a017;">schedule</mat-icon>
+            <mat-icon style="color: #D4A017;">schedule</mat-icon>
             <h3>Office Hours</h3>
             <div class="hours-grid">
               @for (h of hours; track h.day) {
@@ -95,103 +95,7 @@ import { MatSelectModule } from '@angular/material/select';
       </div>
     </div>
   `,
-  styles: [`
-    .contact-page { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; }
-
-    .contact-hero {
-      text-align: center;
-      padding: 60px 0 40px;
-    }
-
-    .contact-hero h1 {
-      font-size: 40px;
-      font-weight: 800;
-      color: #1b5e20;
-    }
-
-    .accent { color: #d4a017; }
-
-    .contact-hero p {
-      color: #64748b;
-      font-size: 18px;
-      margin-top: 12px;
-    }
-
-    .contact-grid {
-      display: grid;
-      grid-template-columns: 1fr 400px;
-      gap: 32px;
-      align-items: start;
-    }
-
-    .contact-form-card h2 {
-      font-size: 22px;
-      font-weight: 600;
-      color: #1b5e20;
-      margin-bottom: 24px;
-    }
-
-    .submit-btn {
-      width: 100%;
-      height: 48px;
-      font-size: 16px;
-      font-weight: 600;
-      background: #2e7d32 !important;
-    }
-
-    .submit-btn mat-icon { margin-right: 8px; }
-
-    .contact-info {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .info-card, .hours-card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-    }
-
-    .info-card mat-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-      margin-bottom: 8px;
-    }
-
-    .info-card h3, .hours-card h3 {
-      font-size: 16px;
-      font-weight: 600;
-      color: #1e293b;
-      margin-bottom: 8px;
-    }
-
-    .info-card p {
-      font-size: 14px;
-      color: #64748b;
-      line-height: 1.6;
-    }
-
-    .hours-card mat-icon { margin-bottom: 8px; }
-
-    .hours-grid { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-
-    .hours-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-    }
-
-    .day { color: #64748b; }
-    .time { color: #1e293b; font-weight: 500; }
-
-    @media (max-width: 768px) {
-      .contact-grid { grid-template-columns: 1fr; }
-      .contact-hero h1 { font-size: 32px; }
-    }
-  `],
+  styleUrls: ['./contact.component.scss'],
 })
 export class ContactComponent {
   form = {
@@ -202,8 +106,8 @@ export class ContactComponent {
   };
 
   contactInfo = [
-    { icon: 'location_on', title: 'Address', lines: ['123 Business Center Drive', 'New York, NY 10001'], color: '#2e7d32' },
-    { icon: 'phone', title: 'Phone', lines: ['+1 (555) 123-4567', '+1 (555) 987-6543'], color: '#d4a017' },
+    { icon: 'location_on', title: 'Address', lines: ['123 Business Center Drive', 'New York, NY 10001'], color: '#0F6B3A' },
+    { icon: 'phone', title: 'Phone', lines: ['+1 (555) 123-4567', '+1 (555) 987-6543'], color: '#D4A017' },
     { icon: 'email', title: 'Email', lines: ['support&#64;ecx-visitor.com', 'info&#64;ecx-visitor.com'], color: '#1565c0' },
   ];
 

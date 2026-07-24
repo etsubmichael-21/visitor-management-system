@@ -39,10 +39,13 @@ export interface CheckInRequest {
   visitorId: number;
   employeeId: number;
   purpose: string;
+  appointmentId?: number;
   badgeNumber?: string;
   securityOfficer?: string;
+  isDestinationKnown?: boolean;
 }
 
 export interface CheckOutRequest {
+  securityOfficer?: string;
   remark?: string;
 }

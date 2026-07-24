@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using EcxVisitorManagement.Data;
 using EcxVisitorManagement.DTOs.Common;
 using EcxVisitorManagement.DTOs.Dashboard;
 using EcxVisitorManagement.Interfaces;
@@ -12,8 +13,13 @@ namespace EcxVisitorManagement.Controllers;
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;
+    private readonly AppDbContext _context;
 
-    public DashboardController(IDashboardService dashboardService) => _dashboardService = dashboardService;
+    public DashboardController(IDashboardService dashboardService, AppDbContext context)
+    {
+        _dashboardService = dashboardService;
+        _context = context;
+    }
 
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
@@ -69,5 +75,16 @@ public class DashboardController : ControllerBase
     {
         var result = await _dashboardService.GetSecurityDashboardAsync();
         return Ok(ApiResponse<SecurityDashboardDto>.Ok(result));
+    }
+
+    [HttpGet("visitor")]
+    public async Task<IActionResult> GetVisitorDashboard()
+    {
+        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var user = await _context.Users.FindAsync(userId);
+        if (user?.VisitorId == null)
+            return NotFound(ApiResponse<VisitorDashboardDto>.NotFound("Visitor profile not found"));
+        var result = await _dashboardService.GetVisitorDashboardAsync(user.VisitorId.Value);
+        return Ok(ApiResponse<VisitorDashboardDto>.Ok(result));
     }
 }

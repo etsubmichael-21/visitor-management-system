@@ -66,27 +66,7 @@ import { VisitorService, Visitor } from '../../../core/services/visitor.service'
       }
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .page-header a { display: flex; align-items: center; gap: 4px; }
-    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .profile-header { text-align: center; padding: 24px 0; }
-    .avatar-large { width: 80px; height: 80px; border-radius: 50%; background: #2e7d32; color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; margin: 0 auto 12px; }
-    .profile-header h2 { margin: 0; }
-    .info-list { padding: 16px 0; }
-    .info-item { display: flex; gap: 16px; padding: 12px 0; }
-    .info-item mat-icon { color: #2e7d32; margin-top: 2px; }
-    .info-item small { font-size: 11px; color: #999; display: block; }
-    .info-item p { margin: 2px 0 0; font-size: 14px; }
-    .visit-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-    .visit-date { font-size: 12px; color: #1a237e; min-width: 80px; }
-    .visit-info { flex: 1; }
-    .visit-info strong { font-size: 14px; display: block; }
-    .visit-info p { font-size: 12px; color: #666; margin: 2px 0; }
-    .empty-state { text-align: center; color: #999; padding: 24px; }
-    @media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
-  `]
+  styleUrls: ['./visitor-detail.component.scss']
 })
 export class VisitorDetailComponent implements OnInit {
   private visitorService = inject(VisitorService);

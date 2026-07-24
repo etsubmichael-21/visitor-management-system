@@ -3,6 +3,7 @@ import { Observable, map, switchMap } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { Visitor, VisitorCreate, VisitorProfile, UpdateProfileRequest, VisitorStats } from '../models/visitor.model';
+import { Appointment } from '../models/appointment.model';
 import { PagedResponse, PageRequest } from '../models/paged-response.model';
 
 @Injectable({ providedIn: 'root' })
@@ -59,12 +60,15 @@ export class VisitorService {
   }
 
   getVisitorStats(): Observable<VisitorStats> {
-    return this.api.get<any>('/dashboard/stats').pipe(
+    return this.api.get<any>('/dashboard/visitor').pipe(
       map((res) => ({
-        totalVisits: res.data?.totalVisits ?? 0,
+        totalAppointments: res.data?.totalAppointments ?? 0,
         pendingAppointments: res.data?.pendingAppointments ?? 0,
         approvedAppointments: res.data?.approvedAppointments ?? 0,
-        upcomingVisits: res.data?.upcomingVisits ?? 0,
+        completedAppointments: res.data?.completedAppointments ?? 0,
+        cancelledAppointments: res.data?.cancelledAppointments ?? 0,
+        upcomingAppointments: res.data?.upcomingAppointments ?? 0,
+        totalVisits: res.data?.totalVisits ?? 0,
       }))
     );
   }
@@ -99,5 +103,29 @@ export class VisitorService {
 
   delete(id: string | number): Observable<void> {
     return this.api.delete<void>(`/visitors/${id}`).pipe(map(() => undefined));
+  }
+
+  getVisitorRecentAppointments(): Observable<Appointment[]> {
+    return this.api.get<any>('/dashboard/visitor').pipe(
+      map((res) => (res.data?.recentAppointments ?? []).map((a: any) => ({
+        id: String(a.id),
+        visitorId: String(a.visitorId),
+        employeeId: String(a.employeeId),
+        employeeName: a.employeeName,
+        departmentName: a.departmentName,
+        purpose: a.purpose,
+        status: a.status,
+        requestedDate: a.requestedDate,
+        requestedStartTime: a.requestedStartTime,
+        requestedEndTime: a.requestedEndTime,
+        checkInAllowed: a.checkInAllowed,
+        isConfidential: a.isConfidential,
+        appointmentCode: a.appointmentCode,
+        notes: a.notes,
+        attachments: [],
+        commentCount: 0,
+        createdAt: a.createdAt,
+      } as Appointment)))
+    );
   }
 }

@@ -1,0 +1,41 @@
+
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px; display: flex; align-items: center; gap: 16px;
+    }
+    .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .stat-icon mat-icon { font-size: 28px; }
+    .stat-info h3 { font-size: 28px; font-weight: 700; margin: 0; }
+    .stat-info p { font-size: 13px; color: #666; margin: 4px 0 0; }
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-card mat-card-header { margin-bottom: 16px; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 12px; height: 200px; padding: 0 8px; }
+    .bar-item { display: flex; flex-direction: column; align-items: center; flex: 1; }
+    .bar { width: 100%; background: linear-gradient(180deg, #0F6B3A, #15803D); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s; }
+    .bar-label { font-size: 11px; color: #666; margin-top: 8px; }
+    .bar-value { font-size: 12px; font-weight: 600; color: #333; }
+    .dept-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .dept-name { min-width: 100px; font-size: 13px; color: #333; }
+    .dept-bar-container { flex: 1; height: 24px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+    .dept-bar { height: 100%; background: linear-gradient(90deg, #0F6B3A, #283593); border-radius: 4px; transition: width 0.3s; }
+    .dept-count { min-width: 30px; text-align: right; font-weight: 600; font-size: 13px; }
+    .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .activity-card mat-card-header, .appointments-card mat-card-header { display: flex; justify-content: space-between; align-items: center; }
+    .activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .activity-icon mat-icon { font-size: 20px; }
+    .activity-info strong { font-size: 14px; display: block; }
+    .activity-info p { font-size: 12px; color: #666; margin: 2px 0; }
+    .activity-info small { font-size: 11px; color: #999; }
+    .apt-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+    .apt-item:last-child { border-bottom: none; }
+    .apt-time { font-weight: 600; color: #0F6B3A; min-width: 60px; font-size: 13px; }
+    .apt-info { flex: 1; }
+    .apt-info strong { font-size: 14px; display: block; }
+    .apt-info p { font-size: 12px; color: #666; margin: 2px 0; }
+    .empty-state { text-align: center; color: #999; padding: 24px; }
+    @media (max-width: 768px) {
+      .chart-row, .bottom-row { grid-template-columns: 1fr; }
+    }

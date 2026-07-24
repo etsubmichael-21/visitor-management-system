@@ -18,26 +18,6 @@ import { NotificationToastComponent } from '../../shared/components/notification
       <app-notification-toast />
     </div>
   `,
-  styles: [`
-    .layout {
-      display: flex;
-      min-height: 100vh;
-      background: #f1f5f9;
-    }
-    .main-content {
-      flex: 1;
-      margin-left: 260px;
-      min-height: 100vh;
-      transition: margin-left 0.3s ease;
-    }
-    .content-wrapper {
-      padding: 1.5rem 2rem;
-      max-width: 1400px;
-    }
-    @media (max-width: 768px) {
-      .main-content { margin-left: 0; }
-      .content-wrapper { padding: 1rem; }
-    }
-  `],
+  styleUrls: ['./main-layout.component.scss'],
 })
 export class MainLayoutComponent {}

@@ -104,16 +104,7 @@ import { Department } from '../../../core/models/common.model';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .page-header a { display: flex; align-items: center; gap: 8px; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
-    .checkbox-field { display: flex; align-items: center; padding-top: 8px; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e0e0e0; }
-    .form-actions button { display: flex; align-items: center; gap: 8px; }
-    @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
-  `]
+  styleUrls: ['./employee-form.component.scss']
 })
 export class EmployeeFormComponent implements OnInit {
   private fb = inject(FormBuilder);

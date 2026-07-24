@@ -1,0 +1,128 @@
+.notifications-page { max-width: 800px; margin: 0 auto; }
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0C5A31;
+}
+
+.page-subtitle {
+  color: #6B7280;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  background: white;
+  border-radius: 12px;
+}
+
+.empty-state mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #cbd5e1;
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #475569;
+  margin: 16px 0 8px;
+}
+
+.empty-state p {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notification-card {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.notification-card.unread {
+  background: #f0faf0;
+  border-left: 3px solid #0F6B3A;
+}
+
+.notification-card:hover { background: #f8faf8; }
+
+.notification-card mat-card-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.noti-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.noti-icon.green { background: #e8f5e9; }
+.noti-icon.green mat-icon { color: #0F6B3A; }
+.noti-icon.gold { background: #fff8e1; }
+.noti-icon.gold mat-icon { color: #D4A017; }
+.noti-icon.red { background: #ffebee; }
+.noti-icon.red mat-icon { color: #c62828; }
+.noti-icon.blue { background: #e3f2fd; }
+.noti-icon.blue mat-icon { color: #1565c0; }
+.noti-icon.gray { background: #F8F9FA; }
+.noti-icon.gray mat-icon { color: #6B7280; }
+
+.noti-content { flex: 1; }
+
+.noti-content h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.noti-content p {
+  font-size: 13px;
+  color: #6B7280;
+  line-height: 1.5;
+}
+
+.noti-time {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+  display: block;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.notification-card:hover .delete-btn { opacity: 1; }

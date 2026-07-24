@@ -1,0 +1,31 @@
+
+    .history-page { max-width: 800px; margin: 0 auto; padding: 1.5rem; }
+    .page-header { margin-bottom: 1.5rem; }
+    .page-title { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .page-subtitle { color: #6B7280; font-size: 0.875rem; margin: 0.25rem 0 0; }
+    .filters { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: flex-start; }
+    .search-field { flex: 1; }
+    .status-field { width: 180px; }
+    .loading-container { display: flex; justify-content: center; padding: 3rem; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #6B7280; }
+    .empty-icon { font-size: 3rem; width: 3rem; height: 3rem; color: #94a3b8; margin-bottom: 0.5rem; }
+    .empty-state h3 { margin: 0.5rem 0; color: #1F2937; font-size: 1.125rem; }
+    .empty-state p { margin: 0 0 1.5rem; font-size: 0.875rem; }
+    .visit-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .visit-card { border-radius: 12px; border-left: 4px solid #e2e8f0; }
+    .visit-scheduled { border-left-color: #3b82f6; }
+    .visit-checkedin { border-left-color: #0F6B3A; }
+    .visit-checkedout { border-left-color: #6B7280; }
+    .visit-cancelled { border-left-color: #dc2626; }
+    mat-card-content { padding: 1rem !important; }
+    .visit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .visit-date { font-size: 0.8125rem; color: #6B7280; font-weight: 500; }
+    .visit-purpose { font-size: 1rem; font-weight: 600; color: #1e293b; margin: 0 0 0.75rem; }
+    .visit-details { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; }
+    .detail { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; color: #475569; }
+    .detail mat-icon { font-size: 1rem; width: 1rem; height: 1rem; color: #94a3b8; }
+    .status-chip { font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.625rem; border-radius: 20px; }
+    .status-scheduled { background: #dbeafe; color: #1d4ed8; }
+    .status-checkedin { background: #c1e3d0; color: #0C5A31; }
+    .status-checkedout { background: #e2e8f0; color: #475569; }
+    .status-cancelled { background: #fecaca; color: #b91c1c; }

@@ -25,6 +25,8 @@ public class AuthService : IAuthService
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (user == null)
+            throw new UnauthorizedAccessException("Invalid email or password");
         //if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         //    throw new UnauthorizedAccessException("Invalid email or password");
         if (!user.IsActive)

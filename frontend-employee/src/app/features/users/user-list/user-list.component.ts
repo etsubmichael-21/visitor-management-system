@@ -101,20 +101,7 @@ import { User } from '../../../core/models/auth.model';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .page-header a { display: flex; align-items: center; gap: 8px; }
-    .filter-card { margin-bottom: 16px; }
-    .filters { display: flex; gap: 16px; }
-    .filters mat-form-field { flex: 1; }
-    .table-container { overflow-x: auto; }
-    .name-cell { display: flex; align-items: center; gap: 12px; }
-    .avatar { width: 36px; height: 36px; border-radius: 50%; background: #1a237e; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
-    .name-cell strong { display: block; font-size: 14px; }
-    .name-cell small { font-size: 12px; color: #666; }
-    .role-chip { background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
-  `]
+  styleUrls: ['./user-list.component.scss']
 })
 export class UserListComponent implements OnInit {
   private userService = inject(UserService);

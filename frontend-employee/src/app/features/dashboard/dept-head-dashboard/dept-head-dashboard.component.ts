@@ -20,8 +20,8 @@ import { AuthService } from '../../../core/services/auth.service';
       </div>
 
       <div class="stat-row">
-        <div class="stat-card" style="border-left: 4px solid #2e7d32;">
-          <div class="stat-icon" style="background: #e8f5e9; color: #2e7d32;"><mat-icon>event_available</mat-icon></div>
+        <div class="stat-card" style="border-left: 4px solid #0F6B3A;">
+          <div class="stat-icon" style="background: #e8f5e9; color: #0F6B3A;"><mat-icon>event_available</mat-icon></div>
           <div class="stat-info">
             <h3>{{ dashboardData()?.stats?.totalVisitorsToday || 0 }}</h3>
             <p>Today's Visitors</p>
@@ -34,8 +34,8 @@ import { AuthService } from '../../../core/services/auth.service';
             <p>Pending Approvals</p>
           </div>
         </div>
-        <div class="stat-card" style="border-left: 4px solid #f9a825;">
-          <div class="stat-icon" style="background: #fff8e1; color: #f9a825;"><mat-icon>people</mat-icon></div>
+        <div class="stat-card" style="border-left: 4px solid #D4A017;">
+          <div class="stat-icon" style="background: #fff8e1; color: #D4A017;"><mat-icon>people</mat-icon></div>
           <div class="stat-info">
             <h3>{{ dashboardData()?.stats?.checkedInVisitors || 0 }}</h3>
             <p>Active Visitors</p>
@@ -112,39 +112,7 @@ import { AuthService } from '../../../core/services/auth.service';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .welcome-banner { margin-bottom: 24px; }
-    .welcome-banner h2 { font-size: 24px; color: #1a237e; margin: 0; }
-    .welcome-banner p { color: #666; margin-top: 4px; }
-    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; display: flex; align-items: center; gap: 16px; }
-    .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-    .stat-icon mat-icon { font-size: 28px; }
-    .stat-info h3 { font-size: 28px; font-weight: 700; margin: 0; }
-    .stat-info p { font-size: 13px; color: #666; margin: 4px 0 0; }
-    .content-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-    .apt-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-    .apt-item:last-child { border-bottom: none; }
-    .apt-time { font-weight: 600; color: #1a237e; min-width: 60px; font-size: 13px; }
-    .apt-info { flex: 1; }
-    .apt-info strong { font-size: 14px; display: block; }
-    .apt-info p { font-size: 12px; color: #666; margin: 2px 0; }
-    .visitor-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-    .visitor-item:last-child { border-bottom: none; }
-    .visitor-info strong { font-size: 14px; display: block; }
-    .visitor-info p { font-size: 12px; color: #666; margin: 2px 0; }
-    .visitor-info small { font-size: 11px; color: #999; }
-    .badge { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-    .activity-card { margin-bottom: 16px; }
-    .activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; align-items: flex-start; }
-    .activity-item:last-child { border-bottom: none; }
-    .activity-item div { flex: 1; }
-    .activity-item strong { font-size: 14px; display: block; }
-    .activity-item p { font-size: 12px; color: #666; margin: 2px 0; }
-    .activity-item small { font-size: 11px; color: #999; }
-    .empty-state { text-align: center; color: #999; padding: 24px; }
-    @media (max-width: 768px) { .content-row { grid-template-columns: 1fr; } }
-  `]
+  styleUrls: ['./dept-head-dashboard.component.scss']
 })
 export class DeptHeadDashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);

@@ -1,0 +1,23 @@
+
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; display: flex; align-items: center; gap: 16px; }
+    .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .stat-icon mat-icon { font-size: 28px; }
+    .stat-info h3 { font-size: 28px; font-weight: 700; margin: 0; }
+    .stat-info p { font-size: 13px; color: #666; margin: 4px 0 0; }
+    .action-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .big-action { height: 56px; font-size: 16px; display: flex; align-items: center; gap: 8px; padding: 0 32px; }
+    .active-card mat-card-header mat-card-title { display: flex; align-items: center; gap: 8px; }
+    .visitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .visitor-card {
+      background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px;
+    }
+    .visitor-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .visitor-avatar { width: 48px; height: 48px; border-radius: 50%; background: #D4A017; color: #0F6B3A; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; }
+    .visitor-main strong { font-size: 16px; display: block; }
+    .visitor-main small { font-size: 12px; color: #666; }
+    .visitor-details p { font-size: 13px; color: #555; margin: 4px 0; display: flex; align-items: center; gap: 6px; }
+    .visitor-details mat-icon { font-size: 16px; width: 16px; height: 16px; color: #999; }
+    .checkout-btn { margin-top: 12px; width: 100%; }
+    .empty-state { grid-column: 1 / -1; text-align: center; padding: 40px; color: #999; }
+    .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; color: #0F6B3A; }

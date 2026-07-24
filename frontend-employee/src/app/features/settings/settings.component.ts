@@ -136,23 +136,7 @@ import { AuthService } from '../../core/services/auth.service';
       </div>
     </div>
   `,
-  styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #2e7d32; }
-    .page-header h1 { font-size: 24px; font-weight: 500; color: #1b5e20; }
-    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    mat-card-title { display: flex; align-items: center; gap: 8px; font-size: 18px; }
-    .profile-info { display: flex; gap: 24px; align-items: center; padding: 16px 0; }
-    .profile-avatar { width: 72px; height: 72px; border-radius: 50%; background: #1a237e; color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; flex-shrink: 0; }
-    .profile-details h3 { margin: 0; font-size: 20px; }
-    .profile-details p { margin: 4px 0; color: #666; }
-    .role-badge { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
-    .full-width { width: 100%; }
-    .pref-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
-    .pref-item strong { display: block; }
-    .pref-item p { font-size: 12px; color: #666; margin: 2px 0 0; }
-    .about-info p { margin: 4px 0; }
-    @media (max-width: 768px) { .settings-grid { grid-template-columns: 1fr; } }
-  `]
+  styleUrls: ['./settings.component.scss']
 })
 export class SettingsComponent {
   private fb = inject(FormBuilder);

@@ -1,0 +1,143 @@
+.appointments-page { max-width: 900px; margin: 0 auto; }
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0C5A31;
+}
+
+.page-subtitle {
+  color: #6B7280;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.new-btn {
+  height: 42px;
+  padding: 0 20px;
+  font-weight: 600;
+  background: #0F6B3A !important;
+}
+
+.filters-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.search-field { flex: 1; }
+.status-filter { width: 180px; }
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.empty-state mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #cbd5e1;
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #475569;
+  margin: 16px 0 8px;
+}
+
+.empty-state p {
+  color: #94a3b8;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.appointments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.appointment-card {
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.appointment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.appointment-card mat-card-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+
+.apt-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.apt-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #e8f5e9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apt-icon mat-icon { color: #0F6B3A; }
+
+.apt-info h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.apt-meta, .apt-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #6B7280;
+  margin-top: 2px;
+}
+
+.apt-meta mat-icon, .apt-date mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+.separator { margin: 0 8px; color: #cbd5e1; }
+
+mat-paginator { margin-top: 16px; }
+
+@media (max-width: 768px) {
+  .page-header { flex-direction: column; gap: 12px; }
+  .filters-bar { flex-direction: column; }
+  .status-filter { width: 100%; }
+  .appointment-card mat-card-content { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
