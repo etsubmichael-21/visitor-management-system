@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, DestroyRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -7,7 +7,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
-import { finalize } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 import { VisitorService } from '../../../core/services/visitor.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { VisitorStats } from '../../../core/models/visitor.model';
@@ -45,16 +46,20 @@ import { Appointment } from '../../../core/models/appointment.model';
         </div>
       </div>
 
-      // @if (loading) {
-      //   <div class="spinner-container">
-      //     <mat-spinner diameter="48"></mat-spinner>
-      //   </div>
-      // }
+      @if (loading) {
+        <div class="spinner-container">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+      }
 
-      @if (errorMessage && !loading) {
+      @if (!loading && errorMessage) {
         <div class="error-banner">
           <mat-icon>error_outline</mat-icon>
           <span>{{ errorMessage }}</span>
+          <button mat-button class="retry-btn" (click)="loadDashboard()">
+            <mat-icon>refresh</mat-icon>
+            Retry
+          </button>
         </div>
       }
 
@@ -164,9 +169,11 @@ import { Appointment } from '../../../core/models/appointment.model';
   `,
   styleUrls: ['./visitor-dashboard.component.scss'],
 })
-export class VisitorDashboardComponent implements OnInit {
+export class VisitorDashboardComponent implements OnInit, OnDestroy {
   private visitorService = inject(VisitorService);
   private authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
+  private destroy$ = new Subject<void>();
 
   loading = true;
   stats: VisitorStats | null = null;
@@ -179,27 +186,49 @@ export class VisitorDashboardComponent implements OnInit {
     if (user) {
       this.userName = `${user.firstName} ${user.lastName}`;
     }
+    this.loadDashboard();
+  }
 
-    this.visitorService.getVisitorStats().pipe(
-      finalize(() => this.loading = false)
-    ).subscribe({
-      next: (data) => {
-        this.stats = data;
-      },
-      error: (err) => {
-        this.errorMessage = err?.message || 'Failed to load dashboard data. Please try again later.';
-        this.stats = null;
-      },
-    });
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
-    this.visitorService.getVisitorRecentAppointments().subscribe({
-      next: (appointments) => {
-        this.recentAppointments = appointments;
-      },
-      error: () => {
-        this.recentAppointments = [];
-      },
-    });
+  loadDashboard(): void {
+    this.loading = true;
+    this.errorMessage = '';
+    this.cdr.markForCheck();
+
+    this.visitorService.getVisitorStats()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.stats = data;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Failed to load dashboard stats:', err);
+          this.errorMessage = 'Unable to load dashboard data. Please try again.';
+          this.stats = null;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.visitorService.getVisitorRecentAppointments()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (appointments) => {
+          this.recentAppointments = appointments;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Failed to load recent appointments:', err);
+          this.recentAppointments = [];
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   getStatusIcon(status: string): string {

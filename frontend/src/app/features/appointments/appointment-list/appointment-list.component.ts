@@ -1,7 +1,7 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,16 +11,17 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Subject } from 'rxjs';
+import { debounceTime, takeUntil, finalize } from 'rxjs/operators';
 import { AppointmentService } from '../../../core/services/appointment.service';
-import { Appointment, AppointmentStatus } from '../../../core/models/appointment.model';
-import { PagedResponse } from '../../../core/models/common.model';
+import { Appointment } from '../../../core/models/appointment.model';
 
 @Component({
   selector: 'app-appointment-list',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
+    ReactiveFormsModule,
     RouterLink,
     MatCardModule,
     MatButtonModule,
@@ -48,13 +49,13 @@ import { PagedResponse } from '../../../core/models/common.model';
       <div class="filters-bar">
         <mat-form-field appearance="outline" class="search-field">
           <mat-label>Search</mat-label>
-          <input matInput [(ngModel)]="searchTerm" placeholder="Search appointments...">
+          <input matInput [formControl]="searchControl" placeholder="Search by subject, host...">
           <mat-icon matPrefix>search</mat-icon>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="status-filter">
           <mat-label>Status</mat-label>
-          <mat-select [(ngModel)]="statusFilter" (selectionChange)="loadAppointments()">
+          <mat-select [formControl]="statusControl">
             <mat-option value="">All Statuses</mat-option>
             <mat-option value="Pending">Pending</mat-option>
             <mat-option value="Approved">Approved</mat-option>
@@ -71,7 +72,7 @@ import { PagedResponse } from '../../../core/models/common.model';
         </div>
       }
 
-      @if (!loading && appointments.length === 0) {
+      @if (!loading && filteredAppointments.length === 0) {
         <div class="empty-state">
           <mat-icon>event_busy</mat-icon>
           <h3>No appointments found</h3>
@@ -83,9 +84,9 @@ import { PagedResponse } from '../../../core/models/common.model';
         </div>
       }
 
-      @if (!loading && appointments.length > 0) {
+      @if (!loading && filteredAppointments.length > 0) {
         <div class="appointments-list">
-          @for (apt of appointments; track apt.id) {
+          @for (apt of filteredAppointments; track apt.id) {
             <mat-card class="appointment-card" [routerLink]="['/appointments', apt.id]">
               <mat-card-content>
                 <div class="apt-main">
@@ -129,40 +130,86 @@ import { PagedResponse } from '../../../core/models/common.model';
   `,
   styleUrls: ['./appointment-list.component.scss'],
 })
-export class AppointmentListComponent implements OnInit {
+export class AppointmentListComponent implements OnInit, OnDestroy {
   private appointmentService = inject(AppointmentService);
+  private cdr = inject(ChangeDetectorRef);
+  private destroy$ = new Subject<void>();
 
   appointments: Appointment[] = [];
+  filteredAppointments: Appointment[] = [];
   loading = true;
-  searchTerm = '';
-  statusFilter = '';
   totalCount = 0;
   pageSize = 10;
   pageIndex = 0;
 
+  searchControl = new FormControl('');
+  statusControl = new FormControl('');
+
   ngOnInit(): void {
+    this.searchControl.valueChanges
+      .pipe(debounceTime(300), takeUntil(this.destroy$))
+      .subscribe(() => this.applyFilters());
+
+    this.statusControl.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.applyFilters());
+
     this.loadAppointments();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadAppointments(): void {
     this.loading = true;
+
     this.appointmentService
       .getAppointments({
         page: this.pageIndex + 1,
         pageSize: this.pageSize,
-        status: (this.statusFilter as AppointmentStatus) || undefined,
-        search: this.searchTerm || undefined,
       })
+      .pipe(finalize(() => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      }))
       .subscribe({
         next: (res) => {
           this.appointments = res.items;
           this.totalCount = res.totalCount;
-          this.loading = false;
+          this.applyFilters();
         },
         error: () => {
-          this.loading = false;
+          this.filteredAppointments = [];
+          this.cdr.markForCheck();
         },
       });
+  }
+
+  applyFilters(): void {
+    const searchTerm = (this.searchControl.value ?? '').toLowerCase().trim();
+    const status = (this.statusControl.value ?? '').trim().toLowerCase();
+
+    let result = [...this.appointments];
+
+    if (status) {
+      result = result.filter(a =>
+        a.status?.trim().toLowerCase() === status
+      );
+    }
+
+    if (searchTerm) {
+      result = result.filter(a =>
+        a.purpose?.toLowerCase().includes(searchTerm) ||
+        a.employeeName?.toLowerCase().includes(searchTerm) ||
+        a.departmentName?.toLowerCase().includes(searchTerm) ||
+        a.status?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    this.filteredAppointments = result;
+    this.cdr.markForCheck();
   }
 
   onPageChange(event: PageEvent): void {

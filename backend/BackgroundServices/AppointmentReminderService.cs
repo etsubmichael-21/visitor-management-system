@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using EcxVisitorManagement.Data;
+using EcxVisitorManagement.Interfaces;
 using EcxVisitorManagement.Models;
 
 namespace EcxVisitorManagement.BackgroundServices;
@@ -9,10 +10,10 @@ public class AppointmentReminderService : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AppointmentReminderService> _logger;
 
-    public AppointmentReminderService(IServiceProvider serviceProvider, ILogger<AppointmentReminderService> _logger)
+    public AppointmentReminderService(IServiceProvider serviceProvider, ILogger<AppointmentReminderService> logger)
     {
         _serviceProvider = serviceProvider;
-        this._logger = _logger;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -25,36 +26,56 @@ public class AppointmentReminderService : BackgroundService
             {
                 using var scope = _serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                var smsService = scope.ServiceProvider.GetRequiredService<ISmsService>();
 
                 var tomorrow = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
                 var pendingReminders = await context.Appointments
                     .Where(a => a.RequestedDate == tomorrow && a.Status == "Approved" && !a.ReminderEmailSent)
                     .Include(a => a.Visitor)
                     .Include(a => a.Employee)
+                    .ThenInclude(e => e.Department)
                     .ToListAsync(stoppingToken);
 
                 foreach (var appointment in pendingReminders)
                 {
                     try
                     {
-                        context.EmailQueues.Add(new EmailQueue
+                        if (!string.IsNullOrEmpty(appointment.Visitor?.Email))
                         {
-                            AppointmentId = appointment.Id,
-                            RecipientEmail = appointment.Visitor.Email,
-                            Subject = $"Appointment Reminder: {appointment.Purpose}",
-                            Body = $"Dear {appointment.Visitor.FullName}, this is a reminder of your appointment tomorrow at {appointment.RequestedStartTime:HH:mm} with {appointment.Employee.FullName}.",
-                            Status = "Pending",
-                            CreatedAt = DateTimeOffset.UtcNow
-                        });
+                            await emailService.SendAppointmentReminderAsync(
+                                appointment.Visitor.Email,
+                                appointment.Visitor.FullName,
+                                appointment.Employee?.FullName ?? "",
+                                appointment.Employee?.Department?.Name ?? "",
+                                appointment.RequestedDate,
+                                appointment.RequestedStartTime,
+                                appointment.RequestedEndTime,
+                                appointment.Purpose);
+                        }
 
-                        context.SmsQueues.Add(new SmsQueue
+                        if (!string.IsNullOrEmpty(appointment.Visitor?.Phone))
                         {
-                            AppointmentId = appointment.Id,
-                            RecipientPhone = appointment.Visitor.Phone,
-                            Message = $"Reminder: Appointment with {appointment.Employee.FullName} tomorrow at {appointment.RequestedStartTime:HH:mm}.",
-                            Status = "Pending",
-                            CreatedAt = DateTimeOffset.UtcNow
-                        });
+                            await smsService.SendAppointmentNotificationAsync(
+                                appointment.Visitor.Phone,
+                                appointment.Visitor.FullName,
+                                appointment.Employee?.FullName ?? "",
+                                appointment.RequestedDate,
+                                "Reminder");
+                        }
+
+                        if (!string.IsNullOrEmpty(appointment.Employee?.Email))
+                        {
+                            await emailService.SendEmployeeReminderAsync(
+                                appointment.Employee.Email,
+                                appointment.Employee.FullName,
+                                appointment.Visitor?.FullName ?? "",
+                                appointment.Employee?.Department?.Name ?? "",
+                                appointment.RequestedDate,
+                                appointment.RequestedStartTime,
+                                appointment.RequestedEndTime,
+                                appointment.Purpose);
+                        }
 
                         appointment.ReminderEmailSent = true;
                         appointment.ReminderSmsSent = true;

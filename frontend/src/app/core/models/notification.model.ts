@@ -1,11 +1,12 @@
 export interface Notification {
-  id: string;
-  employeeId: number;
+  id: number;
+  visitorId?: number;
+  employeeId?: number;
   appointmentId?: number;
   title: string;
   message: string;
   notificationType: NotificationType;
-  priority: string;
+  priority?: string;
   isRead: boolean;
   readAt?: string;
   channel: string;

@@ -49,6 +49,17 @@ import { Appointment } from '../../../core/models/appointment.model';
         </div>
       }
 
+      @if (!loading && errorMessage) {
+        <div class="empty-state">
+          <mat-icon>error_outline</mat-icon>
+          <h3>{{ errorMessage }}</h3>
+          <a mat-flat-button color="primary" routerLink="/appointments">
+            <mat-icon>arrow_back</mat-icon>
+            Back to Appointments
+          </a>
+        </div>
+      }
+
       @if (!loading && appointment) {
         <div class="detail-content">
           <mat-card class="status-card">
@@ -168,6 +179,7 @@ export class AppointmentDetailComponent implements OnInit {
   cancelling = false;
   showCancelDialog = false;
   cancelReason = '';
+  errorMessage = '';
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -178,9 +190,13 @@ export class AppointmentDetailComponent implements OnInit {
           this.loading = false;
         },
         error: () => {
+          this.errorMessage = 'Failed to load appointment details.';
           this.loading = false;
         },
       });
+    } else {
+      this.errorMessage = 'Invalid appointment ID.';
+      this.loading = false;
     }
   }
 

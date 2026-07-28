@@ -7,12 +7,14 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   standalone: true,
   imports: [CommonModule, MatProgressSpinnerModule],
   template: `
-    <div class="spinner-container" [class.overlay]="overlay" [class.fullpage]="fullpage">
-      <div class="spinner-wrapper">
-        <mat-spinner [diameter]="diameter"></mat-spinner>
-        <p *ngIf="message" class="spinner-message">{{ message }}</p>
+    @if (loading) {
+      <div class="spinner-container" [class.overlay]="overlay" [class.fullpage]="fullpage">
+        <div class="spinner-wrapper">
+          <mat-spinner [diameter]="diameter"></mat-spinner>
+          <p *ngIf="message" class="spinner-message">{{ message }}</p>
+        </div>
       </div>
-    </div>
+    }
   `,
   styleUrls: ['./loading-spinner.component.scss'],
 })

@@ -19,17 +19,24 @@ export class ErrorInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
+        let friendlyMessage = 'An unexpected error occurred. Please try again.';
+
+        if (error.status === 0) {
+          friendlyMessage = 'Unable to connect to the server. Please check your connection and try again.';
+        } else if (error.status === 401) {
           this.auth.logout();
           this.router.navigate(['/auth/login']);
+          friendlyMessage = 'Your session has expired. Please log in again.';
         } else if (error.status === 403) {
           this.router.navigate(['/']);
-        } else if (error.status === 0) {
-          console.error('Network error - backend may be offline');
+          friendlyMessage = 'You do not have permission to access this resource.';
+        } else if (error.status === 404) {
+          friendlyMessage = 'The requested resource was not found.';
+        } else if (error.status >= 500) {
+          friendlyMessage = 'A server error occurred. Please try again later.';
         }
 
-        const message = error.error?.message || error.message || 'An unexpected error occurred';
-        return throwError(() => ({ status: error.status, message }));
+        return throwError(() => ({ status: error.status, message: friendlyMessage }));
       })
     );
   }

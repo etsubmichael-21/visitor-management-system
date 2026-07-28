@@ -15,11 +15,13 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly Interfaces.IEmailService _emailService;
 
-    public AuthService(AppDbContext context, IConfiguration configuration)
+    public AuthService(AppDbContext context, IConfiguration configuration, Interfaces.IEmailService emailService)
     {
         _context = context;
         _configuration = configuration;
+        _emailService = emailService;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -83,6 +85,16 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
 
         var refreshToken = await GenerateRefreshTokenAsync(user.Id);
+
+        try
+        {
+            await _emailService.SendWelcomeEmailAsync(visitor.Email, visitor.FullName);
+        }
+        catch (Exception)
+        {
+            // Email failure should not block registration
+        }
+
         return new LoginResponse
         {
             Token = GenerateJwtToken(user),
@@ -142,6 +154,16 @@ public class AuthService : IAuthService
             CreatedAt = DateTimeOffset.UtcNow
         });
         await _context.SaveChangesAsync();
+
+        try
+        {
+            var baseUrl = _configuration["Email:BaseUrl"] ?? "https://visitor.ecx.com.et";
+            await _emailService.SendPasswordResetEmailAsync(request.Email, token, baseUrl);
+        }
+        catch (Exception)
+        {
+            // Email failure should not block password reset request
+        }
     }
 
     public async Task ResetPasswordAsync(ResetPasswordRequest request)

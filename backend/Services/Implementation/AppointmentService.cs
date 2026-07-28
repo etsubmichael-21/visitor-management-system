@@ -91,9 +91,34 @@ public class AppointmentService : IAppointmentService
             });
 
             if (!string.IsNullOrEmpty(visitor.Email))
-                await _emailService.SendAppointmentNotificationAsync(visitor.Email, visitor.FullName, employee?.FullName ?? "", dto.RequestedDate, "Submitted");
+                await _emailService.SendAppointmentSubmittedAsync(
+                    visitor.Email, visitor.FullName, employee?.FullName ?? "",
+                    employee?.Department?.Name ?? "", dto.RequestedDate,
+                    dto.RequestedStartTime, dto.RequestedEndTime,
+                    dto.Purpose, dto.Notes);
             if (!string.IsNullOrEmpty(visitor.Phone))
                 await _smsService.SendAppointmentNotificationAsync(visitor.Phone, visitor.FullName, employee?.FullName ?? "", dto.RequestedDate, "Submitted");
+        }
+
+        if (employee != null && !string.IsNullOrEmpty(employee.Email))
+        {
+            await _notificationRepository.AddAsync(new Notification
+            {
+                EmployeeId = dto.EmployeeId,
+                AppointmentId = created.Id,
+                Title = "New Appointment Request",
+                Message = $"You have a new appointment request from {visitor?.FullName ?? "Visitor"} on {dto.RequestedDate}.",
+                NotificationType = "Info",
+                Priority = "Normal",
+                Channel = "InApp",
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+
+            await _emailService.SendEmployeeNewRequestAsync(
+                employee.Email, employee.FullName, visitor?.FullName ?? "",
+                employee.Department?.Name ?? "", dto.RequestedDate,
+                dto.RequestedStartTime, dto.RequestedEndTime,
+                dto.Purpose, dto.Notes);
         }
 
         return MapToDto(created);
@@ -137,7 +162,12 @@ public class AppointmentService : IAppointmentService
             });
 
             if (!string.IsNullOrEmpty(appointment.Visitor.Email))
-                await _emailService.SendAppointmentNotificationAsync(appointment.Visitor.Email, appointment.Visitor.FullName, appointment.Employee?.FullName ?? "", appointment.RequestedDate, "Approved");
+                await _emailService.SendAppointmentApprovedAsync(
+                    appointment.Visitor.Email, appointment.Visitor.FullName,
+                    appointment.Employee?.FullName ?? "",
+                    appointment.Employee?.Department?.Name ?? "",
+                    appointment.RequestedDate, appointment.RequestedStartTime,
+                    appointment.RequestedEndTime, appointment.Purpose, appointment.Notes);
             if (!string.IsNullOrEmpty(appointment.Visitor.Phone))
                 await _smsService.SendAppointmentNotificationAsync(appointment.Visitor.Phone, appointment.Visitor.FullName, appointment.Employee?.FullName ?? "", appointment.RequestedDate, "Approved");
         }
@@ -183,7 +213,12 @@ public class AppointmentService : IAppointmentService
             });
 
             if (!string.IsNullOrEmpty(appointment.Visitor.Email))
-                await _emailService.SendAppointmentNotificationAsync(appointment.Visitor.Email, appointment.Visitor.FullName, appointment.Employee?.FullName ?? "", appointment.RequestedDate, "Rejected", dto.Reason);
+                await _emailService.SendAppointmentRejectedAsync(
+                    appointment.Visitor.Email, appointment.Visitor.FullName,
+                    appointment.Employee?.FullName ?? "",
+                    appointment.Employee?.Department?.Name ?? "",
+                    appointment.RequestedDate, appointment.RequestedStartTime,
+                    appointment.RequestedEndTime, appointment.Purpose, dto.Reason);
             if (!string.IsNullOrEmpty(appointment.Visitor.Phone))
                 await _smsService.SendAppointmentNotificationAsync(appointment.Visitor.Phone, appointment.Visitor.FullName, appointment.Employee?.FullName ?? "", appointment.RequestedDate, "Rejected", dto.Reason);
         }
@@ -227,9 +262,24 @@ public class AppointmentService : IAppointmentService
             });
 
             if (!string.IsNullOrEmpty(appointment.Visitor.Email))
-                await _emailService.SendAppointmentNotificationAsync(appointment.Visitor.Email, appointment.Visitor.FullName, appointment.Employee?.FullName ?? "", appointment.RequestedDate, "Cancelled");
+                await _emailService.SendAppointmentCancelledAsync(
+                    appointment.Visitor.Email, appointment.Visitor.FullName,
+                    appointment.Employee?.FullName ?? "",
+                    appointment.Employee?.Department?.Name ?? "",
+                    appointment.RequestedDate, appointment.RequestedStartTime,
+                    appointment.RequestedEndTime, appointment.Purpose);
             if (!string.IsNullOrEmpty(appointment.Visitor.Phone))
                 await _smsService.SendAppointmentNotificationAsync(appointment.Visitor.Phone, appointment.Visitor.FullName, appointment.Employee?.FullName ?? "", appointment.RequestedDate, "Cancelled");
+        }
+
+        if (appointment.Employee != null && !string.IsNullOrEmpty(appointment.Employee.Email))
+        {
+            await _emailService.SendEmployeeRequestCancelledAsync(
+                appointment.Employee.Email, appointment.Employee.FullName,
+                appointment.Visitor?.FullName ?? "",
+                appointment.Employee.Department?.Name ?? "",
+                appointment.RequestedDate, appointment.RequestedStartTime,
+                appointment.RequestedEndTime, appointment.Purpose);
         }
 
         return MapToDto(appointment);
@@ -400,6 +450,41 @@ public class AppointmentService : IAppointmentService
         await _repository.UpdateAsync(appointment);
 
         var requestingUser = await _context.Users.FindAsync(userId);
+
+        if (appointment.Visitor != null)
+        {
+            await _visitorNotificationRepository.AddAsync(new VisitorNotification
+            {
+                VisitorId = appointment.VisitorId,
+                AppointmentId = appointment.Id,
+                Title = "Appointment Rescheduled",
+                Message = $"Your appointment with {appointment.Employee?.FullName ?? "Employee"} has been rescheduled to {dto.NewDate}.",
+                NotificationType = "Info",
+                Channel = "InApp",
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+
+            if (!string.IsNullOrEmpty(appointment.Visitor.Email))
+                await _emailService.SendAppointmentRescheduledAsync(
+                    appointment.Visitor.Email, appointment.Visitor.FullName,
+                    appointment.Employee?.FullName ?? "",
+                    appointment.Employee?.Department?.Name ?? "",
+                    appointment.RequestedDate, dto.NewDate,
+                    dto.NewStartTime, dto.NewEndTime,
+                    appointment.Purpose, dto.Reason);
+        }
+
+        if (appointment.Employee != null && !string.IsNullOrEmpty(appointment.Employee.Email))
+        {
+            await _emailService.SendEmployeeRequestRescheduledAsync(
+                appointment.Employee.Email, appointment.Employee.FullName,
+                appointment.Visitor?.FullName ?? "",
+                appointment.Employee.Department?.Name ?? "",
+                appointment.RequestedDate, dto.NewDate,
+                dto.NewStartTime, dto.NewEndTime,
+                appointment.Purpose, dto.Reason);
+        }
+
         return new RescheduleResponseDto
         {
             Id = request.Id,
