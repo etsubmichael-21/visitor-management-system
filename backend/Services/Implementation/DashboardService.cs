@@ -68,12 +68,47 @@ public class DashboardService : IDashboardService
     public async Task<EmployeeDashboardDto> GetEmployeeDashboardAsync(int employeeId)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var todayAppointments = await _context.Appointments
+            .Include(a => a.Visitor)
+            .Include(a => a.Employee).ThenInclude(e => e.Department)
+            .Where(a => a.EmployeeId == employeeId && a.RequestedDate == today)
+            .OrderBy(a => a.RequestedStartTime)
+            .Select(a => new AppointmentResponseDto
+            {
+                Id = a.Id, VisitorId = a.VisitorId, VisitorName = a.Visitor.FullName,
+                EmployeeId = a.EmployeeId, EmployeeName = a.Employee.FullName,
+                DepartmentName = a.Employee.Department.Name, Purpose = a.Purpose,
+                Status = a.Status, RequestedDate = a.RequestedDate,
+                RequestedStartTime = a.RequestedStartTime, RequestedEndTime = a.RequestedEndTime,
+                CheckInAllowed = a.CheckInAllowed, IsConfidential = a.IsConfidential,
+                AppointmentCode = a.AppointmentCode, Notes = a.Notes, CreatedAt = a.CreatedAt
+            }).ToListAsync();
+
+        var upcomingAppointments = await _context.Appointments
+            .Include(a => a.Visitor)
+            .Include(a => a.Employee).ThenInclude(e => e.Department)
+            .Where(a => a.EmployeeId == employeeId && a.RequestedDate >= today && (a.Status == "Pending" || a.Status == "Approved"))
+            .OrderBy(a => a.RequestedDate).ThenBy(a => a.RequestedStartTime)
+            .Select(a => new AppointmentResponseDto
+            {
+                Id = a.Id, VisitorId = a.VisitorId, VisitorName = a.Visitor.FullName,
+                EmployeeId = a.EmployeeId, EmployeeName = a.Employee.FullName,
+                DepartmentName = a.Employee.Department.Name, Purpose = a.Purpose,
+                Status = a.Status, RequestedDate = a.RequestedDate,
+                RequestedStartTime = a.RequestedStartTime, RequestedEndTime = a.RequestedEndTime,
+                CheckInAllowed = a.CheckInAllowed, IsConfidential = a.IsConfidential,
+                AppointmentCode = a.AppointmentCode, Notes = a.Notes, CreatedAt = a.CreatedAt
+            }).ToListAsync();
+
         return new EmployeeDashboardDto
         {
             EmployeeId = employeeId,
             PendingAppointments = await _context.Appointments.CountAsync(a => a.EmployeeId == employeeId && a.Status == "Pending"),
             ApprovedAppointments = await _context.Appointments.CountAsync(a => a.EmployeeId == employeeId && a.Status == "Approved"),
-            CompletedToday = await _context.Appointments.CountAsync(a => a.EmployeeId == employeeId && a.Status == "Completed" && a.RequestedDate == today)
+            CompletedToday = await _context.Appointments.CountAsync(a => a.EmployeeId == employeeId && a.Status == "Completed" && a.RequestedDate == today),
+            TodayAppointments = todayAppointments,
+            UpcomingAppointments = upcomingAppointments
         };
     }
 

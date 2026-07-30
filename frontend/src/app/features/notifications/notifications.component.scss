@@ -13,7 +13,7 @@
 .page-title {
   font-size: 24px;
   font-weight: 700;
-  color: #0C5A31;
+  color: #0C5830;
 }
 
 .page-subtitle {
@@ -88,11 +88,11 @@
   }
 
   &.unread {
-    background: #f0faf0;
-    border-left-color: #0F6B3A;
+    background: #f0faf8;
+    border-left-color: #0F6A38;
 
     &:hover {
-      background: #e8f5e9;
+      background: #EAF5EE;
     }
   }
 }
@@ -121,15 +121,15 @@
 }
 
 .noti-icon-warning {
-  background: #fff8e1;
+  background: #fef8e8;
 
-  mat-icon { color: #D4A017; }
+  mat-icon { color: #F4B223; }
 }
 
 .noti-icon-reminder {
-  background: #e8f5e9;
+  background: #EAF5EE;
 
-  mat-icon { color: #0F6B3A; }
+  mat-icon { color: #0F6A38; }
 }
 
 .noti-icon-alert {
@@ -165,7 +165,7 @@
   height: 8px;
   min-width: 8px;
   border-radius: 50%;
-  background: #0F6B3A;
+  background: #0F6A38;
   flex-shrink: 0;
 }
 

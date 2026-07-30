@@ -15,20 +15,25 @@ import { Appointment } from '../../../core/models/appointment.model';
   template: `
     <div class="emp-dashboard">
       <div class="welcome-banner">
-        <h2>Welcome, {{ userName() }}!</h2>
-        <p>Manage your appointments and visitor requests.</p>
+        <div class="welcome-brand">
+          <img src="assets/images/ecx-logo.png" alt="ECX Logo" class="welcome-logo">
+          <div class="welcome-text">
+            <h1>Welcome back, {{ userName() }}!</h1>
+            <p>ECX Employee Management System — Manage appointments and visitor requests efficiently</p>
+          </div>
+        </div>
       </div>
 
       <div class="stat-row">
-        <div class="stat-card" style="border-left: 4px solid #0F6B3A;">
-          <div class="stat-icon" style="background: #e8f5e9; color: #0F6B3A;"><mat-icon>event</mat-icon></div>
+        <div class="stat-card" style="border-left: 4px solid #0F6A38;">
+          <div class="stat-icon" style="background: #EAF5EE; color: #0F6A38;"><mat-icon>event</mat-icon></div>
           <div class="stat-info">
             <h3>{{ myAppointments().length }}</h3>
             <p>My Appointments</p>
           </div>
         </div>
-        <div class="stat-card" style="border-left: 4px solid #D4A017;">
-          <div class="stat-icon" style="background: #fff8e1; color: #D4A017;"><mat-icon>pending</mat-icon></div>
+        <div class="stat-card" style="border-left: 4px solid #F4B223;">
+          <div class="stat-icon" style="background: #fef8e8; color: #F4B223;"><mat-icon>pending</mat-icon></div>
           <div class="stat-info">
             <h3>{{ pendingCount() }}</h3>
             <p>Pending</p>
@@ -41,8 +46,8 @@ import { Appointment } from '../../../core/models/appointment.model';
             <p>Approved</p>
           </div>
         </div>
-        <div class="stat-card" style="border-left: 4px solid #7b1fa2;">
-          <div class="stat-icon" style="background: #f3e5f5; color: #7b1fa2;"><mat-icon>history</mat-icon></div>
+        <div class="stat-card" style="border-left: 4px solid #0C5830;">
+          <div class="stat-icon" style="background: #EAF5EE; color: #0C5830;"><mat-icon>history</mat-icon></div>
           <div class="stat-info">
             <h3>{{ completedCount() }}</h3>
             <p>Completed</p>

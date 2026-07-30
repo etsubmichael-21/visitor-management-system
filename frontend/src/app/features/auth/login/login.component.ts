@@ -24,11 +24,9 @@ import { AuthService } from '../../../core/services/auth.service';
     <div class="login-wrapper">
       <div class="login-card">
         <div class="card-header">
-          <div class="avatar-icon">
-            <mat-icon>person</mat-icon>
-          </div>
+          <img src="assets/images/ecx-logo.png" alt="ECX Logo" class="ecx-logo">
           <h2>Sign In</h2>
-          <p>Enter your credentials to access your account</p>
+          <p>ECX Visitor Management System</p>
         </div>
 
         @if (error) {

@@ -28,12 +28,13 @@ export class ErrorInterceptor implements HttpInterceptor {
           this.router.navigate(['/auth/login']);
           friendlyMessage = 'Your session has expired. Please log in again.';
         } else if (error.status === 403) {
-          this.router.navigate(['/']);
           friendlyMessage = 'You do not have permission to access this resource.';
         } else if (error.status === 404) {
           friendlyMessage = 'The requested resource was not found.';
         } else if (error.status >= 500) {
           friendlyMessage = 'A server error occurred. Please try again later.';
+        } else if (error.error?.message) {
+          friendlyMessage = error.error.message;
         }
 
         return throwError(() => ({ status: error.status, message: friendlyMessage }));

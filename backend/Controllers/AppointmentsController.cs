@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EcxVisitorManagement.DTOs.Appointments;
 using EcxVisitorManagement.DTOs.Common;
+using EcxVisitorManagement.Extensions;
 using EcxVisitorManagement.Interfaces;
 
 namespace EcxVisitorManagement.Controllers;
@@ -18,8 +19,27 @@ public class AppointmentsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
     {
-        var result = await _appointmentService.GetAllAsync(request);
-        return Ok(ApiResponse<PagedResponse<AppointmentResponseDto>>.Ok(result));
+        if (User.IsAdminOrHigher())
+        {
+            var result = await _appointmentService.GetAllAsync(request);
+            return Ok(ApiResponse<PagedResponse<AppointmentResponseDto>>.Ok(result));
+        }
+
+        var employeeId = User.GetEmployeeId();
+        if (employeeId != null)
+        {
+            var empResult = await _appointmentService.GetAllByEmployeeAsync(employeeId.Value, request);
+            return Ok(ApiResponse<PagedResponse<AppointmentResponseDto>>.Ok(empResult));
+        }
+
+        var visitorId = User.GetVisitorId();
+        if (visitorId != null)
+        {
+            var visitorResult = await _appointmentService.GetAllByVisitorAsync(visitorId.Value, request);
+            return Ok(ApiResponse<PagedResponse<AppointmentResponseDto>>.Ok(visitorResult));
+        }
+
+        return Forbid();
     }
 
     [HttpGet("{id}")]
@@ -42,8 +62,9 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-            var result = await _appointmentService.ApproveAsync(id, userId);
+            var ownerId = await EnsureOwnershipAsync(id);
+            if (ownerId == null) return Forbid();
+            var result = await _appointmentService.ApproveAsync(id, ownerId.Value);
             return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment approved"));
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
@@ -55,8 +76,9 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-            var result = await _appointmentService.RejectAsync(id, dto, userId);
+            var ownerId = await EnsureOwnershipAsync(id);
+            if (ownerId == null) return Forbid();
+            var result = await _appointmentService.RejectAsync(id, dto, ownerId.Value);
             return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment rejected"));
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
@@ -68,8 +90,9 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-            var result = await _appointmentService.CancelAsync(id, userId);
+            var ownerId = await EnsureOwnershipAsync(id);
+            if (ownerId == null) return Forbid();
+            var result = await _appointmentService.CancelAsync(id, ownerId.Value);
             return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment cancelled"));
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
@@ -81,8 +104,9 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-            var result = await _appointmentService.CompleteAsync(id, userId);
+            var ownerId = await EnsureOwnershipAsync(id);
+            if (ownerId == null) return Forbid();
+            var result = await _appointmentService.CompleteAsync(id, ownerId.Value);
             return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment completed"));
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
@@ -94,8 +118,9 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-            var result = await _appointmentService.DelegateAsync(id, dto, userId);
+            var ownerId = await EnsureOwnershipAsync(id);
+            if (ownerId == null) return Forbid();
+            var result = await _appointmentService.DelegateAsync(id, dto, ownerId.Value);
             return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment delegated"));
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
@@ -107,8 +132,9 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-            var result = await _appointmentService.RedirectAsync(id, dto, userId);
+            var ownerId = await EnsureOwnershipAsync(id);
+            if (ownerId == null) return Forbid();
+            var result = await _appointmentService.RedirectAsync(id, dto, ownerId.Value);
             return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment redirected"));
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
@@ -131,8 +157,9 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-            var result = await _appointmentService.RequestRescheduleAsync(id, dto, userId);
+            var ownerId = await EnsureOwnershipAsync(id);
+            if (ownerId == null) return Forbid();
+            var result = await _appointmentService.RequestRescheduleAsync(id, dto, ownerId.Value);
             return Ok(ApiResponse<RescheduleResponseDto>.Ok(result, "Reschedule requested"));
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<RescheduleResponseDto>.NotFound(ex.Message)); }
@@ -155,7 +182,7 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var userId = User.GetUserId();
             var result = await _appointmentService.AddCommentAsync(id, dto, userId);
             return Ok(ApiResponse<AppointmentCommentDto>.Ok(result, "Comment added"));
         }
@@ -181,7 +208,7 @@ public class AppointmentsController : ControllerBase
 
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var userId = User.GetUserId();
             var filePath = Path.Combine("uploads", "appointments", id.ToString(), file.FileName);
             Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
             using var stream = new FileStream(filePath, FileMode.Create);
@@ -213,6 +240,13 @@ public class AppointmentsController : ControllerBase
     [HttpGet("by-employee/{employeeId}")]
     public async Task<IActionResult> GetByEmployee(int employeeId)
     {
+        if (!User.IsAdminOrHigher())
+        {
+            var myEmployeeId = User.GetEmployeeId();
+            if (myEmployeeId == null || myEmployeeId.Value != employeeId)
+                return Forbid();
+        }
+
         var result = await _appointmentService.GetByEmployeeAsync(employeeId);
         return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
     }
@@ -220,18 +254,39 @@ public class AppointmentsController : ControllerBase
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
     {
-        var result = await _appointmentService.GetPendingAsync();
-        return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+        if (User.IsAdminOrHigher())
+        {
+            var result = await _appointmentService.GetPendingAsync();
+            return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+        }
+
+        var employeeId = User.GetEmployeeId();
+        if (employeeId == null)
+            return Forbid();
+
+        var empResult = await _appointmentService.GetPendingByEmployeeAsync(employeeId.Value);
+        return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(empResult));
     }
 
     [HttpGet("today")]
     public async Task<IActionResult> GetToday()
     {
-        var result = await _appointmentService.GetTodayAsync();
-        return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+        if (User.IsAdminOrHigher())
+        {
+            var result = await _appointmentService.GetTodayAsync();
+            return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+        }
+
+        var employeeId = User.GetEmployeeId();
+        if (employeeId == null)
+            return Forbid();
+
+        var empResult = await _appointmentService.GetTodayByEmployeeAsync(employeeId.Value);
+        return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(empResult));
     }
 
     [HttpGet("by-department/{departmentId}")]
+    [Authorize(Roles = "Admin,CEO,DepartmentHead")]
     public async Task<IActionResult> GetByDepartment(int departmentId)
     {
         var result = await _appointmentService.GetByDepartmentAsync(departmentId);
@@ -244,5 +299,25 @@ public class AppointmentsController : ControllerBase
     {
         var result = await _appointmentService.GetConfidentialAsync();
         return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+    }
+
+    private async Task<int?> EnsureOwnershipAsync(int appointmentId)
+    {
+        if (User.IsAdminOrHigher())
+        {
+            var userId = User.GetUserId();
+            return userId;
+        }
+
+        var employeeId = User.GetEmployeeId();
+        if (employeeId == null) return null;
+
+        var appointment = await _appointmentService.GetByIdAsync(appointmentId);
+        if (appointment == null) return null;
+
+        if (appointment.EmployeeId != employeeId.Value)
+            return null;
+
+        return User.GetUserId();
     }
 }

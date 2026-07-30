@@ -50,6 +50,30 @@ public class AppointmentService : IAppointmentService
         };
     }
 
+    public async Task<PagedResponse<AppointmentResponseDto>> GetAllByEmployeeAsync(int employeeId, PageRequest request)
+    {
+        var paged = await _repository.GetPagedByEmployeeIdAsync(employeeId, request);
+        return new PagedResponse<AppointmentResponseDto>
+        {
+            Items = paged.Items.Select(MapToDto).ToList(),
+            TotalCount = paged.TotalCount,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        };
+    }
+
+    public async Task<PagedResponse<AppointmentResponseDto>> GetAllByVisitorAsync(int visitorId, PageRequest request)
+    {
+        var paged = await _repository.GetPagedByVisitorIdAsync(visitorId, request);
+        return new PagedResponse<AppointmentResponseDto>
+        {
+            Items = paged.Items.Select(MapToDto).ToList(),
+            TotalCount = paged.TotalCount,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        };
+    }
+
     public async Task<AppointmentResponseDto?> GetByIdAsync(int id)
     {
         var appointment = await _repository.GetByIdAsync(id);
@@ -411,9 +435,19 @@ public class AppointmentService : IAppointmentService
         return (await _repository.GetPendingAsync()).Select(MapToDto).ToList();
     }
 
+    public async Task<IReadOnlyList<AppointmentResponseDto>> GetPendingByEmployeeAsync(int employeeId)
+    {
+        return (await _repository.GetPendingByEmployeeIdAsync(employeeId)).Select(MapToDto).ToList();
+    }
+
     public async Task<IReadOnlyList<AppointmentResponseDto>> GetTodayAsync()
     {
         return (await _repository.GetTodayAsync()).Select(MapToDto).ToList();
+    }
+
+    public async Task<IReadOnlyList<AppointmentResponseDto>> GetTodayByEmployeeAsync(int employeeId)
+    {
+        return (await _repository.GetTodayByEmployeeIdAsync(employeeId)).Select(MapToDto).ToList();
     }
 
     public async Task<IReadOnlyList<AppointmentResponseDto>> GetByDepartmentAsync(int departmentId)

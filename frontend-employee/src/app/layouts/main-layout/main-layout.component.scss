@@ -10,7 +10,7 @@
 /* ── Sidebar ─────────────────────────────────────────────────── */
 .ecx-sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #0F6B3A 0%, #0C5A31 100%);
+  background: linear-gradient(180deg, #0F6A38 0%, #0C5830 100%);
   color: white;
   border: none;
   overflow: hidden;
@@ -36,7 +36,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #D4A017, #0F6B3A, #D4A017);
+  background: linear-gradient(90deg, #F4B223, #0F6A38, #F4B223);
 }
 
 .logo-area {
@@ -81,8 +81,8 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #D4A017;
-  color: #0C5A31;
+  background: #F4B223;
+  color: #0C5830;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -159,7 +159,7 @@
 .sidebar-footer .active-link {
   background: rgba(255, 255, 255, 0.14) !important;
   color: #ffffff !important;
-  border-left: 3px solid #D4A017;
+  border-left: 3px solid #F4B223;
   border-radius: 0 8px 8px 0;
 
   ::ng-deep .mat-icon,
@@ -207,12 +207,12 @@
 
 /* ── Notification bell ───────────────────────────────────────── */
 .notification-bell {
-  color: #D4A017 !important;
+  color: #F4B223 !important;
   position: relative;
 }
 
 .notification-bell mat-icon {
-  color: #D4A017;
+  color: #F4B223;
 }
 
 /* ── Notification dropdown ───────────────────────────────────── */
@@ -274,8 +274,8 @@
 }
 
 .notif-type-info    { color: #1565c0; }
-.notif-type-warning { color: #f57f17; }
-.notif-type-reminder{ color: #0F6B3A; }
+.notif-type-warning { color: #F4B223; }
+.notif-type-reminder{ color: #0F6A38; }
 .notif-type-alert   { color: #c62828; }
 
 .notif-item-text {
@@ -306,7 +306,7 @@
 }
 
 .notif-view-all {
-  color: #0F6B3A !important;
+  color: #0F6A38 !important;
   font-weight: 500;
   justify-content: center;
 }

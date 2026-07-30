@@ -73,6 +73,15 @@ builder.Services.AddHostedService<EmailQueueProcessor>();
 builder.Services.AddHostedService<SmsQueueProcessor>();
 builder.Services.AddHostedService<AppointmentReminderService>();
 
+// Validate SMTP configuration at startup
+var smtpUser = builder.Configuration["Smtp:Username"];
+var smtpPass = builder.Configuration["Smtp:Password"];
+if (string.IsNullOrWhiteSpace(smtpUser) || string.IsNullOrWhiteSpace(smtpPass))
+{
+    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+    logger.LogWarning("SMTP credentials are not configured in appsettings.json. Email sending will be disabled.");
+}
+
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();

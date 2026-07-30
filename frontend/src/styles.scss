@@ -5,24 +5,25 @@
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
 @import '@fontsource/inter/700.css';
+@import '@fontsource/inter/800.css';
 
 @include mat.core();
 
 $ecx-green-primary: (
-  50: #e6f4ed,
-  100: #c1e3d0,
-  200: #98d1b0,
-  300: #6fbe90,
-  400: #4fb178,
-  500: #0F6B3A,
-  600: #0D6034,
-  700: #0C5A31,
-  800: #0A4E2B,
-  900: #073D21,
-  A100: #5cc48a,
-  A200: #2ba95c,
-  A400: #15803D,
-  A700: #0F6B3A,
+  50: #eaf5ee,
+  100: #c6e5d1,
+  200: #9ed4b0,
+  300: #76c38f,
+  400: #58b677,
+  500: #0F6A38,
+  600: #0D5E32,
+  700: #0C5830,
+  800: #0A4D2A,
+  900: #073B20,
+  A100: #55c27a,
+  A200: #26a85a,
+  A400: #137a3e,
+  A700: #0F6A38,
   contrast: (
     50: #000000,
     100: #000000,
@@ -42,31 +43,31 @@ $ecx-green-primary: (
 );
 
 $ecx-gold-accent: (
-  50: #fdf6e3,
-  100: #f9e8be,
-  200: #f5d996,
-  300: #f1ca6e,
-  400: #ecbe4e,
-  500: #D4A017,
-  600: #c99515,
-  700: #bc8812,
-  800: #a97a0f,
-  900: #8a630b,
-  A100: #ffeb8a,
-  A200: #ffe45c,
-  A400: #ffdd2e,
-  A700: #D4A017,
+  50: #fef8e8,
+  100: #fcecc3,
+  200: #fae09b,
+  300: #f8d473,
+  400: #f6ca54,
+  500: #F4B223,
+  600: #e6a61f,
+  700: #d5971a,
+  800: #c48916,
+  900: #a46f10,
+  A100: #fff0a0,
+  A200: #ffec72,
+  A400: #ffe844,
+  A700: #F4B223,
   contrast: (
     50: #000000,
     100: #000000,
     200: #000000,
     300: #000000,
     400: #000000,
-    500: #ffffff,
+    500: #000000,
     600: #000000,
     700: #000000,
     800: #000000,
-    900: #ffffff,
+    900: #000000,
     A100: #000000,
     A200: #000000,
     A400: #000000,
@@ -142,7 +143,7 @@ html, body {
   font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  color: #1F2937;
+  color: #2F2F2F;
   background: #F8F9FA;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -160,14 +161,14 @@ img { max-width: 100%; height: auto; }
 ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #6B7280; }
 
-::selection { background: #0F6B3A; color: #fff; }
+::selection { background: #0F6A38; color: #fff; }
 
 input, select, textarea, button { font-family: inherit; }
 
-.ecx-green { color: #0F6B3A; }
-.ecx-gold { color: #D4A017; }
-.ecx-bg-green { background-color: #0F6B3A; }
-.ecx-bg-gold { background-color: #D4A017; }
+.ecx-green { color: #0F6A38; }
+.ecx-gold { color: #F4B223; }
+.ecx-bg-green { background-color: #0F6A38; }
+.ecx-bg-gold { background-color: #F4B223; }
 
 .mat-mdc-card {
   border-radius: 12px !important;
@@ -198,12 +199,12 @@ input, select, textarea, button { font-family: inherit; }
   text-transform: uppercase;
   letter-spacing: 0.5px;
 
-  &.pending { background: #fef3cd; color: #D4A017; }
-  &.approved { background: #d1fae5; color: #0F6B3A; }
+  &.pending { background: #fef8e8; color: #F4B223; }
+  &.approved { background: #EAF5EE; color: #0F6A38; }
   &.rejected { background: #fee2e2; color: #DC3545; }
-  &.cancelled { background: #f3e5f5; color: #7b1fa2; }
-  &.completed { background: #d1fae5; color: #0C5A31; }
-  &.checked-in { background: #d1fae5; color: #0F6B3A; }
+  &.cancelled { background: #f3f4f6; color: #6B7280; }
+  &.completed { background: #EAF5EE; color: #0C5830; }
+  &.checked-in { background: #EAF5EE; color: #0F6A38; }
   &.checked-out { background: #f3f4f6; color: #6B7280; }
 }
 

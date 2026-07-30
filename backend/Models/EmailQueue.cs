@@ -6,6 +6,12 @@ namespace EcxVisitorManagement.Models;
 [Table("email_queue")]
 public class EmailQueue
 {
+    public const string StatusPending = "Pending";
+    public const string StatusSent = "Sent";
+    public const string StatusFailed = "Failed";
+    public const string StatusPermanentlyFailed = "PermanentlyFailed";
+    public const int MaxRetryCount = 3;
+
     [Key]
     [Column("id")]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -27,7 +33,7 @@ public class EmailQueue
 
     [Column("status")]
     [MaxLength(20)]
-    public string Status { get; set; } = "Pending";
+    public string Status { get; set; } = StatusPending;
 
     [Column("retry_count")]
     public int RetryCount { get; set; }

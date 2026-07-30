@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EcxVisitorManagement.DTOs.Common;
 using EcxVisitorManagement.DTOs.Notifications;
+using EcxVisitorManagement.Extensions;
 using EcxVisitorManagement.Interfaces;
 
 namespace EcxVisitorManagement.Controllers;
@@ -18,8 +19,19 @@ public class NotificationsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
     {
-        var result = await _notificationService.GetAllAsync(request);
-        return Ok(ApiResponse<PagedResponse<NotificationResponseDto>>.Ok(result));
+        if (User.IsAdminOrHigher())
+        {
+            var result = await _notificationService.GetAllAsync(request);
+            return Ok(ApiResponse<PagedResponse<NotificationResponseDto>>.Ok(result));
+        }
+
+        var employeeId = User.GetEmployeeId();
+        if (employeeId == null)
+            return Ok(ApiResponse<PagedResponse<NotificationResponseDto>>.Ok(
+                new PagedResponse<NotificationResponseDto> { Items = new List<NotificationResponseDto>(), TotalCount = 0, Page = 1, PageSize = 10 }));
+
+        var empResult = await _notificationService.GetAllByEmployeeAsync(employeeId.Value, request);
+        return Ok(ApiResponse<PagedResponse<NotificationResponseDto>>.Ok(empResult));
     }
 
     [HttpGet("{id}")]
@@ -33,15 +45,35 @@ public class NotificationsController : ControllerBase
     [HttpGet("unread")]
     public async Task<IActionResult> GetUnread()
     {
-        var result = await _notificationService.GetUnreadAsync();
-        return Ok(ApiResponse<IReadOnlyList<NotificationResponseDto>>.Ok(result));
+        var employeeId = User.GetEmployeeId();
+        if (User.IsAdminOrHigher())
+        {
+            var result = await _notificationService.GetUnreadAsync();
+            return Ok(ApiResponse<IReadOnlyList<NotificationResponseDto>>.Ok(result));
+        }
+
+        if (employeeId == null)
+            return Ok(ApiResponse<IReadOnlyList<NotificationResponseDto>>.Ok(new List<NotificationResponseDto>()));
+
+        var empResult = await _notificationService.GetUnreadByEmployeeAsync(employeeId.Value);
+        return Ok(ApiResponse<IReadOnlyList<NotificationResponseDto>>.Ok(empResult));
     }
 
     [HttpGet("unread/count")]
     public async Task<IActionResult> GetUnreadCount()
     {
-        var count = await _notificationService.GetUnreadCountAsync();
-        return Ok(ApiResponse<UnreadCountDto>.Ok(count));
+        if (User.IsAdminOrHigher())
+        {
+            var count = await _notificationService.GetUnreadCountAsync();
+            return Ok(ApiResponse<UnreadCountDto>.Ok(count));
+        }
+
+        var employeeId = User.GetEmployeeId();
+        if (employeeId == null)
+            return Ok(ApiResponse<UnreadCountDto>.Ok(new UnreadCountDto { Count = 0 }));
+
+        var empCount = await _notificationService.GetUnreadCountByEmployeeAsync(employeeId.Value);
+        return Ok(ApiResponse<UnreadCountDto>.Ok(empCount));
     }
 
     [HttpPost("{id}/read")]
@@ -58,7 +90,16 @@ public class NotificationsController : ControllerBase
     [HttpPost("read-all")]
     public async Task<IActionResult> MarkAllAsRead()
     {
-        await _notificationService.MarkAllAsReadAsync();
+        if (User.IsAdminOrHigher())
+        {
+            await _notificationService.MarkAllAsReadAsync();
+        }
+        else
+        {
+            var employeeId = User.GetEmployeeId();
+            if (employeeId != null)
+                await _notificationService.MarkAllAsReadByEmployeeAsync(employeeId.Value);
+        }
         return Ok(ApiResponse<object>.Ok(null!, "All notifications marked as read"));
     }
 

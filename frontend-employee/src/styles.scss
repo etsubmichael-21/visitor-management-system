@@ -1,9 +1,11 @@
 @use '@angular/material' as mat;
 @import '@fontsource/material-icons';
-@import '@fontsource/roboto/300.css';
-@import '@fontsource/roboto/400.css';
-@import '@fontsource/roboto/500.css';
-@import '@fontsource/roboto/700.css';
+@import '@fontsource/inter/300.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/inter/800.css';
 
 @include mat.core();
 
@@ -17,7 +19,9 @@ $ecx-theme: mat.m2-define-light-theme((
     accent: $ecx-accent,
     warn: $ecx-warn,
   ),
-  typography: mat.m2-define-typography-config(),
+  typography: mat.m2-define-typography-config(
+    $font-family: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+  ),
 ));
 
 @include mat.all-component-themes($ecx-theme);
@@ -38,21 +42,21 @@ $ecx-theme: mat.m2-define-light-theme((
 }
 
 :root {
-  --ecx-green: #0F6B3A;
+  --ecx-green: #0F6A38;
   --ecx-green-light: #15803D;
-  --ecx-green-dark: #0C5A31;
-  --ecx-gold: #D4A017;
-  --ecx-gold-light: #ecbe4e;
-  --ecx-gold-dark: #b88a0f;
-  --ecx-navy: #0C5A31;
-  --ecx-navy-dark: #0A4E2B;
+  --ecx-green-dark: #0C5830;
+  --ecx-gold: #F4B223;
+  --ecx-gold-light: #fcecc3;
+  --ecx-gold-dark: #d5971a;
+  --ecx-navy: #0C5830;
+  --ecx-navy-dark: #0A4D2A;
   --ecx-bg: #F8F9FA;
   --ecx-bg-alt: #F3F4F6;
-  --ecx-sidebar-bg: #0F6B3A;
+  --ecx-sidebar-bg: #0F6A38;
   --ecx-sidebar-text: #ffffff;
   --ecx-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   --ecx-card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --ecx-text-primary: #1F2937;
+  --ecx-text-primary: #2F2F2F;
   --ecx-text-secondary: #6B7280;
   --ecx-text-hint: #9CA3AF;
   --ecx-border: #E5E7EB;
@@ -67,12 +71,14 @@ $ecx-theme: mat.m2-define-light-theme((
 
 html, body {
   height: 100%;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--ecx-bg);
   color: var(--ecx-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+::selection { background: #0F6A38; color: #fff; }
 
 .mat-mdc-raised-button.mat-primary {
   background-color: var(--ecx-green) !important;
@@ -81,7 +87,7 @@ html, body {
 
 .mat-mdc-raised-button.mat-accent {
   background-color: var(--ecx-gold) !important;
-  color: #1F2937 !important;
+  color: #2F2F2F !important;
 }
 
 .mat-mdc-flat-button.mat-primary {
@@ -129,7 +135,7 @@ html, body {
 
 .ecx-page-header h1 {
   font-size: 24px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--ecx-green-dark);
 }
 
@@ -192,12 +198,12 @@ html, body {
 }
 
 .ecx-status-badge.pending {
-  background-color: #fef3cd;
-  color: #D4A017;
+  background-color: #fef8e8;
+  color: #F4B223;
 }
 
 .ecx-status-badge.approved {
-  background-color: #d1fae5;
+  background-color: #EAF5EE;
   color: var(--ecx-green);
 }
 
@@ -207,12 +213,12 @@ html, body {
 }
 
 .ecx-status-badge.completed {
-  background-color: #d1fae5;
+  background-color: #EAF5EE;
   color: var(--ecx-green-dark);
 }
 
 .ecx-status-badge.checked-in {
-  background-color: #d1fae5;
+  background-color: #EAF5EE;
   color: var(--ecx-green);
 }
 
@@ -227,7 +233,7 @@ html, body {
 }
 
 .ecx-status-badge.active {
-  background-color: #d1fae5;
+  background-color: #EAF5EE;
   color: var(--ecx-green);
 }
 

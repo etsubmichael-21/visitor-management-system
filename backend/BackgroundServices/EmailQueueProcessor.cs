@@ -1,6 +1,7 @@
-using System.Net;
-using System.Net.Mail;
+using System.Net.Sockets;
 using System.Text;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using EcxVisitorManagement.Data;
 using EcxVisitorManagement.Models;
@@ -13,6 +14,9 @@ public class EmailQueueProcessor : BackgroundService
     private readonly ILogger<EmailQueueProcessor> _logger;
     private readonly IConfiguration _configuration;
 
+    private const int SmtpTimeoutSeconds = 15;
+    private const int ConnectivityTimeoutMs = 5000;
+
     public EmailQueueProcessor(IServiceProvider serviceProvider, ILogger<EmailQueueProcessor> logger, IConfiguration configuration)
     {
         _serviceProvider = serviceProvider;
@@ -22,15 +26,20 @@ public class EmailQueueProcessor : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Email Queue Processor started");
+        _logger.LogInformation("EmailQueueProcessor started");
 
         var smtpHost = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
         var smtpPort = int.TryParse(_configuration["Smtp:Port"], out var port) ? port : 587;
-        var smtpEnableSsl = bool.TryParse(_configuration["Smtp:EnableSsl"], out var ssl) ? ssl : true;
         var smtpUsername = _configuration["Smtp:Username"] ?? "";
         var smtpPassword = _configuration["Smtp:Password"] ?? "";
         var fromAddress = _configuration["Smtp:FromAddress"] ?? "noreply@ecx.com.et";
         var fromName = _configuration["Smtp:FromName"] ?? "ECX Visitor Management";
+
+        var canSendViaSmtp = !string.IsNullOrWhiteSpace(smtpUsername) && !string.IsNullOrWhiteSpace(smtpPassword);
+        if (!canSendViaSmtp)
+            _logger.LogWarning("SMTP credentials not configured in appsettings.json. Emails will be queued but not sent.");
+
+        var secureSocketOption = smtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -40,7 +49,7 @@ public class EmailQueueProcessor : BackgroundService
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                 var pendingEmails = await context.EmailQueues
-                    .Where(e => e.Status == "Pending" && e.RetryCount < 10)
+                    .Where(e => (e.Status == EmailQueue.StatusPending || e.Status == EmailQueue.StatusFailed) && e.RetryCount < EmailQueue.MaxRetryCount)
                     .OrderBy(e => e.CreatedAt)
                     .Take(20)
                     .ToListAsync(stoppingToken);
@@ -51,66 +60,98 @@ public class EmailQueueProcessor : BackgroundService
                     continue;
                 }
 
-                var canSendViaSmtp = !string.IsNullOrWhiteSpace(smtpUsername) && !string.IsNullOrWhiteSpace(smtpPassword);
-
-                SmtpClient? client = null;
-                if (canSendViaSmtp)
+                if (!canSendViaSmtp)
                 {
-                    client = new SmtpClient(smtpHost, smtpPort)
-                    {
-                        EnableSsl = smtpEnableSsl,
-                        Credentials = new NetworkCredential(smtpUsername, smtpPassword),
-                        Timeout = 30000
-                    };
+                    _logger.LogWarning("Skipping {Count} queued emails — SMTP not configured", pendingEmails.Count);
+                    await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                    continue;
                 }
 
-                try
+                if (!await TcpPortIsOpenAsync(smtpHost, smtpPort, stoppingToken))
                 {
-                    foreach (var email in pendingEmails)
-                    {
-                        try
-                        {
-                            if (client != null)
-                            {
-                                using var message = new MailMessage
-                                {
-                                    From = new MailAddress(fromAddress, fromName, Encoding.UTF8),
-                                    Subject = email.Subject,
-                                    Body = email.Body,
-                                    IsBodyHtml = true,
-                                    SubjectEncoding = Encoding.UTF8,
-                                    BodyEncoding = Encoding.UTF8
-                                };
-                                message.To.Add(email.RecipientEmail);
-                                await client.SendMailAsync(message);
-                            }
+                    _logger.LogWarning("SMTP server {Host}:{Port} is unreachable. Skipping {Count} queued emails this cycle.",
+                        smtpHost, smtpPort, pendingEmails.Count);
+                    await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                    continue;
+                }
 
-                            email.Status = "Sent";
-                            email.SentAt = DateTimeOffset.UtcNow;
-                            await context.SaveChangesAsync(stoppingToken);
-                            _logger.LogInformation("Email sent to {Email}: {Subject}", email.RecipientEmail, email.Subject);
-                        }
-                        catch (Exception ex)
+                using var client = new SmtpClient
+                {
+                    ServerCertificateValidationCallback = (_, _, _, _) => true,
+                    Timeout = SmtpTimeoutSeconds * 1000
+                };
+
+                await client.ConnectAsync(smtpHost, smtpPort, secureSocketOption, stoppingToken);
+                await client.AuthenticateAsync(smtpUsername, smtpPassword, stoppingToken);
+
+                foreach (var email in pendingEmails)
+                {
+                    try
+                    {
+                        var message = new MimeKit.MimeMessage
                         {
-                            email.RetryCount++;
-                            email.ErrorMessage = ex.Message;
-                            if (email.RetryCount >= 10) email.Status = "Failed";
-                            await context.SaveChangesAsync(stoppingToken);
-                            _logger.LogWarning(ex, "Failed to send email to {Email}, retry {Count}", email.RecipientEmail, email.RetryCount);
-                        }
+                            Subject = email.Subject,
+                            Body = new MimeKit.TextPart("html")
+                            {
+                                Text = email.Body
+                            }
+                        };
+                        message.From.Add(new MimeKit.MailboxAddress(fromName, fromAddress));
+                        message.To.Add(new MimeKit.MailboxAddress("", email.RecipientEmail));
+
+                        await client.SendAsync(message, stoppingToken);
+
+                        email.Status = EmailQueue.StatusSent;
+                        email.SentAt = DateTimeOffset.UtcNow;
+                        email.ErrorMessage = null;
+                        await context.SaveChangesAsync(stoppingToken);
+                        _logger.LogInformation("Email sent to {Email}: {Subject}", email.RecipientEmail, email.Subject);
+                    }
+                    catch (Exception ex)
+                    {
+                        email.RetryCount++;
+                        email.ErrorMessage = ex.Message;
+                        email.Status = email.RetryCount >= EmailQueue.MaxRetryCount
+                            ? EmailQueue.StatusPermanentlyFailed
+                            : EmailQueue.StatusFailed;
+                        await context.SaveChangesAsync(stoppingToken);
+
+                        if (email.RetryCount >= EmailQueue.MaxRetryCount)
+                            _logger.LogError(ex, "Email to {Email} permanently failed after {RetryCount} attempts: {Subject}",
+                                email.RecipientEmail, email.RetryCount, email.Subject);
+                        else
+                            _logger.LogWarning(ex, "Email to {Email} failed (attempt {RetryCount}/{MaxRetryCount}): {Subject}",
+                                email.RecipientEmail, email.RetryCount, EmailQueue.MaxRetryCount, email.Subject);
                     }
                 }
-                finally
-                {
-                    client?.Dispose();
-                }
+
+                await client.DisconnectAsync(true, stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing email queue");
+                _logger.LogError(ex, "Error in EmailQueueProcessor cycle");
             }
 
             await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+        }
+    }
+
+    private static async Task<bool> TcpPortIsOpenAsync(string host, int port, CancellationToken ct)
+    {
+        try
+        {
+            using var tcpClient = new TcpClient();
+            var connectTask = tcpClient.ConnectAsync(host, port);
+            if (await Task.WhenAny(connectTask, Task.Delay(ConnectivityTimeoutMs, ct)) == connectTask)
+            {
+                if (connectTask.IsCompletedSuccessfully)
+                    return true;
+            }
+            return false;
+        }
+        catch
+        {
+            return false;
         }
     }
 }

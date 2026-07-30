@@ -11,13 +11,14 @@ import { MatIconModule } from '@angular/material/icon';
       <div class="auth-left">
         <div class="left-content">
           <div class="brand">
-            <div class="logo-mark">
-              <mat-icon>apartment</mat-icon>
+            <img src="assets/images/ecx-logo.png" alt="ECX Logo" class="brand-logo-img">
+            <div class="brand-text">
+              <span class="brand-name">ECX</span>
+              <span class="brand-sub">Visitor Management System</span>
             </div>
-            <span class="brand-name">ECX</span>
           </div>
           <h1>Welcome to ECX<br>Visitor Management</h1>
-          <p class="tagline">Schedule visits, check in seamlessly, and stay connected — all from one portal.</p>
+          <p class="tagline">Digital Visitor &amp; Appointment Platform — Schedule visits, check in seamlessly, and stay connected.</p>
           <div class="feature-list">
             <div class="feature-item">
               <mat-icon>event_available</mat-icon>

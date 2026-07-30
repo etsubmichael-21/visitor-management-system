@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, DestroyRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -7,7 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
-import { finalize } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
 import { VisitorService } from '../../../core/services/visitor.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { VisitorStats } from '../../../core/models/visitor.model';
@@ -30,8 +32,13 @@ import { Appointment } from '../../../core/models/appointment.model';
     <div class="visitor-dashboard">
       <div class="welcome-banner">
         <div class="welcome-text">
-          <h1>Welcome back, {{ userName }}!</h1>
-          <p>Here's an overview of your visits and appointments.</p>
+          <div class="welcome-brand">
+            <img src="assets/images/ecx-logo.png" alt="ECX Logo" class="welcome-logo">
+            <div>
+              <h1>Welcome back, {{ userName }}!</h1>
+              <p class="welcome-subtitle">ECX Visitor Management System — Digital Visitor &amp; Appointment Platform</p>
+            </div>
+          </div>
         </div>
         <div class="welcome-actions">
           <button mat-raised-button color="primary" routerLink="/appointments/new">
@@ -45,20 +52,24 @@ import { Appointment } from '../../../core/models/appointment.model';
         </div>
       </div>
 
-      // @if (loading) {
-      //   <div class="spinner-container">
-      //     <mat-spinner diameter="48"></mat-spinner>
-      //   </div>
-      // }
-
-      @if (errorMessage && !loading) {
-        <div class="error-banner">
-          <mat-icon>error_outline</mat-icon>
-          <span>{{ errorMessage }}</span>
+      @if (statsLoading) {
+        <div class="spinner-container">
+          <mat-spinner diameter="40"></mat-spinner>
         </div>
       }
 
-      @if (!loading && stats) {
+      @if (statsError && !statsLoading) {
+        <div class="error-banner">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ statsError }}</span>
+          <button mat-button color="warn" (click)="loadStats()" class="retry-btn">
+            <mat-icon>refresh</mat-icon>
+            Retry
+          </button>
+        </div>
+      }
+
+      @if (!statsLoading && stats) {
         <div class="stats-grid">
           <div class="stat-card stat-total">
             <div class="stat-icon-wrapper">
@@ -99,80 +110,96 @@ import { Appointment } from '../../../core/models/appointment.model';
         </div>
       }
 
-      @if (!loading) {
-        <mat-card class="recent-card">
-          <mat-card-header>
-            <mat-card-title>Recent Appointments</mat-card-title>
-            <a mat-button color="primary" routerLink="/appointments" class="view-all-link">
-              View All
-              <mat-icon>arrow_forward</mat-icon>
-            </a>
-          </mat-card-header>
-          <mat-divider></mat-divider>
-          <mat-card-content>
-            @if (recentAppointments.length === 0) {
-              <div class="empty-state">
-                <mat-icon>event_busy</mat-icon>
-                <p>No appointments yet. Book your first appointment to get started.</p>
-              </div>
-            } @else {
-              <mat-list>
-                @for (appointment of recentAppointments; track appointment.id) {
-                  <mat-list-item class="appointment-item">
-                    <div matListItemAvatar class="status-avatar" [class]="'status-' + appointment.status">
-                      <mat-icon>{{ getStatusIcon(appointment.status) }}</mat-icon>
-                    </div>
-                    <div matListItemTitle>{{ appointment.purpose }}</div>
-                    <div matListItemLine>
-                      @if (appointment.employeeName) {
-                        <span class="detail-text">With {{ appointment.employeeName }}</span>
-                      }
-                      @if (appointment.departmentName) {
-                        <span class="detail-text dept"> · {{ appointment.departmentName }}</span>
-                      }
-                    </div>
-                    <div matListItemMeta>
-                      <span class="appointment-date">{{ appointment.requestedDate | date:'mediumDate' }}</span>
-                      <span class="appointment-time">{{ appointment.requestedStartTime }}</span>
-                      <span class="status-badge" [class]="'badge-' + appointment.status">{{ appointment.status }}</span>
-                    </div>
-                  </mat-list-item>
-                  @if (!$last) {
-                    <mat-divider></mat-divider>
-                  }
+      <mat-card class="recent-card">
+        <mat-card-header>
+          <mat-card-title>Recent Appointments</mat-card-title>
+          <a mat-button color="primary" routerLink="/appointments" class="view-all-link">
+            View All
+            <mat-icon>arrow_forward</mat-icon>
+          </a>
+        </mat-card-header>
+        <mat-divider></mat-divider>
+        <mat-card-content>
+          @if (appointmentsLoading) {
+            <div class="empty-state">
+              <mat-spinner diameter="32"></mat-spinner>
+              <p>Loading appointments...</p>
+            </div>
+          } @else if (appointmentsError) {
+            <div class="empty-state error-state">
+              <mat-icon>error_outline</mat-icon>
+              <p>{{ appointmentsError }}</p>
+              <button mat-button color="primary" (click)="loadRecentAppointments()">
+                <mat-icon>refresh</mat-icon>
+                Retry
+              </button>
+            </div>
+          } @else if (recentAppointments.length === 0) {
+            <div class="empty-state">
+              <mat-icon>event_busy</mat-icon>
+              <p>No appointments yet. Book your first appointment to get started.</p>
+            </div>
+          } @else {
+            <mat-list>
+              @for (appointment of recentAppointments; track appointment.id) {
+                <mat-list-item class="appointment-item">
+                  <div matListItemAvatar class="status-avatar" [class]="'status-' + appointment.status">
+                    <mat-icon>{{ getStatusIcon(appointment.status) }}</mat-icon>
+                  </div>
+                  <div matListItemTitle>{{ appointment.purpose }}</div>
+                  <div matListItemLine>
+                    @if (appointment.employeeName) {
+                      <span class="detail-text">With {{ appointment.employeeName }}</span>
+                    }
+                    @if (appointment.departmentName) {
+                      <span class="detail-text dept"> · {{ appointment.departmentName }}</span>
+                    }
+                  </div>
+                  <div matListItemMeta>
+                    <span class="appointment-date">{{ appointment.requestedDate | date:'mediumDate' }}</span>
+                    <span class="appointment-time">{{ appointment.requestedStartTime }}</span>
+                    <span class="status-badge" [class]="'badge-' + appointment.status">{{ appointment.status }}</span>
+                  </div>
+                </mat-list-item>
+                @if (!$last) {
+                  <mat-divider></mat-divider>
                 }
-              </mat-list>
-            }
-          </mat-card-content>
-        </mat-card>
+              }
+            </mat-list>
+          }
+        </mat-card-content>
+      </mat-card>
 
-        <div class="quick-actions">
-          <h3>Quick Actions</h3>
-          <div class="actions-grid">
-            <a mat-raised-button color="primary" routerLink="/appointments/new" class="action-btn">
-              <mat-icon>add_circle</mat-icon>
-              Book Appointment
-            </a>
-            <a mat-stroked-button routerLink="/visits" class="action-btn">
-              <mat-icon>list_alt</mat-icon>
-              View Visit History
-            </a>
-          </div>
+      <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <div class="actions-grid">
+          <a mat-raised-button color="primary" routerLink="/appointments/new" class="action-btn">
+            <mat-icon>add_circle</mat-icon>
+            Book Appointment
+          </a>
+          <a mat-stroked-button routerLink="/visits" class="action-btn">
+            <mat-icon>list_alt</mat-icon>
+            View Visit History
+          </a>
         </div>
-      }
+      </div>
     </div>
   `,
   styleUrls: ['./visitor-dashboard.component.scss'],
 })
-export class VisitorDashboardComponent implements OnInit {
+export class VisitorDashboardComponent implements OnInit, OnDestroy {
   private visitorService = inject(VisitorService);
   private authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
+  private destroy$ = new Subject<void>();
 
-  loading = true;
+  statsLoading = true;
+  appointmentsLoading = true;
   stats: VisitorStats | null = null;
   recentAppointments: Appointment[] = [];
   userName = 'Visitor';
-  errorMessage = '';
+  statsError = '';
+  appointmentsError = '';
 
   ngOnInit(): void {
     const user = this.authService.currentUser;
@@ -180,26 +207,63 @@ export class VisitorDashboardComponent implements OnInit {
       this.userName = `${user.firstName} ${user.lastName}`;
     }
 
-    this.visitorService.getVisitorStats().pipe(
-      finalize(() => this.loading = false)
-    ).subscribe({
-      next: (data) => {
-        this.stats = data;
-      },
-      error: (err) => {
-        this.errorMessage = err?.message || 'Failed to load dashboard data. Please try again later.';
-        this.stats = null;
-      },
-    });
+    this.loadStats();
+    this.loadRecentAppointments();
+  }
 
-    this.visitorService.getVisitorRecentAppointments().subscribe({
-      next: (appointments) => {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadStats(): void {
+    this.statsLoading = true;
+    this.statsError = '';
+    this.cdr.markForCheck();
+
+    this.visitorService.getVisitorStats()
+      .pipe(
+        catchError((err) => {
+          console.error('Failed to load dashboard stats:', err);
+          this.statsError = 'Unable to load dashboard statistics. Please try again.';
+          this.stats = null;
+          return of(null);
+        }),
+        finalize(() => {
+          this.statsLoading = false;
+          this.cdr.markForCheck();
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((data) => {
+        if (data) {
+          this.stats = data;
+        }
+      });
+  }
+
+  loadRecentAppointments(): void {
+    this.appointmentsLoading = true;
+    this.appointmentsError = '';
+    this.cdr.markForCheck();
+
+    this.visitorService.getVisitorRecentAppointments()
+      .pipe(
+        catchError((err) => {
+          console.error('Failed to load recent appointments:', err);
+          this.appointmentsError = 'Unable to load appointments. Please try again.';
+          this.recentAppointments = [];
+          return of([]);
+        }),
+        finalize(() => {
+          this.appointmentsLoading = false;
+          this.cdr.markForCheck();
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((appointments) => {
         this.recentAppointments = appointments;
-      },
-      error: () => {
-        this.recentAppointments = [];
-      },
-    });
+      });
   }
 
   getStatusIcon(status: string): string {

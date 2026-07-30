@@ -1,6 +1,6 @@
-$green: #0F6B3A;
-$green-dark: #0A5029;
-$gold: #D4A017;
+$green: #0F6A38;
+$green-dark: #0C5830;
+$gold: #F4B223;
 
 :host { display: block; }
 
@@ -54,24 +54,30 @@ $gold: #D4A017;
   margin-bottom: 56px;
 }
 
-.logo-mark {
+.brand-logo-img {
   width: 48px;
   height: 48px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 12px;
+  object-fit: contain;
+}
 
-  mat-icon { font-size: 26px; width: 26px; height: 26px; color: #fff; }
+.brand-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .brand-name {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
   color: #fff;
   letter-spacing: 2px;
+  line-height: 1.1;
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.3px;
 }
 
 .left-content h1 {

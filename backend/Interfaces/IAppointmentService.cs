@@ -6,6 +6,8 @@ namespace EcxVisitorManagement.Interfaces;
 public interface IAppointmentService
 {
     Task<PagedResponse<AppointmentResponseDto>> GetAllAsync(PageRequest request);
+    Task<PagedResponse<AppointmentResponseDto>> GetAllByEmployeeAsync(int employeeId, PageRequest request);
+    Task<PagedResponse<AppointmentResponseDto>> GetAllByVisitorAsync(int visitorId, PageRequest request);
     Task<AppointmentResponseDto?> GetByIdAsync(int id);
     Task<AppointmentResponseDto> CreateAsync(AppointmentCreateDto dto);
     Task<AppointmentResponseDto> ApproveAsync(int id, int userId);
@@ -18,6 +20,8 @@ public interface IAppointmentService
     Task<IReadOnlyList<AppointmentResponseDto>> GetByVisitorAsync(int visitorId);
     Task<IReadOnlyList<AppointmentResponseDto>> GetByEmployeeAsync(int employeeId);
     Task<IReadOnlyList<AppointmentResponseDto>> GetPendingAsync();
+    Task<IReadOnlyList<AppointmentResponseDto>> GetPendingByEmployeeAsync(int employeeId);
+    Task<IReadOnlyList<AppointmentResponseDto>> GetTodayByEmployeeAsync(int employeeId);
     Task<IReadOnlyList<AppointmentResponseDto>> GetTodayAsync();
     Task<IReadOnlyList<AppointmentResponseDto>> GetByDepartmentAsync(int departmentId);
     Task<IReadOnlyList<AppointmentResponseDto>> GetConfidentialAsync();

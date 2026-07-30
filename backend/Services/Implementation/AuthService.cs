@@ -139,6 +139,15 @@ public class AuthService : IAuthService
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         user.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
+
+        try
+        {
+            await _emailService.SendPasswordChangedEmailAsync(user.Email, user.FullName);
+        }
+        catch (Exception)
+        {
+            // Email failure should not block password change
+        }
     }
 
     public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
@@ -188,13 +197,17 @@ public class AuthService : IAuthService
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.FullName),
-            new Claim(ClaimTypes.Role, user.Role)
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Name, user.FullName),
+            new(ClaimTypes.Role, user.Role)
         };
+        if (user.EmployeeId.HasValue)
+            claims.Add(new Claim("EmployeeId", user.EmployeeId.Value.ToString()));
+        if (user.VisitorId.HasValue)
+            claims.Add(new Claim("VisitorId", user.VisitorId.Value.ToString()));
         var token = new JwtSecurityToken(issuer: _configuration["Jwt:Issuer"], audience: _configuration["Jwt:Audience"], claims: claims, expires: DateTime.UtcNow.AddHours(24), signingCredentials: creds);
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

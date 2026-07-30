@@ -198,15 +198,15 @@ export class VisitHistoryComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.cdr.markForCheck();
 
-    const userId = this.authService.currentUser?.id;
-    if (!userId) {
+    const visitorId = this.authService.currentUser?.visitorId;
+    if (!visitorId) {
       this.errorMessage = 'You must be logged in to view visit history.';
       this.loading = false;
       this.cdr.markForCheck();
       return;
     }
 
-    this.visitService.getByVisitor(userId)
+    this.visitService.getByVisitor(visitorId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (visits) => {

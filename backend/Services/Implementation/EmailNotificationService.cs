@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Mail;
 using System.Text;
 using EcxVisitorManagement.Data;
 using EcxVisitorManagement.Models;
@@ -70,13 +69,13 @@ public class EmailNotificationService : Interfaces.IEmailService
         var subject = "Appointment Request Received";
         var body = $@"
             <div style=""text-align:center; margin-bottom:24px;"">
-                <div style=""display:inline-block; background:#D4A017; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">REQUEST SUBMITTED</div>
+                <div style=""display:inline-block; background:#F4B223; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">REQUEST SUBMITTED</div>
             </div>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:16px;"">Dear <strong>{EscapeHtml(visitorName)}</strong>,</p>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">Your appointment request has been successfully submitted and is awaiting approval from your host. You will receive another email once the appointment is approved or rejected.</p>
             {BuildAppointmentDetailsTable(employeeName, department, date, startTime, endTime, purpose, notes, "Pending")}
-            <div style=""background:#F0F7F1; border-left:4px solid #0F6B3A; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
-                <p style=""margin:0; font-size:14px; color:#0C5A31;""><strong>What happens next?</strong></p>
+            <div style=""background:#F0F7F1; border-left:4px solid #0F6A38; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
+                <p style=""margin:0; font-size:14px; color:#0C5830;""><strong>What happens next?</strong></p>
                 <p style=""margin:6px 0 0; font-size:13px; color:#555;"">Your host will review and respond to your request. You will be notified via email once a decision is made.</p>
             </div>";
 
@@ -88,13 +87,13 @@ public class EmailNotificationService : Interfaces.IEmailService
         var subject = "Appointment Approved";
         var body = $@"
             <div style=""text-align:center; margin-bottom:24px;"">
-                <div style=""display:inline-block; background:#0F6B3A; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">APPROVED</div>
+                <div style=""display:inline-block; background:#0F6A38; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">APPROVED</div>
             </div>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:16px;"">Dear <strong>{EscapeHtml(visitorName)}</strong>,</p>
-            <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">Great news! Your appointment has been <strong style=""color:#0F6B3A;"">approved</strong> by <strong>{EscapeHtml(employeeName)}</strong>. Please arrive on time for your scheduled visit.</p>
+            <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">Great news! Your appointment has been <strong style=""color:#0F6A38;"">approved</strong> by <strong>{EscapeHtml(employeeName)}</strong>. Please arrive on time for your scheduled visit.</p>
             {BuildAppointmentDetailsTable(employeeName, department, date, startTime, endTime, purpose, notes, "Approved")}
-            <div style=""background:#F0F7F1; border-left:4px solid #0F6B3A; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
-                <p style=""margin:0; font-size:14px; color:#0C5A31;""><strong>Reminder:</strong> Please bring a valid photo ID for verification at the reception desk.</p>
+            <div style=""background:#F0F7F1; border-left:4px solid #0F6A38; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
+                <p style=""margin:0; font-size:14px; color:#0C5830;""><strong>Reminder:</strong> Please bring a valid photo ID for verification at the reception desk.</p>
             </div>";
 
         await SendAsync(toEmail, subject, body, ct);
@@ -115,8 +114,8 @@ public class EmailNotificationService : Interfaces.IEmailService
                 <p style=""margin:0; font-size:14px; color:#e65100;""><strong>Reason:</strong></p>
                 <p style=""margin:6px 0 0; font-size:13px; color:#555;"">{EscapeHtml(rejectionReason)}</p>
             </div>")}
-            <div style=""background:#F0F7F1; border-left:4px solid #0F6B3A; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
-                <p style=""margin:0; font-size:14px; color:#0C5A31;"">You may submit a new appointment request at any time.</p>
+            <div style=""background:#F0F7F1; border-left:4px solid #0F6A38; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
+                <p style=""margin:0; font-size:14px; color:#0C5830;"">You may submit a new appointment request at any time.</p>
             </div>";
 
         await SendAsync(toEmail, subject, body, ct);
@@ -132,8 +131,8 @@ public class EmailNotificationService : Interfaces.IEmailService
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:16px;"">Dear <strong>{EscapeHtml(visitorName)}</strong>,</p>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">Your appointment with <strong>{EscapeHtml(employeeName)}</strong> has been <strong style=""color:#f57f17;"">cancelled</strong>.</p>
             {BuildAppointmentDetailsTable(employeeName, department, date, startTime, endTime, purpose, null, "Cancelled")}
-            <div style=""background:#F0F7F1; border-left:4px solid #0F6B3A; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
-                <p style=""margin:0; font-size:14px; color:#0C5A31;"">If this was a mistake, you may submit a new appointment request at any time.</p>
+            <div style=""background:#F0F7F1; border-left:4px solid #0F6A38; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
+                <p style=""margin:0; font-size:14px; color:#0C5830;"">If this was a mistake, you may submit a new appointment request at any time.</p>
             </div>";
 
         await SendAsync(toEmail, subject, body, ct);
@@ -151,8 +150,8 @@ public class EmailNotificationService : Interfaces.IEmailService
             <div style=""background:#FFF3E0; border:1px solid #FFE0B2; border-radius:8px; padding:16px; margin-bottom:24px;"">
                 <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""font-size:14px; color:#333;"">
                     <tr><td style=""padding:6px 0; color:#888; width:140px;"">Previous Date</td><td style=""padding:6px 0; text-decoration:line-through; color:#999;"">{oldDate:MMMM dd, yyyy}</td></tr>
-                    <tr><td style=""padding:6px 0; color:#888;"">New Date</td><td style=""padding:6px 0; font-weight:600; color:#0F6B3A;"">{newDate:MMMM dd, yyyy}</td></tr>
-                    <tr><td style=""padding:6px 0; color:#888;"">New Time</td><td style=""padding:6px 0; font-weight:600; color:#0F6B3A;"">{newStartTime:h:mm tt} - {newEndTime:h:mm tt}</td></tr>
+                    <tr><td style=""padding:6px 0; color:#888;"">New Date</td><td style=""padding:6px 0; font-weight:600; color:#0F6A38;"">{newDate:MMMM dd, yyyy}</td></tr>
+                    <tr><td style=""padding:6px 0; color:#888;"">New Time</td><td style=""padding:6px 0; font-weight:600; color:#0F6A38;"">{newStartTime:h:mm tt} - {newEndTime:h:mm tt}</td></tr>
                 </table>
             </div>
             {BuildAppointmentDetailsTable(employeeName, department, newDate, newStartTime, newEndTime, purpose, null, "Approved")}
@@ -170,12 +169,12 @@ public class EmailNotificationService : Interfaces.IEmailService
         var subject = $"Reminder: Appointment Tomorrow - {purpose}";
         var body = $@"
             <div style=""text-align:center; margin-bottom:24px;"">
-                <div style=""display:inline-block; background:#D4A017; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">REMINDER</div>
+                <div style=""display:inline-block; background:#F4B223; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">REMINDER</div>
             </div>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:16px;"">Dear <strong>{EscapeHtml(visitorName)}</strong>,</p>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">This is a friendly reminder that you have an appointment <strong>tomorrow</strong>.</p>
             {BuildAppointmentDetailsTable(employeeName, department, date, startTime, endTime, purpose, null, "Approved")}
-            <div style=""background:#FFF3E0; border-left:4px solid #D4A017; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
+            <div style=""background:#FFF3E0; border-left:4px solid #F4B223; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
                 <p style=""margin:0; font-size:14px; color:#e65100;""><strong>Please remember:</strong></p>
                 <ul style=""margin:8px 0 0; padding-left:20px; font-size:13px; color:#555;"">
                     <li>Bring a valid photo ID</li>
@@ -192,32 +191,89 @@ public class EmailNotificationService : Interfaces.IEmailService
         var subject = "Welcome to ECX Visitor Management";
         var body = $@"
             <div style=""text-align:center; margin-bottom:24px;"">
-                <div style=""display:inline-block; background:#0F6B3A; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">WELCOME</div>
+                <div style=""display:inline-block; background:#0F6A38; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">WELCOME</div>
             </div>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:16px;"">Dear <strong>{EscapeHtml(fullName)}</strong>,</p>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">Welcome to the ECX Visitor Management System! Your account has been successfully created. You can now use the portal to:</p>
             <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin-bottom:24px;"">
                 <tr>
                     <td style=""padding:10px 0; vertical-align:top; width:30px;"">
-                        <div style=""width:24px; height:24px; background:#F0F7F1; border-radius:50%; text-align:center; line-height:24px; color:#0F6B3A; font-size:12px;"">&#10003;</div>
+                        <div style=""width:24px; height:24px; background:#F0F7F1; border-radius:50%; text-align:center; line-height:24px; color:#0F6A38; font-size:12px;"">&#10003;</div>
                     </td>
                     <td style=""padding:10px 0; font-size:14px; color:#555;"">Book and manage appointments with ECX employees</td>
                 </tr>
                 <tr>
                     <td style=""padding:10px 0; vertical-align:top; width:30px;"">
-                        <div style=""width:24px; height:24px; background:#F0F7F1; border-radius:50%; text-align:center; line-height:24px; color:#0F6B3A; font-size:12px;"">&#10003;</div>
+                        <div style=""width:24px; height:24px; background:#F0F7F1; border-radius:50%; text-align:center; line-height:24px; color:#0F6A38; font-size:12px;"">&#10003;</div>
                     </td>
                     <td style=""padding:10px 0; font-size:14px; color:#555;"">Receive real-time notifications about your appointments</td>
                 </tr>
                 <tr>
                     <td style=""padding:10px 0; vertical-align:top; width:30px;"">
-                        <div style=""width:24px; height:24px; background:#F0F7F1; border-radius:50%; text-align:center; line-height:24px; color:#0F6B3A; font-size:12px;"">&#10003;</div>
+                        <div style=""width:24px; height:24px; background:#F0F7F1; border-radius:50%; text-align:center; line-height:24px; color:#0F6A38; font-size:12px;"">&#10003;</div>
                     </td>
                     <td style=""padding:10px 0; font-size:14px; color:#555;"">View your visit history and appointment status</td>
                 </tr>
             </table>
             <div style=""text-align:center; margin:24px 0;"">
-                <a href=""{_baseUrl}/auth/login"" style=""display:inline-block; background:#0F6B3A; color:white; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px;"">Log In to Your Account</a>
+                <a href=""{_baseUrl}/auth/login"" style=""display:inline-block; background:#0F6A38; color:white; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px;"">Log In to Your Account</a>
+            </div>";
+
+        await SendAsync(toEmail, subject, body, ct);
+    }
+
+    public async Task SendPasswordChangedEmailAsync(string toEmail, string fullName, CancellationToken ct = default)
+    {
+        var subject = "Your Password Has Been Changed";
+        var body = $@"
+            <div style=""text-align:center; margin-bottom:24px;"">
+                <div style=""display:inline-block; background:#0F6A38; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">PASSWORD CHANGED</div>
+            </div>
+            <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:16px;"">Dear <strong>{EscapeHtml(fullName)}</strong>,</p>
+            <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">Your password has been successfully changed. If you made this change, no further action is needed.</p>
+            <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">If you did <strong>not</strong> make this change, please contact our support team immediately to secure your account.</p>
+            <div style=""text-align:center; margin:24px 0;"">
+                <a href=""{_baseUrl}/auth/login"" style=""display:inline-block; background:#0F6A38; color:white; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px;"">Go to Login</a>
+            </div>
+            <div style=""background:#FFF3E0; border-left:4px solid #F4B223; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
+                <p style=""margin:0; font-size:14px; color:#e65100;""><strong>Need help?</strong></p>
+                <p style=""margin:6px 0 0; font-size:13px; color:#555;"">Contact support at <a href=""mailto:{_supportEmail}"" style=""color:#0F6A38;"">{_supportEmail}</a> or call {_companyPhone}.</p>
+            </div>";
+
+        await SendAsync(toEmail, subject, body, ct);
+    }
+
+    public async Task SendEmployeeWelcomeEmailAsync(string toEmail, string employeeName, CancellationToken ct = default)
+    {
+        var subject = "Welcome to ECX — Employee Account Created";
+        var body = $@"
+            <div style=""text-align:center; margin-bottom:24px;"">
+                <div style=""display:inline-block; background:#0F6A38; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">ACCOUNT CREATED</div>
+            </div>
+            <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:16px;"">Dear <strong>{EscapeHtml(employeeName)}</strong>,</p>
+            <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">Welcome to the ECX Employee Management Portal! Your employee account has been created. You can now manage appointments, view schedules, and communicate with visitors.</p>
+            <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin-bottom:24px;"">
+                <tr>
+                    <td style=""padding:10px 0; vertical-align:top; width:30px;"">
+                        <div style=""width:24px; height:24px; background:#F0F7F1; border-radius:50%; text-align:center; line-height:24px; color:#0F6A38; font-size:12px;"">&#10003;</div>
+                    </td>
+                    <td style=""padding:10px 0; font-size:14px; color:#555;"">Approve, reject, or reschedule appointment requests</td>
+                </tr>
+                <tr>
+                    <td style=""padding:10px 0; vertical-align:top; width:30px;"">
+                        <div style=""width:24px; height:24px; background:#F0F7F1; border-radius:50%; text-align:center; line-height:24px; color:#0F6A38; font-size:12px;"">&#10003;</div>
+                    </td>
+                    <td style=""padding:10px 0; font-size:14px; color:#555;"">Receive notifications for new and upcoming appointments</td>
+                </tr>
+                <tr>
+                    <td style=""padding:10px 0; vertical-align:top; width:30px;"">
+                        <div style=""width:24px; height:24px; background:#F0F7F1; border-radius:50%; text-align:center; line-height:24px; color:#0F6A38; font-size:12px;"">&#10003;</div>
+                    </td>
+                    <td style=""padding:10px 0; font-size:14px; color:#555;"">Manage your schedule and availability</td>
+                </tr>
+            </table>
+            <div style=""text-align:center; margin:24px 0;"">
+                <a href=""{_baseUrl}/employee/login"" style=""display:inline-block; background:#0F6A38; color:white; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px;"">Log In to Employee Portal</a>
             </div>";
 
         await SendAsync(toEmail, subject, body, ct);
@@ -255,7 +311,7 @@ public class EmailNotificationService : Interfaces.IEmailService
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">You have received a new appointment request from <strong>{EscapeHtml(visitorName)}</strong>. Please review and respond at your earliest convenience.</p>
             {BuildEmployeeDetailsTable(visitorName, department, date, startTime, endTime, purpose, notes, "Pending")}
             <div style=""text-align:center; margin:24px 0;"">
-                <a href=""{_baseUrl}/appointments"" style=""display:inline-block; background:#0F6B3A; color:white; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px;"">Review Request</a>
+                <a href=""{_baseUrl}/appointments"" style=""display:inline-block; background:#0F6A38; color:white; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px;"">Review Request</a>
             </div>";
 
         await SendAsync(toEmail, subject, body, ct);
@@ -287,8 +343,8 @@ public class EmailNotificationService : Interfaces.IEmailService
             <div style=""background:#FFF3E0; border:1px solid #FFE0B2; border-radius:8px; padding:16px; margin-bottom:24px;"">
                 <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""font-size:14px; color:#333;"">
                     <tr><td style=""padding:6px 0; color:#888; width:140px;"">Previous Date</td><td style=""padding:6px 0; text-decoration:line-through; color:#999;"">{oldDate:MMMM dd, yyyy}</td></tr>
-                    <tr><td style=""padding:6px 0; color:#888;"">New Date</td><td style=""padding:6px 0; font-weight:600; color:#0F6B3A;"">{newDate:MMMM dd, yyyy}</td></tr>
-                    <tr><td style=""padding:6px 0; color:#888;"">New Time</td><td style=""padding:6px 0; font-weight:600; color:#0F6B3A;"">{newStartTime:h:mm tt} - {newEndTime:h:mm tt}</td></tr>
+                    <tr><td style=""padding:6px 0; color:#888;"">New Date</td><td style=""padding:6px 0; font-weight:600; color:#0F6A38;"">{newDate:MMMM dd, yyyy}</td></tr>
+                    <tr><td style=""padding:6px 0; color:#888;"">New Time</td><td style=""padding:6px 0; font-weight:600; color:#0F6A38;"">{newStartTime:h:mm tt} - {newEndTime:h:mm tt}</td></tr>
                 </table>
             </div>
             {BuildEmployeeDetailsTable(visitorName, department, newDate, newStartTime, newEndTime, purpose, null, "Approved")}
@@ -306,12 +362,12 @@ public class EmailNotificationService : Interfaces.IEmailService
         var subject = $"Reminder: Appointment Tomorrow with {visitorName}";
         var body = $@"
             <div style=""text-align:center; margin-bottom:24px;"">
-                <div style=""display:inline-block; background:#D4A017; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">REMINDER</div>
+                <div style=""display:inline-block; background:#F4B223; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">REMINDER</div>
             </div>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:16px;"">Dear <strong>{EscapeHtml(employeeName)}</strong>,</p>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">This is a reminder that you have an appointment <strong>tomorrow</strong> with a visitor.</p>
             {BuildEmployeeDetailsTable(visitorName, department, date, startTime, endTime, purpose, null, "Approved")}
-            <div style=""background:#FFF3E0; border-left:4px solid #D4A017; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
+            <div style=""background:#FFF3E0; border-left:4px solid #F4B223; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
                 <p style=""margin:0; font-size:14px; color:#e65100;""><strong>Please remember:</strong></p>
                 <ul style=""margin:8px 0 0; padding-left:20px; font-size:13px; color:#555;"">
                     <li>Be available at the scheduled time</li>
@@ -321,44 +377,6 @@ public class EmailNotificationService : Interfaces.IEmailService
             </div>";
 
         await SendAsync(toEmail, subject, body, ct);
-    }
-
-    private async Task SendViaSmtpAsync(string toEmail, string subject, string htmlBody)
-    {
-        if (string.IsNullOrWhiteSpace(_smtpUsername) || string.IsNullOrWhiteSpace(_smtpPassword))
-        {
-            _logger.LogWarning("SMTP credentials not configured. Email to {Email} skipped.", toEmail);
-            return;
-        }
-
-        try
-        {
-            using var client = new SmtpClient(_smtpHost, _smtpPort)
-            {
-                EnableSsl = _smtpEnableSsl,
-                Credentials = new NetworkCredential(_smtpUsername, _smtpPassword),
-                Timeout = 30000
-            };
-
-            using var message = new MailMessage
-            {
-                From = new MailAddress(_fromAddress, _fromName, Encoding.UTF8),
-                Subject = subject,
-                Body = htmlBody,
-                IsBodyHtml = true,
-                SubjectEncoding = Encoding.UTF8,
-                BodyEncoding = Encoding.UTF8
-            };
-            message.To.Add(toEmail);
-
-            await client.SendMailAsync(message);
-            _logger.LogInformation("Email sent to {Email}: {Subject}", toEmail, subject);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send email to {Email}: {Subject}", toEmail, subject);
-            throw;
-        }
     }
 
     private string WrapInBaseTemplate(string title, string content)
@@ -378,10 +396,10 @@ public class EmailNotificationService : Interfaces.IEmailService
 
                     <!-- Header -->
                     <tr>
-                        <td style=""background:linear-gradient(135deg, #0F6B3A 0%, #0C5A31 100%); padding:28px 32px; text-align:center;"">
+                        <td style=""background:linear-gradient(135deg, #0F6A38 0%, #0C5830 100%); padding:28px 32px; text-align:center;"">
                             <h1 style=""margin:0; color:white; font-size:24px; font-weight:700; letter-spacing:1px;"">ECX</h1>
                             <p style=""margin:4px 0 0; color:rgba(255,255,255,0.75); font-size:12px; letter-spacing:0.5px; text-transform:uppercase;"">Visitor Management System</p>
-                            <div style=""width:40px; height:3px; background:#D4A017; margin:12px auto 0; border-radius:2px;""></div>
+                            <div style=""width:40px; height:3px; background:#F4B223; margin:12px auto 0; border-radius:2px;""></div>
                         </td>
                     </tr>
 
@@ -399,7 +417,7 @@ public class EmailNotificationService : Interfaces.IEmailService
                                 {_companyName} &mdash; {_companyAddress}
                             </p>
                             <p style=""margin:0 0 8px; font-size:12px; color:#999; line-height:1.6;"">
-                                Phone: {_companyPhone} &nbsp;|&nbsp; Email: <a href=""mailto:{_supportEmail}"" style=""color:#0F6B3A; text-decoration:none;"">{_supportEmail}</a>
+                                Phone: {_companyPhone} &nbsp;|&nbsp; Email: <a href=""mailto:{_supportEmail}"" style=""color:#0F6A38; text-decoration:none;"">{_supportEmail}</a>
                             </p>
                             <p style=""margin:0; font-size:11px; color:#bbb; line-height:1.6;"">
                                 This is an automated notification. Please do not reply directly to this email.
@@ -418,11 +436,11 @@ public class EmailNotificationService : Interfaces.IEmailService
     {
         var statusColor = status switch
         {
-            "Approved" => "#0F6B3A",
+            "Approved" => "#0F6A38",
             "Rejected" => "#c62828",
             "Cancelled" => "#f57f17",
             "Rescheduled" => "#1565c0",
-            _ => "#D4A017"
+            _ => "#F4B223"
         };
 
         return $@"
@@ -449,11 +467,11 @@ public class EmailNotificationService : Interfaces.IEmailService
     {
         var statusColor = status switch
         {
-            "Approved" => "#0F6B3A",
+            "Approved" => "#0F6A38",
             "Rejected" => "#c62828",
             "Cancelled" => "#f57f17",
             "Rescheduled" => "#1565c0",
-            _ => "#D4A017"
+            _ => "#F4B223"
         };
 
         return $@"
