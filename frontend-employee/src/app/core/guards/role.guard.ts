@@ -17,7 +17,7 @@ export class RoleGuard implements CanActivate {
     try {
       const payload = this.authService.decodeToken(token);
       if (payload.exp * 1000 < Date.now()) {
-        this.authService.logout();
+        this.authService.clearSession();
         return this.router.createUrlTree(['/auth/login']);
       }
 
@@ -33,7 +33,7 @@ export class RoleGuard implements CanActivate {
 
       return this.router.createUrlTree([this.getDashboardPath(userRole)]);
     } catch {
-      this.authService.logout();
+      this.authService.clearSession();
       return this.router.createUrlTree(['/auth/login']);
     }
   }

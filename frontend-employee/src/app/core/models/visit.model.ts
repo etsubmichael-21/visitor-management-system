@@ -25,7 +25,7 @@ export interface Visit {
   createdAt: string;
 }
 
-export type VisitStatus = 'Scheduled' | 'CheckedIn' | 'CheckedOut' | 'Cancelled';
+export type VisitStatus = 'Expected' | 'Scheduled' | 'CheckedIn' | 'CheckedOut' | 'Cancelled';
 
 export interface CheckInRequest {
   appointmentId?: number;
@@ -60,6 +60,7 @@ export interface VisitFilter {
   search?: string;
   isActive?: boolean;
   page?: number;
+  pageSize?: number;
   limit?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';

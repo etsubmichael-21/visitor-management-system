@@ -57,6 +57,7 @@ interface TabConfig {
               <mat-select [(ngModel)]="selectedStatus" (ngModelChange)="onStatusFilterChange()">
                 <mat-option value="">All Statuses</mat-option>
                 <mat-option value="Pending">Pending</mat-option>
+                <mat-option value="PendingAssignment">Pending Assignment</mat-option>
                 <mat-option value="Approved">Approved</mat-option>
                 <mat-option value="Rejected">Rejected</mat-option>
                 <mat-option value="Completed">Completed</mat-option>
@@ -212,6 +213,7 @@ export class AppointmentListComponent implements OnInit {
     { label: 'All', statuses: [] },
     { label: 'Active', statuses: ['Approved', 'Rescheduled'] },
     { label: 'Pending', statuses: ['Pending'] },
+    { label: 'Pending Assignment', statuses: ['PendingAssignment'] },
     { label: 'Completed', statuses: ['Completed'] },
     { label: 'Rejected', statuses: ['Rejected'] },
     { label: 'Cancelled', statuses: ['Cancelled'] }
@@ -248,42 +250,45 @@ export class AppointmentListComponent implements OnInit {
     const tab = this.tabs[this.selectedTabIndex];
     const filter: Record<string, string> = {
       page: (this.currentPage() + 1).toString(),
-      limit: this.pageSize().toString()
+      pageSize: this.pageSize().toString()
     };
 
     if (this.searchTerm) {
       filter['search'] = this.searchTerm;
     }
 
-    const effectiveStatus = this.selectedStatus || (tab.statuses.length === 1 ? tab.statuses[0] : '');
-    if (effectiveStatus) {
-      filter['status'] = effectiveStatus;
+    if (tab.statuses.length > 0 && !this.selectedStatus) {
+      filter['status'] = tab.statuses.join(',');
+    }
+    if (this.selectedStatus) {
+      filter['status'] = this.selectedStatus;
     }
 
     if (this.dateFrom) {
-      filter['dateFrom'] = this.dateFrom.toISOString().split('T')[0];
+      filter['dateFrom'] = this.toLocalDate(this.dateFrom);
     }
     if (this.dateTo) {
-      filter['dateTo'] = this.dateTo.toISOString().split('T')[0];
+      filter['dateTo'] = this.toLocalDate(this.dateTo);
     }
 
-    this.updateChips(effectiveStatus, tab.label);
+    this.updateChips(this.selectedStatus || (tab.statuses.length === 1 ? tab.statuses[0] : ''), tab.label);
+
+    console.log(`[AppointmentList] SelectedStatus=${filter['status'] || '(all)'} Search=${filter['search'] || ''} | API=/appointments?${new URLSearchParams(filter).toString()} | Requesting...`);
 
     this.appointmentService.getAll(filter as any).subscribe({
       next: (res) => {
         if (res.success && res.data) {
-          let items = res.data.items || [];
-          let total = res.data.totalCount || 0;
-
-          if (tab.statuses.length > 1 && !this.selectedStatus) {
-            items = items.filter(a => tab.statuses.includes(a.status));
-          }
-
-          this.appointments.set(items);
-          this.totalCount.set(total);
+          console.log(`[AppointmentList] SelectedStatus=${filter['status'] || '(all)'} | API=/appointments?${new URLSearchParams(filter).toString()} | ResponseCount=${res.data.items?.length ?? 0} TotalCount=${res.data.totalCount ?? 0}`);
+          this.appointments.set(res.data.items || []);
+          this.totalCount.set(res.data.totalCount || 0);
         }
       }
     });
+  }
+
+  private toLocalDate(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 
   onTabChange(index: number): void {

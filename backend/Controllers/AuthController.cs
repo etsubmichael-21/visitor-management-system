@@ -104,6 +104,17 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> Me()
+    {
+        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var result = await _authService.GetCurrentUserAsync(userId);
+        if (result == null)
+            return Unauthorized(ApiResponse<LoginResponse>.Unauthorized("Session is no longer valid"));
+        return Ok(ApiResponse<LoginResponse>.Ok(result));
+    }
+
     [HttpPost("logout")]
     [Authorize]
     public async Task<IActionResult> Logout([FromBody] LogoutRequest request)

@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap, map } from 'rxjs';
 import { ApiService } from './api.service';
 import { StorageService } from './storage.service';
+import { environment } from '../../../environments/environment';
+import { ApiResponse } from '../models/common.model';
 import {
   LoginRequest,
   LoginResponse,
@@ -28,6 +30,9 @@ export class AuthService {
 
   constructor() {
     this.loadStoredUser();
+    if (this.isTokenExpired()) {
+      this.clearSession();
+    }
   }
 
   get isLoggedIn(): boolean {
@@ -99,11 +104,61 @@ export class AuthService {
   }
 
   logout(): void {
+    const token = this.getToken();
+    const refreshToken = this.storage.get(this.refreshTokenKey);
+    this.clearSession();
+    this.storage.clear();
+    try {
+      sessionStorage.clear();
+    } catch {}
+    if (token && refreshToken) {
+      fetch(`${environment.apiUrl}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ refreshToken }),
+      }).catch(() => {});
+    }
+    this.router.navigate(['/auth/login']);
+  }
+
+  clearSession(): void {
     this.storage.remove(this.tokenKey);
     this.storage.remove(this.refreshTokenKey);
     this.storage.remove(this.userKey);
     this.currentUserSubject.next(null);
-    this.router.navigate(['/auth/login']);
+  }
+
+  async validateSession(): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) {
+      return false;
+    }
+    try {
+      const res = await fetch(`${environment.apiUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401 || res.status === 403) {
+        this.clearSession();
+        return false;
+      }
+      if (!res.ok) {
+        return true;
+      }
+      const body = (await res.json()) as ApiResponse<LoginResponse>;
+      const data = body?.data;
+      if (data && data.userId) {
+        const user = this.buildUser(data);
+        this.storage.set(this.userKey, JSON.stringify(user));
+        this.currentUserSubject.next(user);
+        return true;
+      }
+      return true;
+    } catch {
+      return true;
+    }
   }
 
   forgotPassword(data: ForgotPasswordRequest): Observable<unknown> {
@@ -157,6 +212,20 @@ export class AuthService {
     } catch {
       return true;
     }
+  }
+
+  private buildUser(response: LoginResponse): User {
+    const parts = (response.fullName || '').split(' ');
+    return {
+      id: response.userId,
+      email: response.email,
+      fullName: response.fullName,
+      firstName: parts[0] || '',
+      lastName: parts.slice(1).join(' ') || '',
+      role: response.role,
+      visitorId: response.visitorId,
+      isActive: true,
+    };
   }
 
   private loadStoredUser(): void {

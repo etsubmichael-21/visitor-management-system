@@ -193,6 +193,22 @@ public class AuthService : IAuthService
         if (token != null) { token.IsRevoked = true; await _context.SaveChangesAsync(); }
     }
 
+    public async Task<LoginResponse?> GetCurrentUserAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || !user.IsActive)
+            return null;
+        return new LoginResponse
+        {
+            FullName = user.FullName,
+            Email = user.Email,
+            Role = user.Role,
+            UserId = user.Id,
+            EmployeeId = user.EmployeeId,
+            VisitorId = user.VisitorId
+        };
+    }
+
     private string GenerateJwtToken(User user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));

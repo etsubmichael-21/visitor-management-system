@@ -87,6 +87,7 @@ interface NavItem {
                   class="notification-bell"
                   [matBadge]="unreadCount()" matBadgeColor="warn"
                   [matBadgeHidden]="unreadCount() === 0" matBadgeSize="small"
+                  matBadgeOverlap="false" matBadgePosition="above after"
                   matTooltip="Notifications" aria-label="Open notifications menu">
             <mat-icon>notifications</mat-icon>
           </button>

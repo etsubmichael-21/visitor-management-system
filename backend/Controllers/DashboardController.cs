@@ -66,7 +66,7 @@ public class DashboardController : ControllerBase
     public async Task<IActionResult> GetReceptionistDashboard()
     {
         var result = await _dashboardService.GetReceptionistDashboardAsync();
-        return Ok(ApiResponse<ReceptionistDashboardDto>.Ok(result));
+        return Ok(ApiResponse<RoleDashboardDto>.Ok(result));
     }
 
     [HttpGet("security")]
@@ -74,7 +74,7 @@ public class DashboardController : ControllerBase
     public async Task<IActionResult> GetSecurityDashboard()
     {
         var result = await _dashboardService.GetSecurityDashboardAsync();
-        return Ok(ApiResponse<SecurityDashboardDto>.Ok(result));
+        return Ok(ApiResponse<RoleDashboardDto>.Ok(result));
     }
 
     [HttpGet("visitor")]

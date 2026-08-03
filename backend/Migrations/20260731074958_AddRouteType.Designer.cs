@@ -3,6 +3,7 @@ using System;
 using EcxVisitorManagement.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EcxVisitorManagement.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260731074958_AddRouteType")]
+    partial class AddRouteType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,58 +39,9 @@ namespace EcxVisitorManagement.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("appointment_code");
 
-                    b.Property<string>("AppointmentMethod")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("appointment_method");
-
                     b.Property<DateTimeOffset?>("ApprovalDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("approval_date");
-
-                    b.Property<DateTimeOffset?>("AssignedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("assigned_at");
-
-                    b.Property<int?>("AssignedBy")
-                        .HasColumnType("integer")
-                        .HasColumnName("assigned_by");
-
-                    b.Property<int?>("AssignedDepartmentId")
-                        .HasColumnType("integer")
-                        .HasColumnName("assigned_department_id");
-
-                    b.Property<int?>("AssignedEmployeeId")
-                        .HasColumnType("integer")
-                        .HasColumnName("assigned_employee_id");
-
-                    b.Property<string>("AttachmentContentType")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("attachment_content_type");
-
-                    b.Property<string>("AttachmentFileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("attachment_file_name");
-
-                    b.Property<string>("AttachmentOriginalFileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("attachment_original_name");
-
-                    b.Property<string>("AttachmentPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("attachment_path");
-
-                    b.Property<long?>("AttachmentSize")
-                        .HasColumnType("bigint")
-                        .HasColumnName("attachment_size");
-
-                    b.Property<DateTimeOffset?>("AttachmentUploadedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("attachment_uploaded_at");
 
                     b.Property<bool>("CheckInAllowed")
                         .HasColumnType("boolean")
@@ -130,14 +84,6 @@ namespace EcxVisitorManagement.Migrations
                     b.Property<int?>("RedirectDepartmentId")
                         .HasColumnType("integer")
                         .HasColumnName("redirect_department_id");
-
-                    b.Property<string>("RedirectReason")
-                        .HasColumnType("text")
-                        .HasColumnName("redirect_reason");
-
-                    b.Property<int?>("RedirectedFromDepartmentId")
-                        .HasColumnType("integer")
-                        .HasColumnName("redirected_from_department_id");
 
                     b.Property<string>("RejectionReason")
                         .HasColumnType("text")
@@ -190,10 +136,6 @@ namespace EcxVisitorManagement.Migrations
 
                     b.HasIndex("AppointmentCode");
 
-                    b.HasIndex("AssignedDepartmentId");
-
-                    b.HasIndex("AssignedEmployeeId");
-
                     b.HasIndex("DelegatedToEmployeeId");
 
                     b.HasIndex("EmployeeId");
@@ -201,8 +143,6 @@ namespace EcxVisitorManagement.Migrations
                     b.HasIndex("OriginalEmployeeId");
 
                     b.HasIndex("RedirectDepartmentId");
-
-                    b.HasIndex("RedirectedFromDepartmentId");
 
                     b.HasIndex("RequestedDate");
 
@@ -1301,14 +1241,6 @@ namespace EcxVisitorManagement.Migrations
 
             modelBuilder.Entity("EcxVisitorManagement.Models.Appointment", b =>
                 {
-                    b.HasOne("EcxVisitorManagement.Models.Department", "AssignedDepartment")
-                        .WithMany()
-                        .HasForeignKey("AssignedDepartmentId");
-
-                    b.HasOne("EcxVisitorManagement.Models.Employee", "AssignedEmployee")
-                        .WithMany()
-                        .HasForeignKey("AssignedEmployeeId");
-
                     b.HasOne("EcxVisitorManagement.Models.Employee", "DelegatedToEmployee")
                         .WithMany()
                         .HasForeignKey("DelegatedToEmployeeId")
@@ -1330,19 +1262,11 @@ namespace EcxVisitorManagement.Migrations
                         .HasForeignKey("RedirectDepartmentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("EcxVisitorManagement.Models.Department", "RedirectedFromDepartment")
-                        .WithMany()
-                        .HasForeignKey("RedirectedFromDepartmentId");
-
                     b.HasOne("EcxVisitorManagement.Models.Visitor", "Visitor")
                         .WithMany("Appointments")
                         .HasForeignKey("VisitorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("AssignedDepartment");
-
-                    b.Navigation("AssignedEmployee");
 
                     b.Navigation("DelegatedToEmployee");
 
@@ -1351,8 +1275,6 @@ namespace EcxVisitorManagement.Migrations
                     b.Navigation("OriginalEmployee");
 
                     b.Navigation("RedirectDepartment");
-
-                    b.Navigation("RedirectedFromDepartment");
 
                     b.Navigation("Visitor");
                 });

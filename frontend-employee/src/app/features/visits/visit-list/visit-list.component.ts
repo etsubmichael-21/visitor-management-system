@@ -44,6 +44,7 @@ import { Visit } from '../../../core/models/visit.model';
               <mat-option value="CheckedIn">Checked In</mat-option>
               <mat-option value="CheckedOut">Checked Out</mat-option>
               <mat-option value="Cancelled">Cancelled</mat-option>
+              <mat-option value="Completed">Completed</mat-option>
             </mat-select>
           </mat-form-field>
         </div>
@@ -56,12 +57,11 @@ import { Visit } from '../../../core/models/visit.model';
               <th mat-header-cell *matHeaderCellDef>Visitor</th>
               <td mat-cell *matCellDef="let v">
                 <strong>{{ v.visitorName || 'N/A' }}</strong>
-                <br><small>{{ v.visitorCompany || '' }}</small>
               </td>
             </ng-container>
             <ng-container matColumnDef="host">
               <th mat-header-cell *matHeaderCellDef>Host</th>
-              <td mat-cell *matCellDef="let v">{{ v.hostEmployeeName || 'N/A' }}</td>
+              <td mat-cell *matCellDef="let v">{{ v.employeeName || 'N/A' }}</td>
             </ng-container>
             <ng-container matColumnDef="department">
               <th mat-header-cell *matHeaderCellDef>Department</th>
@@ -123,15 +123,28 @@ export class VisitListComponent implements OnInit {
   }
 
   loadVisits(): void {
-    const filter: any = { page: (this.currentPage() + 1).toString(), limit: this.pageSize().toString() };
+    const filter: any = { page: (this.currentPage() + 1).toString(), pageSize: this.pageSize().toString() };
     if (this.searchTerm) filter.search = this.searchTerm;
     if (this.selectedStatus) filter.status = this.selectedStatus;
 
     const role = this.authService.getUserRole();
     if (role === 'Security') filter.isActive = 'true';
 
-    this.visitService.getAll(filter).subscribe({
-      next: (res) => { if (res.success && res.data) { this.visits.set(res.data.items || []); this.totalCount.set(res.data.totalCount || 0); } }
+    const endpoint = role === 'Receptionist' ? '/visits/reception-today' : '/visits';
+    const request$ = role === 'Receptionist'
+      ? this.visitService.getReceptionToday(filter)
+      : this.visitService.getAll(filter);
+
+    console.log(`[VisitList] SelectedStatus=${this.selectedStatus || '(all)'} Role=${role} | API=${endpoint}?${new URLSearchParams(filter).toString()} | Requesting...`);
+
+    request$.subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          console.log(`[VisitList] SelectedStatus=${this.selectedStatus || '(all)'} | API=${endpoint} | ResponseCount=${res.data.items?.length ?? 0} TotalCount=${res.data.totalCount ?? 0}`);
+          this.visits.set(res.data.items || []);
+          this.totalCount.set(res.data.totalCount || 0);
+        }
+      }
     });
   }
 

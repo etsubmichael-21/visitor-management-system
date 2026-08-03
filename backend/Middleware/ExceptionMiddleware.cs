@@ -6,6 +6,12 @@ namespace EcxVisitorManagement.Middleware;
 
 public class ExceptionMiddleware
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
+
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
 
@@ -27,7 +33,7 @@ public class ExceptionMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.NotFound;
             context.Response.ContentType = "application/json";
             var response = ApiResponse<object>.NotFound(ex.Message);
-            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -35,7 +41,7 @@ public class ExceptionMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             context.Response.ContentType = "application/json";
             var response = ApiResponse<object>.Unauthorized(ex.Message);
-            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
         }
         catch (InvalidOperationException ex)
         {
@@ -43,7 +49,7 @@ public class ExceptionMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             context.Response.ContentType = "application/json";
             var response = ApiResponse<object>.BadRequest(ex.Message);
-            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
         }
         catch (ArgumentException ex)
         {
@@ -51,7 +57,7 @@ public class ExceptionMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             context.Response.ContentType = "application/json";
             var response = ApiResponse<object>.BadRequest(ex.Message);
-            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
         }
         catch (Exception ex)
         {
@@ -61,7 +67,7 @@ public class ExceptionMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             context.Response.ContentType = "application/json";
             var response = ApiResponse<object>.Error("An internal server error occurred");
-            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
         }
     }
 }

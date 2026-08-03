@@ -47,8 +47,7 @@ public class AuditMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Audit middleware error for {Path}", context.Request.Path);
-            responseBody.Seek(0, SeekOrigin.Begin);
-            await responseBody.CopyToAsync(originalBodyStream);
+            throw;
         }
         finally
         {

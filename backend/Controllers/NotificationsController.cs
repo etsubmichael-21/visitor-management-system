@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using EcxVisitorManagement.Data;
 using EcxVisitorManagement.DTOs.Common;
 using EcxVisitorManagement.DTOs.Notifications;
 using EcxVisitorManagement.Extensions;
@@ -13,8 +15,13 @@ namespace EcxVisitorManagement.Controllers;
 public class NotificationsController : ControllerBase
 {
     private readonly INotificationService _notificationService;
+    private readonly AppDbContext _context;
 
-    public NotificationsController(INotificationService notificationService) => _notificationService = notificationService;
+    public NotificationsController(INotificationService notificationService, AppDbContext context)
+    {
+        _notificationService = notificationService;
+        _context = context;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
@@ -25,12 +32,12 @@ public class NotificationsController : ControllerBase
             return Ok(ApiResponse<PagedResponse<NotificationResponseDto>>.Ok(result));
         }
 
-        var employeeId = User.GetEmployeeId();
-        if (employeeId == null)
+        var employeeIds = await ResolveEmployeeIdsAsync();
+        if (employeeIds.Count == 0)
             return Ok(ApiResponse<PagedResponse<NotificationResponseDto>>.Ok(
                 new PagedResponse<NotificationResponseDto> { Items = new List<NotificationResponseDto>(), TotalCount = 0, Page = 1, PageSize = 10 }));
 
-        var empResult = await _notificationService.GetAllByEmployeeAsync(employeeId.Value, request);
+        var empResult = await _notificationService.GetAllByEmployeesAsync(employeeIds, request);
         return Ok(ApiResponse<PagedResponse<NotificationResponseDto>>.Ok(empResult));
     }
 
@@ -45,17 +52,17 @@ public class NotificationsController : ControllerBase
     [HttpGet("unread")]
     public async Task<IActionResult> GetUnread()
     {
-        var employeeId = User.GetEmployeeId();
+        var employeeIds = await ResolveEmployeeIdsAsync();
         if (User.IsAdminOrHigher())
         {
             var result = await _notificationService.GetUnreadAsync();
             return Ok(ApiResponse<IReadOnlyList<NotificationResponseDto>>.Ok(result));
         }
 
-        if (employeeId == null)
+        if (employeeIds.Count == 0)
             return Ok(ApiResponse<IReadOnlyList<NotificationResponseDto>>.Ok(new List<NotificationResponseDto>()));
 
-        var empResult = await _notificationService.GetUnreadByEmployeeAsync(employeeId.Value);
+        var empResult = await _notificationService.GetUnreadByEmployeesAsync(employeeIds);
         return Ok(ApiResponse<IReadOnlyList<NotificationResponseDto>>.Ok(empResult));
     }
 
@@ -68,11 +75,11 @@ public class NotificationsController : ControllerBase
             return Ok(ApiResponse<UnreadCountDto>.Ok(count));
         }
 
-        var employeeId = User.GetEmployeeId();
-        if (employeeId == null)
+        var employeeIds = await ResolveEmployeeIdsAsync();
+        if (employeeIds.Count == 0)
             return Ok(ApiResponse<UnreadCountDto>.Ok(new UnreadCountDto { Count = 0 }));
 
-        var empCount = await _notificationService.GetUnreadCountByEmployeeAsync(employeeId.Value);
+        var empCount = await _notificationService.GetUnreadCountByEmployeesAsync(employeeIds);
         return Ok(ApiResponse<UnreadCountDto>.Ok(empCount));
     }
 
@@ -96,9 +103,9 @@ public class NotificationsController : ControllerBase
         }
         else
         {
-            var employeeId = User.GetEmployeeId();
-            if (employeeId != null)
-                await _notificationService.MarkAllAsReadByEmployeeAsync(employeeId.Value);
+            var employeeIds = await ResolveEmployeeIdsAsync();
+            if (employeeIds.Count > 0)
+                await _notificationService.MarkAllAsReadByEmployeesAsync(employeeIds);
         }
         return Ok(ApiResponse<object>.Ok(null!, "All notifications marked as read"));
     }
@@ -151,5 +158,39 @@ public class NotificationsController : ControllerBase
     {
         var count = await _notificationService.GetVisitorUnreadCountAsync(visitorId);
         return Ok(ApiResponse<UnreadCountDto>.Ok(count));
+    }
+
+    private async Task<List<int>> ResolveEmployeeIdsAsync()
+    {
+        var employeeId = User.GetEmployeeId();
+        var role = User.GetRole();
+
+        if (role == "Security")
+        {
+            var securityDepartment = await _context.Departments.FirstOrDefaultAsync(d => d.Name == "Security");
+            var ids = securityDepartment == null
+                ? new List<int>()
+                : await _context.Employees
+                    .Where(e => e.DepartmentId == securityDepartment.Id && e.Status == "Active")
+                    .Select(e => e.Id)
+                    .ToListAsync();
+            if (employeeId.HasValue && !ids.Contains(employeeId.Value))
+                ids.Add(employeeId.Value);
+            return ids;
+        }
+
+        if (role == "Receptionist")
+        {
+            var ids = await _context.Users
+                .Where(u => u.Role == "Receptionist" && u.EmployeeId.HasValue)
+                .Select(u => u.EmployeeId!.Value)
+                .Distinct()
+                .ToListAsync();
+            if (employeeId.HasValue && !ids.Contains(employeeId.Value))
+                ids.Add(employeeId.Value);
+            return ids;
+        }
+
+        return employeeId.HasValue ? new List<int> { employeeId.Value } : new List<int>();
     }
 }

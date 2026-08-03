@@ -88,6 +88,35 @@
   line-height: 1.6;
 }
 
+.letter-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  word-break: break-all;
+  text-align: right;
+}
+
+.letter-name mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: #0F6B3A;
+  flex-shrink: 0;
+}
+
+.letter-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.no-letter {
+  color: #9ca3af;
+  font-size: 14px;
+  margin: 0;
+  font-style: italic;
+}
+
 .cancel-dialog {
   position: fixed;
   top: 0;

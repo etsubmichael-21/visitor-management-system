@@ -1,0 +1,126 @@
+.visit-routing-page { max-width: 700px; margin: 0 auto; }
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.back-btn { color: #6B7280; }
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0C5A31;
+}
+
+.page-subtitle {
+  color: #6B7280;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.form-card { padding: 12px; }
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #EAF5EE;
+  border-radius: 10px;
+}
+
+.step-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0F6A38;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.step-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0C5830;
+  margin: 0;
+}
+
+.step-subtitle {
+  font-size: 13px;
+  color: #4b5563;
+  margin: 2px 0 0;
+}
+
+.form-section {
+  margin-bottom: 28px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0F6B3A;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e8f5e9;
+}
+
+.question {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2937;
+  margin: 0 0 12px;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  margin-top: 16px;
+  background: #EAF5EE;
+  color: #0C5830;
+  border-left: 4px solid #0F6A38;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.info-box mat-icon {
+  color: #0F6A38;
+  font-size: 20px;
+  margin-top: 1px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.form-actions button[type="submit"] {
+  height: 42px;
+  padding: 0 28px;
+  font-weight: 600;
+  background: #0F6B3A !important;
+}

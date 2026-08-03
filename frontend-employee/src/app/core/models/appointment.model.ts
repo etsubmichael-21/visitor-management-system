@@ -20,12 +20,31 @@ export interface Appointment {
   notes?: string;
   delegatedToEmployeeId?: number;
   delegatedToEmployeeName?: string;
+  assignedDepartmentId?: number;
+  assignedDepartmentName?: string;
+  assignedEmployeeId?: number;
+  assignedEmployeeName?: string;
+  redirectedFromDepartmentId?: number;
+  redirectedFromDepartmentName?: string;
+  redirectReason?: string;
+  assignedBy?: number;
+  assignedAt?: string;
+  supportingLetter?: SupportingLetter | null;
   commentCount: number;
   createdAt: string;
   updatedAt?: string;
 }
 
-export type AppointmentStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'Completed' | 'EmployeeUnavailable' | 'Rescheduled' | 'Delegated';
+export interface SupportingLetter {
+  fileName: string;
+  originalFileName: string;
+  filePath: string;
+  fileSize: number;
+  contentType: string;
+  uploadedAt?: string;
+}
+
+export type AppointmentStatus = 'Pending' | 'PendingAssignment' | 'Approved' | 'Rejected' | 'Cancelled' | 'Completed' | 'EmployeeUnavailable' | 'Rescheduled' | 'Delegated';
 
 export interface CreateAppointmentRequest {
   visitorId: number;
@@ -54,6 +73,18 @@ export interface DelegateAppointmentRequest {
   notes?: string;
 }
 
+export interface RedirectToDepartmentRequest {
+  appointmentId: number;
+  newDepartmentId: number;
+  reason?: string;
+}
+
+export interface AssignEmployeeRequest {
+  appointmentId: number;
+  newEmployeeId: number;
+  notes?: string;
+}
+
 export interface AppointmentFilter {
   status?: AppointmentStatus;
   departmentId?: number;
@@ -62,6 +93,7 @@ export interface AppointmentFilter {
   dateTo?: string;
   search?: string;
   page?: number;
+  pageSize?: number;
   limit?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';

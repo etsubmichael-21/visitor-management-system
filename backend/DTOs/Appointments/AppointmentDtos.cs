@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace EcxVisitorManagement.DTOs.Appointments;
 
 public class AppointmentCreateDto
@@ -9,7 +11,10 @@ public class AppointmentCreateDto
     public DateTimeOffset RequestedEndTime { get; set; }
     public string Purpose { get; set; } = string.Empty;
     public bool IsConfidential { get; set; }
+    public string? RouteType { get; set; }
+    public string? AppointmentMethod { get; set; }
     public string? Notes { get; set; }
+    public IFormFile? SupportingLetter { get; set; }
 }
 
 public class AppointmentUpdateDto
@@ -41,13 +46,25 @@ public class AppointmentResponseDto
     public DateTimeOffset? ApprovalDate { get; set; }
     public bool CheckInAllowed { get; set; }
     public bool IsConfidential { get; set; }
+    public string? RouteType { get; set; }
+    public string? AppointmentMethod { get; set; }
     public string? AppointmentCode { get; set; }
     public string? RejectionReason { get; set; }
     public string? Notes { get; set; }
+    public SupportingLetterDto? SupportingLetter { get; set; }
     public int? DelegatedToEmployeeId { get; set; }
     public string? DelegatedToEmployeeName { get; set; }
     public int? OriginalEmployeeId { get; set; }
     public string? OriginalEmployeeName { get; set; }
+    public int? AssignedDepartmentId { get; set; }
+    public string? AssignedDepartmentName { get; set; }
+    public int? AssignedEmployeeId { get; set; }
+    public string? AssignedEmployeeName { get; set; }
+    public int? RedirectedFromDepartmentId { get; set; }
+    public string? RedirectedFromDepartmentName { get; set; }
+    public string? RedirectReason { get; set; }
+    public int? AssignedBy { get; set; }
+    public DateTimeOffset? AssignedAt { get; set; }
     public List<AppointmentAttachmentDto> Attachments { get; set; } = new();
     public int CommentCount { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
@@ -65,6 +82,18 @@ public class AppointmentRedirectDto
     public int NewEmployeeId { get; set; }
     public int? NewDepartmentId { get; set; }
     public string? Reason { get; set; }
+}
+
+public class AppointmentDepartmentRedirectDto
+{
+    public int NewDepartmentId { get; set; }
+    public string? Reason { get; set; }
+}
+
+public class AppointmentAssignDto
+{
+    public int NewEmployeeId { get; set; }
+    public string? Notes { get; set; }
 }
 
 public class AppointmentRejectDto
@@ -101,6 +130,23 @@ public class AppointmentAttachmentDto
     public int FileSize { get; set; }
     public string ContentType { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
+}
+
+public class SupportingLetterDto
+{
+    public string FileName { get; set; } = string.Empty;
+    public string OriginalFileName { get; set; } = string.Empty;
+    public string FilePath { get; set; } = string.Empty;
+    public long FileSize { get; set; }
+    public string ContentType { get; set; } = string.Empty;
+    public DateTimeOffset? UploadedAt { get; set; }
+}
+
+public class SupportingLetterDownloadDto
+{
+    public string FullPath { get; set; } = string.Empty;
+    public string OriginalFileName { get; set; } = string.Empty;
+    public string ContentType { get; set; } = string.Empty;
 }
 
 public class AppointmentCommentDto

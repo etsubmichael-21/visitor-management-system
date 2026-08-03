@@ -99,6 +99,9 @@ $ecx-gold-pale: #FFF8E1;
   }
 
   ::ng-deep .mat-badge-content {
+    position: absolute !important;
+    top: -8px !important;
+    right: -8px !important;
     background: $ecx-gold-bright !important;
     color: $ecx-green-dark !important;
     font-weight: 700 !important;
@@ -110,6 +113,7 @@ $ecx-gold-pale: #FFF8E1;
     padding: 0 5px;
     border: 2px solid $ecx-green-dark;
     border-radius: 9px;
+    box-sizing: border-box;
   }
 }
 

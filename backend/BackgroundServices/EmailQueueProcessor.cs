@@ -1,7 +1,7 @@
+using System.Net;
+using System.Net.Mail;
 using System.Net.Sockets;
 using System.Text;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using EcxVisitorManagement.Data;
 using EcxVisitorManagement.Models;
@@ -14,7 +14,7 @@ public class EmailQueueProcessor : BackgroundService
     private readonly ILogger<EmailQueueProcessor> _logger;
     private readonly IConfiguration _configuration;
 
-    private const int SmtpTimeoutSeconds = 15;
+    private const int SmtpTimeoutSeconds = 10;
     private const int ConnectivityTimeoutMs = 5000;
 
     public EmailQueueProcessor(IServiceProvider serviceProvider, ILogger<EmailQueueProcessor> logger, IConfiguration configuration)
@@ -29,7 +29,8 @@ public class EmailQueueProcessor : BackgroundService
         _logger.LogInformation("EmailQueueProcessor started");
 
         var smtpHost = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
-        var smtpPort = int.TryParse(_configuration["Smtp:Port"], out var port) ? port : 587;
+        var smtpPort = int.TryParse(_configuration["Smtp:Port"], out var port) ? port : 465;
+        var smtpEnableSsl = bool.TryParse(_configuration["Smtp:EnableSsl"], out var ssl) ? ssl : true;
         var smtpUsername = _configuration["Smtp:Username"] ?? "";
         var smtpPassword = _configuration["Smtp:Password"] ?? "";
         var fromAddress = _configuration["Smtp:FromAddress"] ?? "noreply@ecx.com.et";
@@ -38,8 +39,6 @@ public class EmailQueueProcessor : BackgroundService
         var canSendViaSmtp = !string.IsNullOrWhiteSpace(smtpUsername) && !string.IsNullOrWhiteSpace(smtpPassword);
         if (!canSendViaSmtp)
             _logger.LogWarning("SMTP credentials not configured in appsettings.json. Emails will be queued but not sent.");
-
-        var secureSocketOption = smtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -67,7 +66,7 @@ public class EmailQueueProcessor : BackgroundService
                     continue;
                 }
 
-                if (!await TcpPortIsOpenAsync(smtpHost, smtpPort, stoppingToken))
+                if (!await SmtpServerIsReachableAsync(smtpHost, smtpPort, stoppingToken))
                 {
                     _logger.LogWarning("SMTP server {Host}:{Port} is unreachable. Skipping {Count} queued emails this cycle.",
                         smtpHost, smtpPort, pendingEmails.Count);
@@ -75,31 +74,29 @@ public class EmailQueueProcessor : BackgroundService
                     continue;
                 }
 
-                using var client = new SmtpClient
+                using var client = new SmtpClient(smtpHost, smtpPort)
                 {
-                    ServerCertificateValidationCallback = (_, _, _, _) => true,
+                    EnableSsl = smtpEnableSsl,
+                    Credentials = new NetworkCredential(smtpUsername, smtpPassword),
                     Timeout = SmtpTimeoutSeconds * 1000
                 };
-
-                await client.ConnectAsync(smtpHost, smtpPort, secureSocketOption, stoppingToken);
-                await client.AuthenticateAsync(smtpUsername, smtpPassword, stoppingToken);
 
                 foreach (var email in pendingEmails)
                 {
                     try
                     {
-                        var message = new MimeKit.MimeMessage
+                        using var message = new MailMessage
                         {
+                            From = new MailAddress(fromAddress, fromName, Encoding.UTF8),
                             Subject = email.Subject,
-                            Body = new MimeKit.TextPart("html")
-                            {
-                                Text = email.Body
-                            }
+                            Body = email.Body,
+                            IsBodyHtml = true,
+                            SubjectEncoding = Encoding.UTF8,
+                            BodyEncoding = Encoding.UTF8
                         };
-                        message.From.Add(new MimeKit.MailboxAddress(fromName, fromAddress));
-                        message.To.Add(new MimeKit.MailboxAddress("", email.RecipientEmail));
+                        message.To.Add(email.RecipientEmail);
 
-                        await client.SendAsync(message, stoppingToken);
+                        await client.SendMailAsync(message);
 
                         email.Status = EmailQueue.StatusSent;
                         email.SentAt = DateTimeOffset.UtcNow;
@@ -124,8 +121,6 @@ public class EmailQueueProcessor : BackgroundService
                                 email.RecipientEmail, email.RetryCount, EmailQueue.MaxRetryCount, email.Subject);
                     }
                 }
-
-                await client.DisconnectAsync(true, stoppingToken);
             }
             catch (Exception ex)
             {
@@ -136,7 +131,7 @@ public class EmailQueueProcessor : BackgroundService
         }
     }
 
-    private static async Task<bool> TcpPortIsOpenAsync(string host, int port, CancellationToken ct)
+    private static async Task<bool> SmtpServerIsReachableAsync(string host, int port, CancellationToken ct)
     {
         try
         {

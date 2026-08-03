@@ -123,3 +123,39 @@ public class VisitorDashboardDto
     public int TotalVisits { get; set; }
     public List<AppointmentResponseDto> RecentAppointments { get; set; } = new();
 }
+
+public class TodayAppointmentDto
+{
+    public int Id { get; set; }
+    public string VisitorName { get; set; } = string.Empty;
+    public string HostName { get; set; } = string.Empty;
+    public string Time { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+    public string Purpose { get; set; } = string.Empty;
+}
+
+public class ActiveVisitorDto
+{
+    public int Id { get; set; }
+    public string VisitorName { get; set; } = string.Empty;
+    public string HostName { get; set; } = string.Empty;
+    public string CheckInTime { get; set; } = string.Empty;
+    public string BadgeNumber { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+    public string Floor { get; set; } = string.Empty;
+}
+
+public class HourlyTrafficDto
+{
+    public string Hour { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+public class RoleDashboardDto
+{
+    public DashboardStatsDto Stats { get; set; } = new();
+    public List<TodayAppointmentDto> TodayAppointments { get; set; } = new();
+    public List<ActiveVisitorDto> ActiveVisitors { get; set; } = new();
+    public List<HourlyTrafficDto> HourlyTraffic { get; set; } = new();
+}

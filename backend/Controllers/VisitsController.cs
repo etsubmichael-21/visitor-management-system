@@ -22,6 +22,14 @@ public class VisitsController : ControllerBase
         return Ok(ApiResponse<PagedResponse<VisitResponseDto>>.Ok(result));
     }
 
+    [HttpGet("reception-today")]
+    [Authorize(Roles = "Receptionist,Admin")]
+    public async Task<IActionResult> GetReceptionToday([FromQuery] PageRequest request)
+    {
+        var result = await _visitService.ReceptionTodayAsync(request);
+        return Ok(ApiResponse<PagedResponse<VisitResponseDto>>.Ok(result));
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {

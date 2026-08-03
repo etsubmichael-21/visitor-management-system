@@ -3,6 +3,7 @@ using System;
 using EcxVisitorManagement.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EcxVisitorManagement.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260731110014_AddAppointmentMethodAndAssignment")]
+    partial class AddAppointmentMethodAndAssignment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,34 +63,6 @@ namespace EcxVisitorManagement.Migrations
                     b.Property<int?>("AssignedEmployeeId")
                         .HasColumnType("integer")
                         .HasColumnName("assigned_employee_id");
-
-                    b.Property<string>("AttachmentContentType")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("attachment_content_type");
-
-                    b.Property<string>("AttachmentFileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("attachment_file_name");
-
-                    b.Property<string>("AttachmentOriginalFileName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("attachment_original_name");
-
-                    b.Property<string>("AttachmentPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("attachment_path");
-
-                    b.Property<long?>("AttachmentSize")
-                        .HasColumnType("bigint")
-                        .HasColumnName("attachment_size");
-
-                    b.Property<DateTimeOffset?>("AttachmentUploadedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("attachment_uploaded_at");
 
                     b.Property<bool>("CheckInAllowed")
                         .HasColumnType("boolean")

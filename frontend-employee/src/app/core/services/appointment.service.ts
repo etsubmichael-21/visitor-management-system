@@ -7,7 +7,9 @@ import {
   CreateAppointmentRequest,
   ApproveAppointmentRequest,
   RejectAppointmentRequest,
-  DelegateAppointmentRequest
+  DelegateAppointmentRequest,
+  RedirectToDepartmentRequest,
+  AssignEmployeeRequest
 } from '../models/appointment.model';
 import { ApiResponse, PaginatedResponse } from '../models/common.model';
 
@@ -55,6 +57,20 @@ export class AppointmentService {
     return this.api.post<Appointment>(`/appointments/${request.appointmentId}/delegate`, request);
   }
 
+  redirectToDepartment(request: RedirectToDepartmentRequest): Observable<ApiResponse<Appointment>> {
+    return this.api.post<Appointment>(`/appointments/${request.appointmentId}/redirect-department`, {
+      newDepartmentId: request.newDepartmentId,
+      reason: request.reason
+    });
+  }
+
+  assignEmployee(request: AssignEmployeeRequest): Observable<ApiResponse<Appointment>> {
+    return this.api.post<Appointment>(`/appointments/${request.appointmentId}/assign-employee`, {
+      newEmployeeId: request.newEmployeeId,
+      notes: request.notes
+    });
+  }
+
   complete(id: number): Observable<ApiResponse<Appointment>> {
     return this.api.post<Appointment>(`/appointments/${id}/complete`, {});
   }
@@ -65,5 +81,9 @@ export class AppointmentService {
 
   getPendingApprovals(): Observable<ApiResponse<Appointment[]>> {
     return this.api.get<Appointment[]>('/appointments/pending');
+  }
+
+  getSupportingLetter(id: number, download = true): Observable<Blob> {
+    return this.api.download(`/appointments/${id}/supporting-letter${download ? '?download=true' : ''}`);
   }
 }

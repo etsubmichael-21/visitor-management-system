@@ -202,6 +202,17 @@ html, body {
   color: #F4B223;
 }
 
+.ecx-status-badge.pendingassignment {
+  background-color: #ede7f6;
+  color: #4527a0;
+}
+
+.ecx-status-badge.rescheduled,
+.ecx-status-badge.delegated {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
 .ecx-status-badge.approved {
   background-color: #EAF5EE;
   color: var(--ecx-green);
@@ -225,6 +236,26 @@ html, body {
 .ecx-status-badge.checked-out {
   background-color: #f3f4f6;
   color: #6B7280;
+}
+
+.ecx-status-badge.expected {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.ecx-status-badge.checkedin {
+  background-color: #EAF5EE;
+  color: var(--ecx-green);
+}
+
+.ecx-status-badge.checkedout {
+  background-color: #f3f4f6;
+  color: #6B7280;
+}
+
+.ecx-status-badge.scheduled {
+  background-color: #e3f2fd;
+  color: #1565c0;
 }
 
 .ecx-status-badge.cancelled {

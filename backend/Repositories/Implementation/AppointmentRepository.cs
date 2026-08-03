@@ -8,7 +8,12 @@ namespace EcxVisitorManagement.Repositories.Implementation;
 
 public class AppointmentRepository : GenericRepository<Appointment>, IAppointmentRepository
 {
-    public AppointmentRepository(AppDbContext context) : base(context) { }
+    private readonly ILogger<AppointmentRepository> _logger;
+
+    public AppointmentRepository(AppDbContext context, ILogger<AppointmentRepository> logger) : base(context)
+    {
+        _logger = logger;
+    }
 
     public override async Task<PagedResponse<Appointment>> GetPagedAsync(DTOs.Common.PageRequest request)
     {
@@ -19,10 +24,13 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Include(a => a.Attachments)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(a => a.Purpose.Contains(request.Search) || a.Visitor.FullName.Contains(request.Search) || a.Employee.FullName.Contains(request.Search));
+        query = ApplyFilters(query, request);
 
+        var sql = query.ToQueryString();
+        _logger.LogInformation("[Appointments] Filters Status={Status} From={DateFrom} To={DateTo} Search={Search} Page={Page} PageSize={PageSize} SQL={Sql}",
+            request.Status, request.DateFrom, request.DateTo, request.Search, request.Page, request.PageSize, sql);
         var totalCount = await query.CountAsync();
+        _logger.LogInformation("[Appointments] TotalCount={TotalCount}", totalCount);
         query = request.SortBy?.ToLower() switch
         {
             "date" => request.SortDesc ? query.OrderByDescending(a => a.RequestedDate) : query.OrderBy(a => a.RequestedDate),
@@ -45,10 +53,13 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Where(a => a.EmployeeId == employeeId)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(a => a.Purpose.Contains(request.Search) || a.Visitor.FullName.Contains(request.Search));
+        query = ApplyFilters(query, request);
 
+        var sql = query.ToQueryString();
+        _logger.LogInformation("[Appointments:Employee] EmployeeId={EmployeeId} Filters Status={Status} From={DateFrom} To={DateTo} Search={Search} Page={Page} PageSize={PageSize} SQL={Sql}",
+            employeeId, request.Status, request.DateFrom, request.DateTo, request.Search, request.Page, request.PageSize, sql);
         var totalCount = await query.CountAsync();
+        _logger.LogInformation("[Appointments:Employee] EmployeeId={EmployeeId} TotalCount={TotalCount}", employeeId, totalCount);
         query = request.SortBy?.ToLower() switch
         {
             "date" => request.SortDesc ? query.OrderByDescending(a => a.RequestedDate) : query.OrderBy(a => a.RequestedDate),
@@ -76,10 +87,13 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Where(a => a.VisitorId == visitorId)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(a => a.Purpose.Contains(request.Search) || a.Employee.FullName.Contains(request.Search));
+        query = ApplyFilters(query, request);
 
+        var sql = query.ToQueryString();
+        _logger.LogInformation("[Appointments:Visitor] VisitorId={VisitorId} Filters Status={Status} From={DateFrom} To={DateTo} Search={Search} Page={Page} PageSize={PageSize} SQL={Sql}",
+            visitorId, request.Status, request.DateFrom, request.DateTo, request.Search, request.Page, request.PageSize, sql);
         var totalCount = await query.CountAsync();
+        _logger.LogInformation("[Appointments:Visitor] VisitorId={VisitorId} TotalCount={TotalCount}", visitorId, totalCount);
         query = request.SortBy?.ToLower() switch
         {
             "date" => request.SortDesc ? query.OrderByDescending(a => a.RequestedDate) : query.OrderBy(a => a.RequestedDate),
@@ -90,6 +104,26 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
 
         var items = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync();
         return new PagedResponse<Appointment> { Items = items, TotalCount = totalCount, Page = request.Page, PageSize = request.PageSize };
+    }
+
+    private static IQueryable<Appointment> ApplyFilters(IQueryable<Appointment> query, PageRequest request)
+    {
+        if (!string.IsNullOrWhiteSpace(request.Search))
+            query = query.Where(a => a.Purpose.Contains(request.Search) || a.Visitor.FullName.Contains(request.Search) || a.Employee.FullName.Contains(request.Search));
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            var statuses = request.Status.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            query = query.Where(a => statuses.Contains(a.Status));
+        }
+
+        if (request.DateFrom.HasValue)
+            query = query.Where(a => a.RequestedDate >= request.DateFrom.Value);
+
+        if (request.DateTo.HasValue)
+            query = query.Where(a => a.RequestedDate <= request.DateTo.Value);
+
+        return query;
     }
 
     public async Task<IReadOnlyList<Appointment>> GetByVisitorIdAsync(int visitorId) =>
@@ -111,12 +145,12 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Include(a => a.Employee).ThenInclude(e => e.Department).OrderByDescending(a => a.CreatedAt).ToListAsync();
 
     public async Task<IReadOnlyList<Appointment>> GetTodayAsync() =>
-        await _dbSet.Where(a => a.RequestedDate == DateOnly.FromDateTime(DateTime.UtcNow))
+        await _dbSet.Where(a => a.RequestedDate == DateOnly.FromDateTime(DateTime.Now))
             .Include(a => a.Visitor).Include(a => a.Employee).ThenInclude(e => e.Department)
             .OrderBy(a => a.RequestedStartTime).ToListAsync();
 
     public async Task<IReadOnlyList<Appointment>> GetTodayByEmployeeIdAsync(int employeeId) =>
-        await _dbSet.Where(a => a.RequestedDate == DateOnly.FromDateTime(DateTime.UtcNow) && a.EmployeeId == employeeId)
+        await _dbSet.Where(a => a.RequestedDate == DateOnly.FromDateTime(DateTime.Now) && a.EmployeeId == employeeId)
             .Include(a => a.Visitor).Include(a => a.Employee).ThenInclude(e => e.Department)
             .OrderBy(a => a.RequestedStartTime).ToListAsync();
 

@@ -200,6 +200,7 @@ input, select, textarea, button { font-family: inherit; }
   letter-spacing: 0.5px;
 
   &.pending { background: #fef8e8; color: #F4B223; }
+  &.PendingAssignment { background: #ede7f6; color: #4527a0; }
   &.approved { background: #EAF5EE; color: #0F6A38; }
   &.rejected { background: #fee2e2; color: #DC3545; }
   &.cancelled { background: #f3f4f6; color: #6B7280; }

@@ -127,6 +127,34 @@ import { Appointment } from '../../../core/models/appointment.model';
               </mat-card-content>
             </mat-card>
 
+            <mat-card class="info-card">
+              <mat-card-content>
+                <h3>
+                  <mat-icon>attach_file</mat-icon>
+                  Supporting Letter
+                </h3>
+                @if (appointment.supportingLetter) {
+                  <div class="info-row">
+                    <span class="info-label">File</span>
+                    <span class="info-value letter-name">
+                      <mat-icon>description</mat-icon>
+                      {{ appointment.supportingLetter.originalFileName }}
+                    </span>
+                  </div>
+                  <div class="letter-actions">
+                    <button mat-stroked-button color="primary" (click)="viewLetter()">
+                      <mat-icon>visibility</mat-icon> View
+                    </button>
+                    <button mat-stroked-button (click)="downloadLetter()">
+                      <mat-icon>download</mat-icon> Download
+                    </button>
+                  </div>
+                } @else {
+                  <p class="no-letter">No supporting letter uploaded.</p>
+                }
+              </mat-card-content>
+            </mat-card>
+
             @if (appointment.rejectionReason) {
               <mat-card class="info-card">
                 <mat-card-content>
@@ -216,6 +244,38 @@ export class AppointmentDetailComponent implements OnInit {
       },
       error: () => {
         this.cancelling = false;
+      },
+    });
+  }
+
+  viewLetter(): void {
+    if (!this.appointment?.supportingLetter) return;
+    this.appointmentService.getSupportingLetter(this.appointment.id, false).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+      },
+      error: () => {
+        this.errorMessage = 'Failed to load supporting letter.';
+      },
+    });
+  }
+
+  downloadLetter(): void {
+    if (!this.appointment?.supportingLetter) return;
+    const letter = this.appointment.supportingLetter;
+    this.appointmentService.getSupportingLetter(this.appointment.id, true).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = letter.originalFileName || 'supporting-letter';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.errorMessage = 'Failed to download supporting letter.';
       },
     });
   }

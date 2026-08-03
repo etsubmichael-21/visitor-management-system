@@ -51,10 +51,44 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] AppointmentCreateDto dto)
+    [RequestSizeLimit(11 * 1024 * 1024)]
+    public async Task<IActionResult> Create([FromForm] AppointmentCreateDto dto)
     {
         var result = await _appointmentService.CreateAsync(dto);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, ApiResponse<AppointmentResponseDto>.Created(result));
+    }
+
+    [HttpGet("{id}/supporting-letter")]
+    public async Task<IActionResult> GetSupportingLetter(int id, [FromQuery] bool download = false)
+    {
+        var appointment = await _appointmentService.GetByIdAsync(id);
+        if (appointment == null)
+            return NotFound(ApiResponse<object>.NotFound("Appointment not found"));
+
+        var visitorId = User.GetVisitorId();
+        var employeeId = User.GetEmployeeId();
+        var isVisitorOwner = visitorId.HasValue && appointment.VisitorId == visitorId.Value;
+        var isAssignedEmployee = employeeId.HasValue
+            && (appointment.EmployeeId == employeeId.Value
+                || appointment.DelegatedToEmployeeId == employeeId.Value
+                || appointment.AssignedEmployeeId == employeeId.Value);
+
+        if (!User.IsAdminOrHigher() && !isVisitorOwner && !isAssignedEmployee)
+            return Forbid();
+
+        try
+        {
+            var file = await _appointmentService.GetSupportingLetterAsync(id);
+            if (file == null)
+                return NotFound(ApiResponse<object>.NotFound("No supporting letter uploaded for this appointment."));
+
+            var stream = new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return download
+                ? File(stream, file.ContentType, file.OriginalFileName)
+                : File(stream, file.ContentType);
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ApiResponse<object>.NotFound(ex.Message)); }
+        catch (InvalidOperationException ex) { return BadRequest(ApiResponse<object>.BadRequest(ex.Message)); }
     }
 
     [HttpPost("{id}/approve")]
@@ -136,6 +170,34 @@ public class AppointmentsController : ControllerBase
             if (ownerId == null) return Forbid();
             var result = await _appointmentService.RedirectAsync(id, dto, ownerId.Value);
             return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment redirected"));
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
+        catch (InvalidOperationException ex) { return BadRequest(ApiResponse<AppointmentResponseDto>.BadRequest(ex.Message)); }
+    }
+
+    [HttpPost("{id}/redirect-department")]
+    [Authorize(Roles = "Admin,CEO,DepartmentHead")]
+    public async Task<IActionResult> RedirectToDepartment(int id, [FromBody] AppointmentDepartmentRedirectDto dto)
+    {
+        try
+        {
+            var userId = User.GetUserId();
+            var result = await _appointmentService.RedirectToDepartmentAsync(id, dto, userId);
+            return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment redirected to department"));
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
+        catch (InvalidOperationException ex) { return BadRequest(ApiResponse<AppointmentResponseDto>.BadRequest(ex.Message)); }
+    }
+
+    [HttpPost("{id}/assign-employee")]
+    [Authorize(Roles = "Admin,CEO,DepartmentHead")]
+    public async Task<IActionResult> AssignEmployee(int id, [FromBody] AppointmentAssignDto dto)
+    {
+        try
+        {
+            var userId = User.GetUserId();
+            var result = await _appointmentService.AssignEmployeeAsync(id, dto, userId);
+            return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment assigned to employee"));
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
         catch (InvalidOperationException ex) { return BadRequest(ApiResponse<AppointmentResponseDto>.BadRequest(ex.Message)); }

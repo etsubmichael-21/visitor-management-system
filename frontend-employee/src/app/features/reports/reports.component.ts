@@ -152,10 +152,12 @@ export class ReportsComponent implements OnInit {
   }
 
   generateReport(): void {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const toLocalDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const filter = {
       reportType: this.reportType as any,
-      dateFrom: this.dateFrom.toISOString().split('T')[0],
-      dateTo: this.dateTo.toISOString().split('T')[0],
+      dateFrom: toLocalDate(this.dateFrom),
+      dateTo: toLocalDate(this.dateTo),
       departmentId: this.departmentId ? Number(this.departmentId) : undefined
     };
     this.reportService.generateReport(filter).subscribe({

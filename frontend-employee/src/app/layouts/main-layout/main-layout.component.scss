@@ -209,6 +209,17 @@
 .notification-bell {
   color: #F4B223 !important;
   position: relative;
+
+  ::ng-deep .mat-badge-content {
+    position: absolute !important;
+    top: -6px !important;
+    right: -6px !important;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    padding: 0 4px;
+    box-sizing: border-box;
+  }
 }
 
 .notification-bell mat-icon {

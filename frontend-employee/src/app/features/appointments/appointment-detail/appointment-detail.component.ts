@@ -14,8 +14,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AppointmentService } from '../../../core/services/appointment.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EmployeeService } from '../../../core/services/employee.service';
+import { DepartmentService } from '../../../core/services/department.service';
 import { Appointment } from '../../../core/models/appointment.model';
 import { Employee } from '../../../core/models/employee.model';
+import { Department } from '../../../core/models/common.model';
 
 @Component({
   selector: 'app-appointment-detail',
@@ -71,6 +73,39 @@ import { Employee } from '../../../core/models/employee.model';
                 @if (appointment()!.delegatedToEmployeeName) {
                   <div class="info-item"><small>Delegated To</small><p>{{ appointment()!.delegatedToEmployeeName }}</p></div>
                 }
+                @if (appointment()!.assignedDepartmentName) {
+                  <div class="info-item"><small>Assigned Department</small><p>{{ appointment()!.assignedDepartmentName }}</p></div>
+                }
+                @if (appointment()!.assignedEmployeeName) {
+                  <div class="info-item"><small>Assigned Employee</small><p>{{ appointment()!.assignedEmployeeName }}</p></div>
+                }
+                @if (appointment()!.redirectedFromDepartmentName) {
+                  <div class="info-item"><small>Redirected From</small><p>{{ appointment()!.redirectedFromDepartmentName }}</p></div>
+                }
+                @if (appointment()!.redirectReason) {
+                  <div class="info-item full"><small>Redirect Reason</small><p>{{ appointment()!.redirectReason }}</p></div>
+                }
+              </div>
+
+              <mat-divider></mat-divider>
+              <div class="letter-section">
+                <h3>Supporting Letter</h3>
+                @if (appointment()!.supportingLetter) {
+                  <div class="letter-row">
+                    <mat-icon>description</mat-icon>
+                    <span class="letter-name">{{ appointment()!.supportingLetter!.originalFileName }}</span>
+                  </div>
+                  <div class="letter-actions">
+                    <button mat-stroked-button color="primary" (click)="viewSupportingLetter()">
+                      <mat-icon>visibility</mat-icon> View
+                    </button>
+                    <button mat-stroked-button (click)="downloadSupportingLetter()">
+                      <mat-icon>download</mat-icon> Download
+                    </button>
+                  </div>
+                } @else {
+                  <p class="no-letter">No supporting letter uploaded.</p>
+                }
               </div>
             </mat-card-content>
           </mat-card>
@@ -88,6 +123,16 @@ import { Employee } from '../../../core/models/employee.model';
                   </button>
                   <button mat-stroked-button color="primary" class="action-btn" (click)="showDelegateForm.set(true)">
                     <mat-icon>forward</mat-icon> Delegate
+                  </button>
+                  @if (canRedirect()) {
+                    <button mat-stroked-button color="accent" class="action-btn" (click)="showRedirectForm.set(true)">
+                      <mat-icon>swap_horiz</mat-icon> Redirect to Department
+                    </button>
+                  }
+                }
+                @if (appointment()!.status === 'PendingAssignment' && canAssign()) {
+                  <button mat-raised-button color="primary" class="action-btn" (click)="showAssignForm.set(true)">
+                    <mat-icon>assignment_ind</mat-icon> Assign Employee
                   </button>
                 }
                 @if (appointment()!.status === 'Approved' && canApprove()) {
@@ -143,6 +188,54 @@ import { Employee } from '../../../core/models/employee.model';
               </mat-card>
             }
 
+            @if (showRedirectForm()) {
+              <mat-card>
+                <mat-card-header><mat-card-title>Redirect to Department</mat-card-title></mat-card-header>
+                <mat-card-content>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Select Department</mat-label>
+                    <mat-select [(ngModel)]="redirectDepartmentId">
+                      @for (dept of departments(); track dept.id) {
+                        <mat-option [value]="dept.id">{{ dept.name }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Reason (Optional)</mat-label>
+                    <textarea matInput [(ngModel)]="redirectReason" rows="2"></textarea>
+                  </mat-form-field>
+                  <div class="form-actions">
+                    <button mat-stroked-button (click)="showRedirectForm.set(false)">Cancel</button>
+                    <button mat-raised-button color="accent" (click)="redirectToDepartment()" [disabled]="!redirectDepartmentId">Redirect</button>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            }
+
+            @if (showAssignForm()) {
+              <mat-card>
+                <mat-card-header><mat-card-title>Assign Employee</mat-card-title></mat-card-header>
+                <mat-card-content>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Select Employee</mat-label>
+                    <mat-select [(ngModel)]="assignEmployeeId">
+                      @for (emp of employees(); track emp.id) {
+                        <mat-option [value]="emp.id">{{ emp.fullName }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Notes (Optional)</mat-label>
+                    <textarea matInput [(ngModel)]="assignNotes" rows="2"></textarea>
+                  </mat-form-field>
+                  <div class="form-actions">
+                    <button mat-stroked-button (click)="showAssignForm.set(false)">Cancel</button>
+                    <button mat-raised-button color="primary" (click)="assignEmployee()" [disabled]="!assignEmployeeId">Assign</button>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            }
+
             <mat-card>
               <mat-card-header><mat-card-title>Timeline</mat-card-title></mat-card-header>
               <mat-card-content>
@@ -171,17 +264,25 @@ export class AppointmentDetailComponent implements OnInit {
   private appointmentService = inject(AppointmentService);
   private authService = inject(AuthService);
   private employeeService = inject(EmployeeService);
+  private departmentService = inject(DepartmentService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
 
   appointment = signal<Appointment | null>(null);
   employees = signal<Employee[]>([]);
+  departments = signal<Department[]>([]);
   showRejectForm = signal(false);
   showDelegateForm = signal(false);
+  showRedirectForm = signal(false);
+  showAssignForm = signal(false);
   rejectReason = '';
   delegateEmployeeId: number | null = null;
   delegateNotes = '';
+  redirectDepartmentId: number | null = null;
+  redirectReason = '';
+  assignEmployeeId: number | null = null;
+  assignNotes = '';
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -189,6 +290,10 @@ export class AppointmentDetailComponent implements OnInit {
 
     this.employeeService.getAll({ limit: 200 }).subscribe({
       next: (res) => { if (res.success && res.data) this.employees.set(res.data.items || []); }
+    });
+
+    this.departmentService.getAll().subscribe({
+      next: (res) => { if (res.success && res.data) this.departments.set(res.data || []); }
     });
   }
 
@@ -201,6 +306,14 @@ export class AppointmentDetailComponent implements OnInit {
   canApprove(): boolean {
     const role = this.authService.getUserRole();
     return role === 'Admin' || role === 'CEO' || role === 'DepartmentHead';
+  }
+
+  canRedirect(): boolean {
+    return this.canApprove();
+  }
+
+  canAssign(): boolean {
+    return this.canApprove();
   }
 
   isHost(): boolean {
@@ -240,6 +353,28 @@ export class AppointmentDetailComponent implements OnInit {
     });
   }
 
+  redirectToDepartment(): void {
+    const apt = this.appointment();
+    if (!apt || !this.redirectDepartmentId) return;
+    this.appointmentService.redirectToDepartment({ appointmentId: apt.id, newDepartmentId: this.redirectDepartmentId, reason: this.redirectReason }).subscribe({
+      next: (res) => {
+        if (res.success) { this.snackBar.open('Appointment redirected to department', 'Close', { duration: 3000 }); this.showRedirectForm.set(false); this.loadAppointment(apt.id); }
+      },
+      error: () => this.snackBar.open('Failed to redirect appointment', 'Close', { duration: 3000 })
+    });
+  }
+
+  assignEmployee(): void {
+    const apt = this.appointment();
+    if (!apt || !this.assignEmployeeId) return;
+    this.appointmentService.assignEmployee({ appointmentId: apt.id, newEmployeeId: this.assignEmployeeId, notes: this.assignNotes }).subscribe({
+      next: (res) => {
+        if (res.success) { this.snackBar.open('Employee assigned to appointment', 'Close', { duration: 3000 }); this.showAssignForm.set(false); this.loadAppointment(apt.id); }
+      },
+      error: () => this.snackBar.open('Failed to assign employee', 'Close', { duration: 3000 })
+    });
+  }
+
   completeAppointment(): void {
     const apt = this.appointment();
     if (!apt) return;
@@ -257,4 +392,34 @@ export class AppointmentDetailComponent implements OnInit {
   }
 
   goBack(): void { window.history.back(); }
+
+  viewSupportingLetter(): void {
+    const apt = this.appointment();
+    if (!apt?.supportingLetter) return;
+    this.appointmentService.getSupportingLetter(apt.id, false).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+      },
+      error: () => this.snackBar.open('Failed to load supporting letter', 'Close', { duration: 3000 })
+    });
+  }
+
+  downloadSupportingLetter(): void {
+    const apt = this.appointment();
+    if (!apt?.supportingLetter) return;
+    const letter = apt.supportingLetter;
+    this.appointmentService.getSupportingLetter(apt.id, true).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = letter.originalFileName || 'supporting-letter';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => this.snackBar.open('Failed to download supporting letter', 'Close', { duration: 3000 })
+    });
+  }
 }

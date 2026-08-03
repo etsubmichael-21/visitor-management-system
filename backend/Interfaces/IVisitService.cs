@@ -6,6 +6,7 @@ namespace EcxVisitorManagement.Interfaces;
 public interface IVisitService
 {
     Task<PagedResponse<VisitResponseDto>> GetAllAsync(PageRequest request);
+    Task<PagedResponse<VisitResponseDto>> ReceptionTodayAsync(PageRequest request);
     Task<VisitResponseDto?> GetByIdAsync(int id);
     Task<VisitResponseDto> CreateAsync(VisitCreateDto dto);
     Task<VisitResponseDto> CheckInAsync(CheckInRequest request);

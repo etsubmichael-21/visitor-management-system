@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { Subscription, interval } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -112,25 +113,30 @@ import { DashboardData } from '../../../core/models/dashboard.model';
   `,
   styleUrls: ['./receptionist-dashboard.component.scss']
 })
-export class ReceptionistDashboardComponent implements OnInit {
+export class ReceptionistDashboardComponent implements OnInit, OnDestroy {
   private dashboardService = inject(DashboardService);
+  private pollSubscription?: Subscription;
   dashboardData = signal<DashboardData | null>(null);
 
   ngOnInit(): void {
+    this.load();
+    this.pollSubscription = interval(30000).subscribe(() => this.load());
+  }
+
+  ngOnDestroy(): void {
+    this.pollSubscription?.unsubscribe();
+  }
+
+  private load(): void {
+    console.log('[ReceptionistDashboard] API=/dashboard/receptionist | Polling reload...');
     this.dashboardService.getReceptionistDashboard().subscribe({
-      next: (res) => { if (res.success) this.dashboardData.set(res.data); },
-      error: () => {
-        this.dashboardData.set({
-          stats: { totalVisitorsToday: 28, totalVisitorsThisWeek: 140, totalVisitorsThisMonth: 420, activeAppointments: 328, pendingAppointments: 15, checkedInVisitors: 8, totalEmployees: 87, totalDepartments: 12, unreadNotifications: 0 },
-          visitorChart: { labels: [], data: [], type: 'daily' }, departmentChart: { labels: [], data: [], type: 'daily' },
-          hourlyTraffic: [
-            { hour: '8AM', count: 3 }, { hour: '9AM', count: 8 }, { hour: '10AM', count: 12 },
-            { hour: '11AM', count: 6 }, { hour: '12PM', count: 4 }, { hour: '1PM', count: 9 },
-            { hour: '2PM', count: 7 }, { hour: '3PM', count: 5 }, { hour: '4PM', count: 3 }, { hour: '5PM', count: 1 }
-          ],
-          recentActivities: [], todayAppointments: [], activeVisitors: [], pendingApprovals: 0, confidentialAppointments: 0
-        });
-      }
+      next: (res) => {
+        if (res.success) {
+          console.log(`[ReceptionistDashboard] API=/dashboard/receptionist | ResponseCount TodayAppointments=${res.data?.todayAppointments?.length ?? 0} ActiveVisitors=${res.data?.activeVisitors?.length ?? 0}`);
+          this.dashboardData.set(res.data);
+        }
+      },
+      error: () => this.dashboardData.set(null)
     });
   }
 }

@@ -24,7 +24,7 @@ public interface IEmailService
 
     Task SendEmployeeWelcomeEmailAsync(string toEmail, string employeeName, CancellationToken ct = default);
 
-    Task SendEmployeeNewRequestAsync(string toEmail, string employeeName, string visitorName, string department, DateOnly date, DateTimeOffset startTime, DateTimeOffset endTime, string purpose, string? notes, CancellationToken ct = default);
+    Task SendEmployeeNewRequestAsync(string toEmail, string employeeName, string visitorName, string department, DateOnly date, DateTimeOffset startTime, DateTimeOffset endTime, string purpose, string? notes, bool hasSupportingLetter = false, CancellationToken ct = default);
 
     Task SendEmployeeRequestCancelledAsync(string toEmail, string employeeName, string visitorName, string department, DateOnly date, DateTimeOffset startTime, DateTimeOffset endTime, string purpose, CancellationToken ct = default);
 

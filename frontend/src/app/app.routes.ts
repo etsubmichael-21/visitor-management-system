@@ -74,6 +74,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/appointments/appointment-form/appointment-form.component').then((m) => m.AppointmentFormComponent),
       },
       {
+        path: 'appointments/new/details',
+        redirectTo: 'appointments/new',
+        pathMatch: 'full',
+      },
+      {
         path: 'appointments/:id',
         loadComponent: () => import('./features/appointments/appointment-detail/appointment-detail.component').then((m) => m.AppointmentDetailComponent),
       },

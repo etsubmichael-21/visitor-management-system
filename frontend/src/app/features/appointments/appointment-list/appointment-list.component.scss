@@ -133,6 +133,22 @@
 
 .separator { margin: 0 8px; color: #cbd5e1; }
 
+.apt-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.letter-btn {
+  color: #0F6B3A;
+}
+
+.no-letter {
+  font-size: 11px;
+  color: #b0bec5;
+  font-style: italic;
+}
+
 mat-paginator { margin-top: 16px; }
 
 @media (max-width: 768px) {

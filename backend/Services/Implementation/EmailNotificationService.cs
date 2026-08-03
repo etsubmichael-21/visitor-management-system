@@ -300,9 +300,16 @@ public class EmailNotificationService : Interfaces.IEmailService
         await SendAsync(toEmail, subject, body, ct);
     }
 
-    public async Task SendEmployeeNewRequestAsync(string toEmail, string employeeName, string visitorName, string department, DateOnly date, DateTimeOffset startTime, DateTimeOffset endTime, string purpose, string? notes, CancellationToken ct = default)
+    public async Task SendEmployeeNewRequestAsync(string toEmail, string employeeName, string visitorName, string department, DateOnly date, DateTimeOffset startTime, DateTimeOffset endTime, string purpose, string? notes, bool hasSupportingLetter = false, CancellationToken ct = default)
     {
         var subject = $"New Appointment Request from {visitorName}";
+        var supportingLetterNote = hasSupportingLetter
+            ? $@"
+            <div style=""background:#F0F7F1; border-left:4px solid #0F6A38; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:24px;"">
+                <p style=""margin:0; font-size:14px; color:#0C5830;""><strong>Supporting Letter:</strong> This appointment includes a supporting letter.</p>
+                <p style=""margin:6px 0 0; font-size:13px; color:#555;"">You can view or download it from the <a href=""{_baseUrl}/appointments"" style=""color:#0F6A38;"">Employee Portal</a>.</p>
+            </div>"
+            : "";
         var body = $@"
             <div style=""text-align:center; margin-bottom:24px;"">
                 <div style=""display:inline-block; background:#1565c0; color:white; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px;"">NEW REQUEST</div>
@@ -310,6 +317,7 @@ public class EmailNotificationService : Interfaces.IEmailService
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:16px;"">Dear <strong>{EscapeHtml(employeeName)}</strong>,</p>
             <p style=""font-size:15px; color:#333; line-height:1.7; margin-bottom:24px;"">You have received a new appointment request from <strong>{EscapeHtml(visitorName)}</strong>. Please review and respond at your earliest convenience.</p>
             {BuildEmployeeDetailsTable(visitorName, department, date, startTime, endTime, purpose, notes, "Pending")}
+            {supportingLetterNote}
             <div style=""text-align:center; margin:24px 0;"">
                 <a href=""{_baseUrl}/appointments"" style=""display:inline-block; background:#0F6A38; color:white; padding:12px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px;"">Review Request</a>
             </div>";

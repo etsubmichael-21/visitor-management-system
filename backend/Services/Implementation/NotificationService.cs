@@ -30,14 +30,30 @@ public class NotificationService : INotificationService
         };
     }
 
+    public async Task<PagedResponse<NotificationResponseDto>> GetAllByEmployeesAsync(IEnumerable<int> employeeIds, PageRequest request)
+    {
+        var all = await _repository.GetByEmployeeIdsAsync(employeeIds);
+        var pagedItems = all.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToList();
+        return new PagedResponse<NotificationResponseDto>
+        {
+            Items = pagedItems.Select(MapToDto).ToList(),
+            TotalCount = all.Count,
+            Page = request.Page,
+            PageSize = request.PageSize
+        };
+    }
+
     public async Task<NotificationResponseDto?> GetByIdAsync(int id) { var n = await _repository.GetByIdAsync(id); return n == null ? null : MapToDto(n); }
     public async Task<IReadOnlyList<NotificationResponseDto>> GetUnreadAsync() => (await _repository.GetUnreadByEmployeeIdAsync(0)).Select(MapToDto).ToList();
     public async Task<IReadOnlyList<NotificationResponseDto>> GetUnreadByEmployeeAsync(int employeeId) => (await _repository.GetUnreadByEmployeeIdAsync(employeeId)).Select(MapToDto).ToList();
+    public async Task<IReadOnlyList<NotificationResponseDto>> GetUnreadByEmployeesAsync(IEnumerable<int> employeeIds) => (await _repository.GetUnreadByEmployeeIdsAsync(employeeIds)).Select(MapToDto).ToList();
     public async Task<UnreadCountDto> GetUnreadCountAsync() => new() { Count = await _repository.CountUnreadAsync(0) };
     public async Task<UnreadCountDto> GetUnreadCountByEmployeeAsync(int employeeId) => new() { Count = await _repository.CountUnreadAsync(employeeId) };
+    public async Task<UnreadCountDto> GetUnreadCountByEmployeesAsync(IEnumerable<int> employeeIds) => new() { Count = await _repository.CountUnreadByEmployeeIdsAsync(employeeIds) };
     public async Task MarkAsReadAsync(int id) => await _repository.MarkAsReadAsync(id);
     public async Task MarkAllAsReadAsync() => await _repository.MarkAllAsReadAsync(0);
     public async Task MarkAllAsReadByEmployeeAsync(int employeeId) => await _repository.MarkAllAsReadAsync(employeeId);
+    public async Task MarkAllAsReadByEmployeesAsync(IEnumerable<int> employeeIds) => await _repository.MarkAllAsReadByEmployeeIdsAsync(employeeIds);
     public async Task DeleteAsync(int id) { var n = await _repository.GetByIdAsync(id) ?? throw new KeyNotFoundException("Notification not found"); await _repository.DeleteAsync(n); }
 
     public async Task<PagedResponse<VisitorNotificationResponseDto>> GetVisitorNotificationsAsync(int visitorId, PageRequest request)

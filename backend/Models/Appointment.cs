@@ -59,6 +59,14 @@ public class Appointment
     [Column("is_confidential")]
     public bool IsConfidential { get; set; }
 
+    [Column("route_type")]
+    [MaxLength(30)]
+    public string? RouteType { get; set; }
+
+    [Column("appointment_method")]
+    [MaxLength(30)]
+    public string? AppointmentMethod { get; set; }
+
     [Column("delegated_to_employee_id")]
     public int? DelegatedToEmployeeId { get; set; }
 
@@ -68,11 +76,51 @@ public class Appointment
     [Column("redirect_department_id")]
     public int? RedirectDepartmentId { get; set; }
 
+    [Column("assigned_department_id")]
+    public int? AssignedDepartmentId { get; set; }
+
+    [Column("assigned_employee_id")]
+    public int? AssignedEmployeeId { get; set; }
+
+    [Column("redirected_from_department_id")]
+    public int? RedirectedFromDepartmentId { get; set; }
+
+    [Column("redirect_reason")]
+    public string? RedirectReason { get; set; }
+
+    [Column("assigned_by")]
+    public int? AssignedBy { get; set; }
+
+    [Column("assigned_at")]
+    public DateTimeOffset? AssignedAt { get; set; }
+
     [Column("rejection_reason")]
     public string? RejectionReason { get; set; }
 
     [Column("notes")]
     public string? Notes { get; set; }
+
+    [Column("attachment_file_name")]
+    [MaxLength(255)]
+    public string? AttachmentFileName { get; set; }
+
+    [Column("attachment_original_name")]
+    [MaxLength(255)]
+    public string? AttachmentOriginalFileName { get; set; }
+
+    [Column("attachment_path")]
+    [MaxLength(500)]
+    public string? AttachmentPath { get; set; }
+
+    [Column("attachment_size")]
+    public long? AttachmentSize { get; set; }
+
+    [Column("attachment_content_type")]
+    [MaxLength(120)]
+    public string? AttachmentContentType { get; set; }
+
+    [Column("attachment_uploaded_at")]
+    public DateTimeOffset? AttachmentUploadedAt { get; set; }
 
     [Column("created_at")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -94,6 +142,15 @@ public class Appointment
 
     [ForeignKey(nameof(RedirectDepartmentId))]
     public Department? RedirectDepartment { get; set; }
+
+    [ForeignKey(nameof(AssignedDepartmentId))]
+    public Department? AssignedDepartment { get; set; }
+
+    [ForeignKey(nameof(AssignedEmployeeId))]
+    public Employee? AssignedEmployee { get; set; }
+
+    [ForeignKey(nameof(RedirectedFromDepartmentId))]
+    public Department? RedirectedFromDepartment { get; set; }
 
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public ICollection<AppointmentAttachment> Attachments { get; set; } = new List<AppointmentAttachment>();

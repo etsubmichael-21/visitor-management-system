@@ -9,6 +9,14 @@ export class VisitService {
   constructor(private api: ApiService) {}
 
   getAll(filter?: VisitFilter): Observable<ApiResponse<PaginatedResponse<Visit>>> {
+    return this.api.getList<Visit>('/visits', this.buildParams(filter));
+  }
+
+  getReceptionToday(filter?: VisitFilter): Observable<ApiResponse<PaginatedResponse<Visit>>> {
+    return this.api.getList<Visit>('/visits/reception-today', this.buildParams(filter));
+  }
+
+  private buildParams(filter?: VisitFilter): Record<string, string> {
     const params: Record<string, string> = {};
     if (filter) {
       Object.entries(filter).forEach(([key, value]) => {
@@ -17,7 +25,7 @@ export class VisitService {
         }
       });
     }
-    return this.api.getList<Visit>('/visits', params);
+    return params;
   }
 
   getById(id: number): Observable<ApiResponse<Visit>> {

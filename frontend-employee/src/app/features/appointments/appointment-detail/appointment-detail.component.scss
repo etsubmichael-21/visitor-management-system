@@ -12,6 +12,13 @@
     .info-item p { margin: 2px 0 0; font-size: 14px; }
     .info-item.full { grid-column: 1 / -1; }
     .info-item.rejection { background: #ffebee; padding: 12px; border-radius: 4px; }
+    .letter-section { padding: 16px 0 8px; }
+    .letter-section h3 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #0F6B3A; }
+    .letter-row { display: flex; align-items: center; gap: 8px; color: #1e293b; font-size: 14px; margin-bottom: 12px; }
+    .letter-row mat-icon { color: #0F6B3A; flex-shrink: 0; }
+    .letter-name { word-break: break-all; }
+    .letter-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .no-letter { color: #9ca3af; font-style: italic; font-size: 14px; margin: 0; }
     .action-panel { display: flex; flex-direction: column; gap: 16px; }
     .action-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
     .full-width { width: 100%; }

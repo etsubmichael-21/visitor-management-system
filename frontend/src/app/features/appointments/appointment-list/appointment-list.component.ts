@@ -11,10 +11,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil, finalize } from 'rxjs/operators';
 import { AppointmentService } from '../../../core/services/appointment.service';
-import { Appointment } from '../../../core/models/appointment.model';
+import { Appointment, AppointmentStatus } from '../../../core/models/appointment.model';
 
 @Component({
   selector: 'app-appointment-list',
@@ -32,6 +33,7 @@ import { Appointment } from '../../../core/models/appointment.model';
     MatSelectModule,
     MatPaginatorModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
   ],
   template: `
     <div class="appointments-page fade-in">
@@ -108,6 +110,13 @@ import { Appointment } from '../../../core/models/appointment.model';
                   </div>
                 </div>
                 <div class="apt-status">
+                  @if (apt.supportingLetter) {
+                    <button mat-icon-button class="letter-btn" matTooltip="Download supporting letter" (click)="downloadLetter($event, apt)" aria-label="Download supporting letter">
+                      <mat-icon>attach_file</mat-icon>
+                    </button>
+                  } @else {
+                    <span class="no-letter">No supporting letter uploaded.</span>
+                  }
                   <span class="status-badge" [class]="apt.status">{{ apt.status }}</span>
                 </div>
               </mat-card-content>
@@ -135,7 +144,6 @@ export class AppointmentListComponent implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
-  appointments: Appointment[] = [];
   filteredAppointments: Appointment[] = [];
   loading = true;
   totalCount = 0;
@@ -148,11 +156,11 @@ export class AppointmentListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.searchControl.valueChanges
       .pipe(debounceTime(300), takeUntil(this.destroy$))
-      .subscribe(() => this.applyFilters());
+      .subscribe(() => this.loadAppointments());
 
     this.statusControl.valueChanges
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.applyFilters());
+      .subscribe(() => this.loadAppointments());
 
     this.loadAppointments();
   }
@@ -165,20 +173,30 @@ export class AppointmentListComponent implements OnInit, OnDestroy {
   loadAppointments(): void {
     this.loading = true;
 
+    const search = (this.searchControl.value ?? '').trim();
+    const status = (this.statusControl.value ?? '').trim() as AppointmentStatus | '';
+
+    const query: any = {
+      page: this.pageIndex + 1,
+      pageSize: this.pageSize,
+      ...(status ? { status } : {}),
+      ...(search ? { search } : {}),
+    };
+
+    console.log(`[AppointmentList] SelectedStatus=${status || '(all)'} Search=${search || ''} | API=/appointments?${new URLSearchParams(query).toString()} | Requesting...`);
+
     this.appointmentService
-      .getAppointments({
-        page: this.pageIndex + 1,
-        pageSize: this.pageSize,
-      })
+      .getAppointments(query)
       .pipe(finalize(() => {
         this.loading = false;
         this.cdr.markForCheck();
       }))
       .subscribe({
         next: (res) => {
-          this.appointments = res.items;
+          console.log(`[AppointmentList] SelectedStatus=${status || '(all)'} | API=/appointments?${new URLSearchParams(query).toString()} | ResponseCount=${res.items?.length ?? 0} TotalCount=${res.totalCount ?? 0}`);
+          this.filteredAppointments = res.items;
           this.totalCount = res.totalCount;
-          this.applyFilters();
+          this.cdr.markForCheck();
         },
         error: () => {
           this.filteredAppointments = [];
@@ -187,34 +205,26 @@ export class AppointmentListComponent implements OnInit, OnDestroy {
       });
   }
 
-  applyFilters(): void {
-    const searchTerm = (this.searchControl.value ?? '').toLowerCase().trim();
-    const status = (this.statusControl.value ?? '').trim().toLowerCase();
-
-    let result = [...this.appointments];
-
-    if (status) {
-      result = result.filter(a =>
-        a.status?.trim().toLowerCase() === status
-      );
-    }
-
-    if (searchTerm) {
-      result = result.filter(a =>
-        a.purpose?.toLowerCase().includes(searchTerm) ||
-        a.employeeName?.toLowerCase().includes(searchTerm) ||
-        a.departmentName?.toLowerCase().includes(searchTerm) ||
-        a.status?.toLowerCase().includes(searchTerm)
-      );
-    }
-
-    this.filteredAppointments = result;
-    this.cdr.markForCheck();
-  }
-
   onPageChange(event: PageEvent): void {
     this.pageIndex = event.pageIndex;
     this.pageSize = event.pageSize;
     this.loadAppointments();
+  }
+
+  downloadLetter(event: Event, apt: Appointment): void {
+    event.stopPropagation();
+    const letter = apt.supportingLetter;
+    if (!letter) return;
+    this.appointmentService.getSupportingLetter(apt.id, true).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = letter.originalFileName || 'supporting-letter';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {},
+    });
   }
 }

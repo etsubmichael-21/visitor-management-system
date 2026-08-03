@@ -8,14 +8,42 @@ namespace EcxVisitorManagement.Repositories.Implementation;
 
 public class VisitRepository : GenericRepository<Visit>, IVisitRepository
 {
-    public VisitRepository(AppDbContext context) : base(context) { }
+    private readonly ILogger<VisitRepository> _logger;
+
+    public VisitRepository(AppDbContext context, ILogger<VisitRepository> logger) : base(context)
+    {
+        _logger = logger;
+    }
 
     public override async Task<PagedResponse<Visit>> GetPagedAsync(DTOs.Common.PageRequest request)
     {
         var query = _dbSet.Include(v => v.Visitor).Include(v => v.Employee).ThenInclude(e => e.Department).AsQueryable();
+
         if (!string.IsNullOrWhiteSpace(request.Search))
             query = query.Where(v => v.Visitor.FullName.Contains(request.Search) || v.Employee.FullName.Contains(request.Search));
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            var statuses = request.Status.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => s == "Expected" ? "Scheduled" : s)
+                .ToArray();
+            query = query.Where(v => statuses.Contains(v.Status));
+        }
+
+        if (request.DateFrom.HasValue)
+            query = query.Where(v => v.VisitDate >= request.DateFrom.Value);
+
+        if (request.DateTo.HasValue)
+            query = query.Where(v => v.VisitDate <= request.DateTo.Value);
+
+        if (request.IsActive == true)
+            query = query.Where(v => v.Status == "CheckedIn");
+
+        var sql = query.ToQueryString();
+        _logger.LogInformation("[Visits] Filters Status={Status} From={DateFrom} To={DateTo} IsActive={IsActive} Search={Search} Page={Page} PageSize={PageSize} SQL={Sql}",
+            request.Status, request.DateFrom, request.DateTo, request.IsActive, request.Search, request.Page, request.PageSize, sql);
         var totalCount = await query.CountAsync();
+        _logger.LogInformation("[Visits] TotalCount={TotalCount}", totalCount);
         query = query.OrderByDescending(v => v.CreatedAt);
         var items = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync();
         return new DTOs.Common.PagedResponse<Visit> { Items = items, TotalCount = totalCount, Page = request.Page, PageSize = request.PageSize };
@@ -33,7 +61,7 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
         await _dbSet.Where(v => v.EmployeeId == employeeId).Include(v => v.Visitor).OrderByDescending(v => v.CreatedAt).ToListAsync();
 
     public async Task<IReadOnlyList<Visit>> GetTodayVisitsAsync() =>
-        await _dbSet.Where(v => v.VisitDate == DateOnly.FromDateTime(DateTime.UtcNow))
+        await _dbSet.Where(v => v.VisitDate == DateOnly.FromDateTime(DateTime.Now))
             .Include(v => v.Visitor).Include(v => v.Employee).ThenInclude(e => e.Department)
             .OrderBy(v => v.CheckInTime).ToListAsync();
 
@@ -46,7 +74,7 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
         await _dbSet.Include(v => v.VisitorItems).FirstOrDefaultAsync(v => v.Id == id);
 
     public async Task<int> CountTodayAsync() =>
-        await _dbSet.CountAsync(v => v.VisitDate == DateOnly.FromDateTime(DateTime.UtcNow));
+        await _dbSet.CountAsync(v => v.VisitDate == DateOnly.FromDateTime(DateTime.Now));
 
     public async Task<int> CountCheckedInAsync() =>
         await _dbSet.CountAsync(v => v.Status == "CheckedIn");

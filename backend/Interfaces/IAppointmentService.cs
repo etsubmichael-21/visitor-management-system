@@ -16,6 +16,8 @@ public interface IAppointmentService
     Task<AppointmentResponseDto> CompleteAsync(int id, int userId);
     Task<AppointmentResponseDto> DelegateAsync(int id, AppointmentDelegateDto dto, int userId);
     Task<AppointmentResponseDto> RedirectAsync(int id, AppointmentRedirectDto dto, int userId);
+    Task<AppointmentResponseDto> RedirectToDepartmentAsync(int id, AppointmentDepartmentRedirectDto dto, int userId);
+    Task<AppointmentResponseDto> AssignEmployeeAsync(int id, AppointmentAssignDto dto, int userId);
     Task<AppointmentResponseDto> ToggleConfidentialAsync(int id);
     Task<IReadOnlyList<AppointmentResponseDto>> GetByVisitorAsync(int visitorId);
     Task<IReadOnlyList<AppointmentResponseDto>> GetByEmployeeAsync(int employeeId);
@@ -28,6 +30,7 @@ public interface IAppointmentService
     Task<RescheduleResponseDto> RequestRescheduleAsync(int appointmentId, RescheduleRequestDto dto, int userId);
     Task<RescheduleResponseDto> ApproveRescheduleAsync(int appointmentId, int requestId, int userId);
     Task<RescheduleResponseDto> RejectRescheduleAsync(int appointmentId, int requestId, int userId);
+    Task<SupportingLetterDownloadDto?> GetSupportingLetterAsync(int appointmentId);
     Task<List<AppointmentAttachmentDto>> GetAttachmentsAsync(int appointmentId);
     Task<AppointmentAttachmentDto> UploadAttachmentAsync(int appointmentId, string fileName, string filePath, int fileSize, string contentType, int userId);
     Task DeleteAttachmentAsync(int appointmentId, int attachmentId);

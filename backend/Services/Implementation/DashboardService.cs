@@ -10,11 +10,16 @@ namespace EcxVisitorManagement.Services.Implementation;
 public class DashboardService : IDashboardService
 {
     private readonly AppDbContext _context;
-    public DashboardService(AppDbContext context) => _context = context;
+    private readonly ILogger<DashboardService> _logger;
+    public DashboardService(AppDbContext context, ILogger<DashboardService> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
 
     public async Task<DashboardStatsDto> GetStatsAsync()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(DateTime.Now);
         var weekStart = today.AddDays(-(int)today.DayOfWeek);
         var monthStart = new DateOnly(today.Year, today.Month, 1);
         return new DashboardStatsDto
@@ -42,7 +47,7 @@ public class DashboardService : IDashboardService
 
     public async Task<CeoDashboardDto> GetCeoDashboardAsync()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(DateTime.Now);
         var monthStart = new DateOnly(today.Year, today.Month, 1);
         return new CeoDashboardDto
         {
@@ -67,7 +72,7 @@ public class DashboardService : IDashboardService
 
     public async Task<EmployeeDashboardDto> GetEmployeeDashboardAsync(int employeeId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(DateTime.Now);
 
         var todayAppointments = await _context.Appointments
             .Include(a => a.Visitor)
@@ -112,32 +117,96 @@ public class DashboardService : IDashboardService
         };
     }
 
-    public async Task<ReceptionistDashboardDto> GetReceptionistDashboardAsync()
+    public async Task<RoleDashboardDto> GetReceptionistDashboardAsync()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        return new ReceptionistDashboardDto
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var stats = await GetStatsAsync();
+        var todayAppointments = await GetTodayAppointmentsAsync(today);
+        var activeVisitors = await GetActiveVisitorsAsync();
+        var hourlyTraffic = await GetHourlyTrafficAsync(today);
+        _logger.LogInformation("[Dashboard:Receptionist] ServerLocalDate={Today} TodayAppointments={Count} ActiveVisitors={Active} TotalVisitorsToday={Total} PendingAppointments={Pending}",
+            today, todayAppointments.Count, activeVisitors.Count, stats.TotalVisitorsToday, stats.PendingAppointments);
+        return new RoleDashboardDto
         {
-            TodayExpected = await _context.Appointments.CountAsync(a => a.RequestedDate == today && a.Status == "Approved"),
-            CurrentlyOnPremises = await _context.Visits.CountAsync(v => v.Status == "CheckedIn"),
-            WalkInsToday = await _context.Visits.CountAsync(v => v.VisitDate == today && v.AppointmentId == null),
-            PendingCheckIns = await _context.Appointments.CountAsync(a => a.RequestedDate == today && a.Status == "Approved" && !a.CheckInAllowed)
+            Stats = stats,
+            TodayAppointments = todayAppointments,
+            ActiveVisitors = activeVisitors,
+            HourlyTraffic = hourlyTraffic
         };
     }
 
-    public async Task<SecurityDashboardDto> GetSecurityDashboardAsync()
+    public async Task<RoleDashboardDto> GetSecurityDashboardAsync()
     {
-        return new SecurityDashboardDto
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var stats = await GetStatsAsync();
+        var todayAppointments = await GetTodayAppointmentsAsync(today);
+        var activeVisitors = await GetActiveVisitorsAsync();
+        var hourlyTraffic = await GetHourlyTrafficAsync(today);
+        return new RoleDashboardDto
         {
-            CurrentlyOnPremises = await _context.Visits.CountAsync(v => v.Status == "CheckedIn"),
-            CheckInsToday = await _context.Visits.CountAsync(v => v.VisitDate == DateOnly.FromDateTime(DateTime.UtcNow) && v.CheckInTime != null),
-            CheckOutsToday = await _context.Visits.CountAsync(v => v.VisitDate == DateOnly.FromDateTime(DateTime.UtcNow) && v.CheckOutTime != null),
-            PendingCheckOuts = await _context.Visits.CountAsync(v => v.Status == "CheckedIn")
+            Stats = stats,
+            TodayAppointments = todayAppointments,
+            ActiveVisitors = activeVisitors,
+            HourlyTraffic = hourlyTraffic
         };
+    }
+
+    private async Task<List<TodayAppointmentDto>> GetTodayAppointmentsAsync(DateOnly day)
+    {
+        return await _context.Appointments
+            .Include(a => a.Visitor)
+            .Include(a => a.Employee).ThenInclude(e => e.Department)
+            .Where(a => a.RequestedDate == day)
+            .OrderBy(a => a.RequestedStartTime)
+            .Select(a => new TodayAppointmentDto
+            {
+                Id = a.Id,
+                VisitorName = a.Visitor.FullName,
+                HostName = a.Employee.FullName,
+                Time = a.RequestedStartTime.ToString("HH:mm"),
+                Status = a.Status,
+                Department = a.Employee.Department.Name,
+                Purpose = a.Purpose
+            }).ToListAsync();
+    }
+
+    private async Task<List<ActiveVisitorDto>> GetActiveVisitorsAsync()
+    {
+        return await _context.Visits
+            .Include(v => v.Visitor)
+            .Include(v => v.Employee).ThenInclude(e => e.Department)
+            .Where(v => v.Status == "CheckedIn")
+            .OrderBy(v => v.CheckInTime)
+            .Select(v => new ActiveVisitorDto
+            {
+                Id = v.Id,
+                VisitorName = v.Visitor.FullName,
+                HostName = v.Employee.FullName,
+                CheckInTime = v.CheckInTime != null ? v.CheckInTime.Value.ToString("hh:mm tt") : "",
+                BadgeNumber = v.BadgeNumber ?? "",
+                Department = v.Employee.Department.Name,
+                Floor = v.Employee.OfficeNumber ?? ""
+            }).ToListAsync();
+    }
+
+    private async Task<List<HourlyTrafficDto>> GetHourlyTrafficAsync(DateOnly day)
+    {
+        var visits = await _context.Visits
+            .Where(v => v.VisitDate == day && v.CheckInTime != null)
+            .Select(v => v.CheckInTime!.Value)
+            .ToListAsync();
+        return Enumerable.Range(0, 24)
+            .Select(h => new HourlyTrafficDto
+            {
+                Hour = $"{(h % 12 == 0 ? 12 : h % 12)}{(h < 12 ? "AM" : "PM")}",
+                Count = visits.Count(v => v.Hour == h)
+            })
+            .ToList();
     }
 
     public async Task<VisitorDashboardDto> GetVisitorDashboardAsync(int visitorId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(DateTime.Now);
         var appointments = await _context.Appointments
             .Where(a => a.VisitorId == visitorId)
             .Include(a => a.Employee).ThenInclude(e => e.Department)

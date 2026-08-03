@@ -4,7 +4,7 @@ import { Injectable } from '@angular/core';
 export class StorageService {
   get(key: string): string | null {
     try {
-      return localStorage.getItem(key);
+      return sessionStorage.getItem(key);
     } catch {
       return null;
     }
@@ -12,19 +12,19 @@ export class StorageService {
 
   set(key: string, value: string): void {
     try {
-      localStorage.setItem(key, value);
+      sessionStorage.setItem(key, value);
     } catch {}
   }
 
   remove(key: string): void {
     try {
-      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
     } catch {}
   }
 
   clear(): void {
     try {
-      localStorage.clear();
+      sessionStorage.clear();
     } catch {}
   }
 

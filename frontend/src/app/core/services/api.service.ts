@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, PagedResponse } from '../models/common.model';
@@ -54,5 +54,16 @@ export class ApiService {
     return this.http.post<ApiResponse<T>>(`${this.baseUrl}${path}`, formData, {
       reportProgress: false,
     });
+  }
+
+  uploadWithProgress<T>(path: string, formData: FormData): Observable<HttpEvent<ApiResponse<T>>> {
+    return this.http.post<ApiResponse<T>>(`${this.baseUrl}${path}`, formData, {
+      reportProgress: true,
+      observe: 'events',
+    });
+  }
+
+  download(path: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}${path}`, { responseType: 'blob' });
   }
 }

@@ -10,6 +10,10 @@ public class PageRequest
         set => _pageSize = Math.Clamp(value, 1, 100);
     }
     public string? Search { get; set; }
+    public string? Status { get; set; }
+    public DateOnly? DateFrom { get; set; }
+    public DateOnly? DateTo { get; set; }
+    public bool? IsActive { get; set; }
     public string? SortBy { get; set; }
     public bool SortDesc { get; set; }
 }

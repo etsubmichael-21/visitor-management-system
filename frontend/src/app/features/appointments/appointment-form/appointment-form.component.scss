@@ -45,6 +45,52 @@
   gap: 12px;
 }
 
+.field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 6px;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.confidential-checkbox {
+  display: block;
+  margin-top: 4px;
+}
+
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  background: #eaf5ee;
+  border-left: 4px solid #0F6B3A;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #0C5830;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #0F6B3A;
+    flex-shrink: 0;
+  }
+}
+
 .error-banner {
   display: flex;
   align-items: center;
@@ -55,6 +101,118 @@
   border-radius: 8px;
   font-size: 14px;
   margin-bottom: 20px;
+}
+
+.file-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 28px 20px;
+  border: 2px dashed #c8e6c9;
+  border-radius: 10px;
+  background: #f7fcf8;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.file-dropzone:hover, .file-dropzone.drag-active {
+  border-color: #0F6B3A;
+  background: #eef7f1;
+}
+
+.file-dropzone mat-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: #0F6B3A;
+}
+
+.drop-title {
+  font-size: 14px;
+  color: #374151;
+  margin: 0;
+}
+
+.browse {
+  color: #0F6B3A;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.drop-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.file-selected {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #eef7f1;
+  border: 1px solid #c8e6c9;
+  border-radius: 10px;
+}
+
+.file-selected-icon {
+  color: #0F6B3A;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  word-break: break-all;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.file-remove {
+  margin-left: auto;
+  color: #c62828;
+}
+
+.file-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.file-error mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.upload-progress {
+  margin-top: 12px;
+}
+
+.upload-progress-label {
+  display: block;
+  font-size: 12px;
+  color: #0F6B3A;
+  margin-top: 6px;
+  text-align: right;
 }
 
 .success-banner {

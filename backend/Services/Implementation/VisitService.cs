@@ -11,24 +11,77 @@ public class VisitService : IVisitService
 {
     private readonly IVisitRepository _repository;
     private readonly AppDbContext _context;
+    private readonly ILogger<VisitService> _logger;
 
-    public VisitService(IVisitRepository repository, AppDbContext context)
+    public VisitService(IVisitRepository repository, AppDbContext context, ILogger<VisitService> logger)
     {
         _repository = repository;
         _context = context;
+        _logger = logger;
     }
 
     public async Task<PagedResponse<VisitResponseDto>> GetAllAsync(PageRequest request)
     {
         var paged = await _repository.GetPagedAsync(request);
+        _logger.LogInformation("[Visits:GetAll] Status={Status} DateFrom={DateFrom} DateTo={DateTo} IsActive={IsActive} Search={Search} => TotalCount={TotalCount}",
+            request.Status, request.DateFrom, request.DateTo, request.IsActive, request.Search, paged.TotalCount);
         return new PagedResponse<VisitResponseDto> { Items = paged.Items.Select(MapToDto).ToList(), TotalCount = paged.TotalCount, Page = paged.Page, PageSize = paged.PageSize };
+    }
+
+    public async Task<PagedResponse<VisitResponseDto>> ReceptionTodayAsync(PageRequest request)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        _logger.LogInformation("[Visits:ReceptionToday] ServerLocalDate={Today}", today);
+
+        var todayAppointments = await _context.Appointments
+            .Include(a => a.Visitor)
+            .Include(a => a.Employee).ThenInclude(e => e.Department)
+            .Where(a => a.RequestedDate == today)
+            .ToListAsync();
+
+        var visits = await _context.Visits
+            .Include(v => v.Visitor)
+            .Include(v => v.Employee).ThenInclude(e => e.Department)
+            .Where(v => v.VisitDate == today)
+            .ToListAsync();
+
+        var combined = new List<(DateTimeOffset SortKey, VisitResponseDto Dto)>();
+        foreach (var a in todayAppointments)
+            combined.Add((a.RequestedStartTime, MapAppointmentToVisitDto(a)));
+        foreach (var v in visits)
+        {
+            var dto = MapToDto(v);
+            if (dto.Status == "Scheduled") dto.Status = "Expected";
+            combined.Add((v.CheckInTime ?? v.CreatedAt, dto));
+        }
+
+        var items = combined.OrderBy(x => x.SortKey).Select(x => x.Dto).ToList();
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+            items = items.Where(x =>
+                x.VisitorName.Contains(request.Search, StringComparison.OrdinalIgnoreCase)
+                || x.EmployeeName.Contains(request.Search, StringComparison.OrdinalIgnoreCase)
+                || x.Purpose.Contains(request.Search, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            var statuses = request.Status.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            items = items.Where(x => statuses.Contains(x.Status)).ToList();
+        }
+
+        var totalCount = items.Count;
+        _logger.LogInformation("[Visits:ReceptionToday] Status={Status} Search={Search} AppointmentsToday={AppointmentCount} Visits={VisitCount} => TotalCount={TotalCount}",
+            request.Status, request.Search, todayAppointments.Count, visits.Count, totalCount);
+
+        var pagedItems = items.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToList();
+        return new PagedResponse<VisitResponseDto> { Items = pagedItems, TotalCount = totalCount, Page = request.Page, PageSize = request.PageSize };
     }
 
     public async Task<VisitResponseDto?> GetByIdAsync(int id) { var v = await _repository.GetByIdAsync(id); return v == null ? null : MapToDto(v); }
 
     public async Task<VisitResponseDto> CreateAsync(VisitCreateDto dto)
     {
-        var visit = new Visit { VisitorId = dto.VisitorId, EmployeeId = dto.EmployeeId, AppointmentId = dto.AppointmentId, Purpose = dto.Purpose, IsDestinationKnown = dto.IsDestinationKnown, Remark = dto.Remark, VisitDate = DateOnly.FromDateTime(DateTime.UtcNow), Status = "Scheduled", CreatedAt = DateTimeOffset.UtcNow };
+        var visit = new Visit { VisitorId = dto.VisitorId, EmployeeId = dto.EmployeeId, AppointmentId = dto.AppointmentId, Purpose = dto.Purpose, IsDestinationKnown = dto.IsDestinationKnown, Remark = dto.Remark, VisitDate = DateOnly.FromDateTime(DateTime.Now), Status = "Scheduled", CreatedAt = DateTimeOffset.UtcNow };
         var created = await _repository.AddAsync(visit);
         return MapToDto(created);
     }
@@ -46,7 +99,7 @@ public class VisitService : IVisitService
             SecurityOfficer = request.SecurityOfficer,
             Status = "CheckedIn",
             CheckInTime = DateTimeOffset.UtcNow,
-            VisitDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            VisitDate = DateOnly.FromDateTime(DateTime.Now),
             CreatedAt = DateTimeOffset.UtcNow
         };
         var created = await _repository.AddAsync(visit);
@@ -136,6 +189,16 @@ public class VisitService : IVisitService
         VisitorItems = v.VisitorItems?.Select(MapItemToDto).ToList() ?? new(),
         AllItemsVerified = v.VisitorItems?.Any() == true && v.VisitorItems.All(i => i.IsVerified),
         CreatedAt = v.CreatedAt
+    };
+
+    private static VisitResponseDto MapAppointmentToVisitDto(Appointment a) => new()
+    {
+        Id = a.Id, VisitorId = a.VisitorId, VisitorName = a.Visitor?.FullName ?? "", VisitorPhone = a.Visitor?.Phone ?? "",
+        VisitorEmail = a.Visitor?.Email ?? "", EmployeeId = a.EmployeeId,
+        EmployeeName = a.Employee?.FullName ?? "", DepartmentName = a.Employee?.Department?.Name ?? "",
+        AppointmentId = a.Id, Purpose = a.Purpose, VisitDate = a.RequestedDate,
+        Status = a.Status is "Pending" or "Approved" or "Rescheduled" or "Delegated" ? "Expected" : a.Status,
+        IsDestinationKnown = true, CreatedAt = a.CreatedAt
     };
 
     private static VisitorItemDto MapItemToDto(VisitorItem i) => new()

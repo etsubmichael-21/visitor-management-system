@@ -24,10 +24,27 @@ export interface Appointment {
   delegatedToEmployeeName?: string;
   originalEmployeeId?: string;
   originalEmployeeName?: string;
+  assignedDepartmentId?: string;
+  assignedDepartmentName?: string;
+  assignedEmployeeId?: string;
+  assignedEmployeeName?: string;
+  redirectedFromDepartmentId?: string;
+  redirectedFromDepartmentName?: string;
+  redirectReason?: string;
   attachments: any[];
+  supportingLetter?: SupportingLetter | null;
   commentCount: number;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface SupportingLetter {
+  fileName: string;
+  originalFileName: string;
+  filePath: string;
+  fileSize: number;
+  contentType: string;
+  uploadedAt?: string;
 }
 
 export type AppointmentStatus =
@@ -38,7 +55,8 @@ export type AppointmentStatus =
   | 'Completed'
   | 'EmployeeUnavailable'
   | 'Rescheduled'
-  | 'Delegated';
+  | 'Delegated'
+  | 'PendingAssignment';
 
 export interface AppointmentRequest {
   visitorId?: number;
@@ -48,6 +66,8 @@ export interface AppointmentRequest {
   requestedEndTime?: string;
   purpose: string;
   isConfidential?: boolean;
+  routeType?: string;
+  appointmentMethod?: string;
   notes?: string;
 }
 

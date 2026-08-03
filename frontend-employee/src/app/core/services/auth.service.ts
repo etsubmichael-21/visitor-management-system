@@ -16,9 +16,12 @@ export class AuthService {
   private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient, private router: Router) {
-    const storedUser = localStorage.getItem(this.userKey);
+    const storedUser = sessionStorage.getItem(this.userKey);
     if (storedUser) {
       this.currentUserSubject.next(JSON.parse(storedUser));
+    }
+    if (!this.isAuthenticated()) {
+      this.clearSession();
     }
   }
 
@@ -49,31 +52,93 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.userKey);
-    this.currentUserSubject.next(null);
+    const token = this.getToken();
+    const refreshToken = this.getRefreshToken();
+    this.clearSession();
+    localStorage.clear();
+    try {
+      sessionStorage.clear();
+    } catch {}
+    if (token) {
+      fetch(`${this.apiUrl}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ refreshToken }),
+      }).catch(() => {});
+    }
     this.router.navigate(['/auth/login']);
   }
 
+  clearSession(): void {
+    sessionStorage.removeItem(this.tokenKey);
+    sessionStorage.removeItem(this.userKey);
+    this.currentUserSubject.next(null);
+  }
+
+  async validateSession(): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) {
+      return false;
+    }
+    try {
+      const res = await fetch(`${this.apiUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401 || res.status === 403) {
+        this.clearSession();
+        return false;
+      }
+      if (!res.ok) {
+        return true;
+      }
+      const body = (await res.json()) as ApiResponse<LoginResponse>;
+      const data = body?.data;
+      if (data && data.userId) {
+        const parts = (data.fullName || '').split(' ');
+        const user: User = {
+          id: data.userId,
+          email: data.email,
+          fullName: data.fullName,
+          role: data.role,
+          employeeId: data.employeeId,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          firstName: parts[0] || '',
+          lastName: parts.slice(1).join(' ') || ''
+        };
+        this.setUser(user);
+        this.currentUserSubject.next(user);
+        return true;
+      }
+      return true;
+    } catch {
+      return true;
+    }
+  }
+
+  private getRefreshToken(): string {
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.toLowerCase().includes('refresh')) {
+        return sessionStorage.getItem(key) || '';
+      }
+    }
+    return '';
+  }
+
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    return sessionStorage.getItem(this.tokenKey);
   }
 
   private setToken(token: string): void {
-  console.log("SET TOKEN CALLED");
-  console.log("TOKEN VALUE:", token);
-  console.log("TOKEN KEY:", this.tokenKey);
-
-  localStorage.setItem(this.tokenKey, token);
-
-  console.log(
-    "AFTER SAVE:",
-    localStorage.getItem(this.tokenKey)
-  );
-}
+    sessionStorage.setItem(this.tokenKey, token);
+  }
 
   private setUser(user: User): void {
-    localStorage.setItem(this.userKey, JSON.stringify(user));
+    sessionStorage.setItem(this.userKey, JSON.stringify(user));
   }
 
   isAuthenticated(): boolean {
