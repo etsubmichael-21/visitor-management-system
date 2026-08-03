@@ -114,6 +114,9 @@ public class AppointmentService : IAppointmentService
                 throw new InvalidOperationException("No receptionist is configured to receive routed appointments.");
         }
 
+        if (dto.EmployeeId <= 0)
+            throw new InvalidOperationException("A host employee is required. Please select a department and host employee.");
+
         var supportingLetter = dto.SupportingLetter != null && dto.SupportingLetter.Length > 0
             ? await SaveSupportingLetterAsync(dto.SupportingLetter)
             : null;

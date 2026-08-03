@@ -353,24 +353,34 @@ export class AppointmentFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.selectedDate) {
-      const pad = (n: number) => String(n).padStart(2, '0');
-      const dateStr = `${this.selectedDate.getFullYear()}-${pad(this.selectedDate.getMonth() + 1)}-${pad(this.selectedDate.getDate())}`;
-      this.form.requestedDate = dateStr;
-
-      const combineToISO = (time: string): string => {
-        const [h, m] = time.split(':').map(Number);
-        const dt = new Date(this.selectedDate!);
-        dt.setHours(h, m, 0, 0);
-        return dt.toISOString();
-      };
-
-      this.form.requestedStartTime = combineToISO(this.form.requestedStartTime);
-      if (this.form.requestedEndTime) {
-        this.form.requestedEndTime = combineToISO(this.form.requestedEndTime);
-      }
+    if (!this.selectedDate) {
+      this.errorMessage = 'Please select a visit date.';
+      return;
     }
-    this.onMethodChange();
+    if (!this.form.requestedStartTime) {
+      this.errorMessage = 'Please select a start time.';
+      return;
+    }
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dateStr = `${this.selectedDate.getFullYear()}-${pad(this.selectedDate.getMonth() + 1)}-${pad(this.selectedDate.getDate())}`;
+    this.form.requestedDate = dateStr;
+
+    const combineToISO = (time: string): string => {
+      const [h, m] = time.split(':').map(Number);
+      const dt = new Date(this.selectedDate!);
+      dt.setHours(h, m, 0, 0);
+      return dt.toISOString();
+    };
+
+    this.form.requestedStartTime = combineToISO(this.form.requestedStartTime);
+    if (this.form.requestedEndTime) {
+      this.form.requestedEndTime = combineToISO(this.form.requestedEndTime);
+    }
+    if (!this.isReceptionRoute && !this.form.employeeId) {
+      this.errorMessage = 'Please select a host employee to continue.';
+      return;
+    }
     if (this.isReceptionRoute && this.departmentId) {
       const deptName = this.departments.find((d) => d.id === this.departmentId)?.name;
       if (deptName) {
