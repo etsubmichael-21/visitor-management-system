@@ -49,7 +49,15 @@ public class DashboardController : ControllerBase
     public async Task<IActionResult> GetDepartmentHeadDashboard()
     {
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-        var result = await _dashboardService.GetDepartmentHeadDashboardAsync(userId);
+        var user = await _context.Users.FindAsync(userId);
+        if (user?.EmployeeId == null)
+            return NotFound(ApiResponse<DepartmentHeadDashboardDto>.NotFound("Employee profile not found"));
+
+        var employee = await _context.Employees.FindAsync(user.EmployeeId.Value);
+        if (employee == null)
+            return NotFound(ApiResponse<DepartmentHeadDashboardDto>.NotFound("Employee profile not found"));
+
+        var result = await _dashboardService.GetDepartmentHeadDashboardAsync(employee.DepartmentId);
         return Ok(ApiResponse<DepartmentHeadDashboardDto>.Ok(result));
     }
 
@@ -57,7 +65,11 @@ public class DashboardController : ControllerBase
     public async Task<IActionResult> GetEmployeeDashboard()
     {
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-        var result = await _dashboardService.GetEmployeeDashboardAsync(userId);
+        var user = await _context.Users.FindAsync(userId);
+        if (user?.EmployeeId == null)
+            return NotFound(ApiResponse<EmployeeDashboardDto>.NotFound("Employee profile not found"));
+
+        var result = await _dashboardService.GetEmployeeDashboardAsync(user.EmployeeId.Value);
         return Ok(ApiResponse<EmployeeDashboardDto>.Ok(result));
     }
 

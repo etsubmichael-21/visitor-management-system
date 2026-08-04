@@ -7,6 +7,7 @@ export interface Appointment {
   employeeId: number;
   employeeName: string;
   employeePosition: string;
+  departmentId: number;
   departmentName: string;
   requestedDate: string;
   requestedStartTime: string;

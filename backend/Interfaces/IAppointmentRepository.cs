@@ -6,6 +6,7 @@ namespace EcxVisitorManagement.Interfaces;
 public interface IAppointmentRepository : IGenericRepository<Appointment>
 {
     Task<PagedResponse<Appointment>> GetPagedByEmployeeIdAsync(int employeeId, PageRequest request);
+    Task<PagedResponse<Appointment>> GetPagedByDepartmentIdAsync(int departmentId, PageRequest request);
     Task<PagedResponse<Appointment>> GetPagedByVisitorIdAsync(int visitorId, PageRequest request);
     Task<IReadOnlyList<Appointment>> GetByVisitorIdAsync(int visitorId);
     Task<IReadOnlyList<Appointment>> GetByEmployeeIdAsync(int employeeId);
@@ -17,7 +18,9 @@ public interface IAppointmentRepository : IGenericRepository<Appointment>
     Task<IReadOnlyList<Appointment>> GetByDepartmentIdAsync(int departmentId);
     Task<Appointment?> GetByCodeAsync(string code);
     Task<IReadOnlyList<Appointment>> GetConfidentialAsync();
+    Task<IReadOnlyList<Appointment>> GetConfidentialByDepartmentIdAsync(int departmentId);
     Task<IReadOnlyList<Appointment>> GetPendingByDepartmentAsync(int departmentId);
+    Task<IReadOnlyList<Appointment>> GetTodayByDepartmentIdAsync(int departmentId);
     Task<int> CountByStatusAsync(string status);
     Task<int> CountByDateRangeAsync(DateOnly start, DateOnly end);
     Task<IReadOnlyList<Appointment>> GetByDateRangeAsync(DateOnly start, DateOnly end);

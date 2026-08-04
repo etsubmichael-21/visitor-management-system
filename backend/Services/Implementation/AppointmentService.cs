@@ -81,6 +81,18 @@ public class AppointmentService : IAppointmentService
         };
     }
 
+    public async Task<PagedResponse<AppointmentResponseDto>> GetAllByDepartmentAsync(int departmentId, PageRequest request)
+    {
+        var paged = await _repository.GetPagedByDepartmentIdAsync(departmentId, request);
+        return new PagedResponse<AppointmentResponseDto>
+        {
+            Items = paged.Items.Select(MapToDto).ToList(),
+            TotalCount = paged.TotalCount,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        };
+    }
+
     public async Task<PagedResponse<AppointmentResponseDto>> GetAllByVisitorAsync(int visitorId, PageRequest request)
     {
         var paged = await _repository.GetPagedByVisitorIdAsync(visitorId, request);
@@ -95,8 +107,18 @@ public class AppointmentService : IAppointmentService
 
     public async Task<AppointmentResponseDto?> GetByIdAsync(int id)
     {
+        _logger.LogInformation("[Appointment:GetById] Receiving request for AppointmentId={Id}", id);
         var appointment = await _repository.GetByIdAsync(id);
-        return appointment == null ? null : MapToDto(appointment);
+        if (appointment == null)
+        {
+            _logger.LogWarning("[Appointment:GetById] AppointmentId={Id} NOT FOUND in database", id);
+            return null;
+        }
+        _logger.LogInformation("[Appointment:GetById] AppointmentId={Id} found. VisitorId={VisitorId} Status={Status} HasSupportingLetter={HasLetter}",
+            id, appointment.VisitorId, appointment.Status, appointment.AttachmentPath != null);
+        var dto = MapToDto(appointment);
+        _logger.LogInformation("[Appointment:GetById] AppointmentId={Id} mapped and returning response", id);
+        return dto;
     }
 
     public async Task<AppointmentResponseDto> CreateAsync(AppointmentCreateDto dto)
@@ -171,14 +193,28 @@ public class AppointmentService : IAppointmentService
                 await _smsService.SendAppointmentNotificationAsync(visitor.Phone, visitor.FullName, employee?.FullName ?? "", dto.RequestedDate, "Submitted");
         }
 
-        if (employee != null && !string.IsNullOrEmpty(employee.Email))
+        var departmentHead = employee != null
+            ? await _context.Users.FirstOrDefaultAsync(u => u.Role == "DepartmentHead"
+                && u.IsActive
+                && u.EmployeeId != null
+                && u.Employee != null
+                && u.Employee.DepartmentId == employee.DepartmentId)
+            : null;
+
+        var notifyEmployeeId = departmentHead?.EmployeeId ?? dto.EmployeeId;
+        var notifyName = departmentHead?.FullName ?? employee?.FullName ?? "Department";
+        var notifyEmail = departmentHead?.Email ?? employee?.Email;
+
+        if (!string.IsNullOrEmpty(notifyEmail))
         {
             await _notificationRepository.AddAsync(new Notification
             {
-                EmployeeId = dto.EmployeeId,
+                EmployeeId = notifyEmployeeId,
                 AppointmentId = created.Id,
-                Title = "New Appointment Request",
-                Message = $"You have a new appointment request from {visitor?.FullName ?? "Visitor"} on {dto.RequestedDate}.",
+                Title = departmentHead != null ? "New Appointment Awaiting Assignment" : "New Appointment Request",
+                Message = departmentHead != null
+                    ? $"A new appointment request from {visitor?.FullName ?? "Visitor"} on {dto.RequestedDate} awaits your assignment."
+                    : $"You have a new appointment request from {visitor?.FullName ?? "Visitor"} on {dto.RequestedDate}.",
                 NotificationType = "Info",
                 Priority = "Normal",
                 Channel = "InApp",
@@ -186,8 +222,8 @@ public class AppointmentService : IAppointmentService
             });
 
             await _emailService.SendEmployeeNewRequestAsync(
-                employee.Email, employee.FullName, visitor?.FullName ?? "",
-                employee.Department?.Name ?? "", dto.RequestedDate,
+                notifyEmail, notifyName, visitor?.FullName ?? "",
+                employee?.Department?.Name ?? "", dto.RequestedDate,
                 dto.RequestedStartTime, dto.RequestedEndTime,
                 dto.Purpose, dto.Notes,
                 hasSupportingLetter: appointment.AttachmentPath != null);
@@ -586,7 +622,7 @@ public class AppointmentService : IAppointmentService
     public async Task<AppointmentResponseDto> AssignEmployeeAsync(int id, AppointmentAssignDto dto, int userId)
     {
         var appointment = await LoadWithDetailsAsync(id);
-        if (appointment.Status != "PendingAssignment")
+        if (appointment.Status is not ("Pending" or "PendingAssignment"))
             throw new InvalidOperationException("Only appointments awaiting assignment can be assigned to an employee");
 
         var newEmployee = await _employeeRepository.GetByIdAsync(dto.NewEmployeeId)
@@ -619,24 +655,6 @@ public class AppointmentService : IAppointmentService
                 appointment.RequestedStartTime, appointment.RequestedEndTime,
                 appointment.Purpose, dto.Notes,
                 hasSupportingLetter: appointment.AttachmentPath != null);
-
-        if (appointment.Visitor != null)
-        {
-            await _visitorNotificationRepository.AddAsync(new VisitorNotification
-            {
-                VisitorId = appointment.VisitorId,
-                AppointmentId = appointment.Id,
-                Title = "Appointment Assigned",
-                Message = $"Your appointment has been assigned to {newEmployee.FullName} ({newEmployee.Department?.Name ?? ""}).",
-                NotificationType = "Info",
-                Channel = "InApp",
-                CreatedAt = DateTimeOffset.UtcNow
-            });
-
-            if (!string.IsNullOrEmpty(appointment.Visitor.Email))
-                await _emailService.SendAsync(appointment.Visitor.Email, "An employee has been assigned to your appointment",
-                    $"<p>Dear {appointment.Visitor.FullName},</p><p>Your appointment has been assigned to <strong>{newEmployee.FullName}</strong> in the {newEmployee.Department?.Name ?? ""} department.</p><p>You will be notified once your appointment is approved.</p>");
-        }
 
         return MapToDto(await LoadWithDetailsAsync(id));
     }
@@ -688,6 +706,21 @@ public class AppointmentService : IAppointmentService
     public async Task<IReadOnlyList<AppointmentResponseDto>> GetConfidentialAsync()
     {
         return (await _repository.GetConfidentialAsync()).Select(MapToDto).ToList();
+    }
+
+    public async Task<IReadOnlyList<AppointmentResponseDto>> GetConfidentialByDepartmentAsync(int departmentId)
+    {
+        return (await _repository.GetConfidentialByDepartmentIdAsync(departmentId)).Select(MapToDto).ToList();
+    }
+
+    public async Task<IReadOnlyList<AppointmentResponseDto>> GetPendingByDepartmentAsync(int departmentId)
+    {
+        return (await _repository.GetPendingByDepartmentAsync(departmentId)).Select(MapToDto).ToList();
+    }
+
+    public async Task<IReadOnlyList<AppointmentResponseDto>> GetTodayByDepartmentAsync(int departmentId)
+    {
+        return (await _repository.GetTodayByDepartmentIdAsync(departmentId)).Select(MapToDto).ToList();
     }
 
     public async Task<RescheduleResponseDto> RequestRescheduleAsync(int appointmentId, RescheduleRequestDto dto, int userId)
@@ -1089,6 +1122,7 @@ public class AppointmentService : IAppointmentService
         EmployeeId = a.EmployeeId,
         EmployeeName = a.Employee?.FullName ?? "",
         EmployeePosition = a.Employee?.Position ?? "",
+        DepartmentId = a.Employee?.DepartmentId ?? 0,
         DepartmentName = a.Employee?.Department?.Name ?? "",
         RequestedDate = a.RequestedDate,
         RequestedStartTime = a.RequestedStartTime,

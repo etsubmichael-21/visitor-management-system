@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -114,7 +114,7 @@ import { Department } from '../../../core/models/common.model';
             <mat-card>
               <mat-card-header><mat-card-title>Actions</mat-card-title></mat-card-header>
               <mat-card-content>
-                @if (appointment()!.status === 'Pending' && canApprove()) {
+                @if (appointment()!.status === 'Pending' && canDecide()) {
                   <button mat-raised-button color="primary" class="action-btn" (click)="approveAppointment()">
                     <mat-icon>check_circle</mat-icon> Approve
                   </button>
@@ -124,23 +124,23 @@ import { Department } from '../../../core/models/common.model';
                   <button mat-stroked-button color="primary" class="action-btn" (click)="showDelegateForm.set(true)">
                     <mat-icon>forward</mat-icon> Delegate
                   </button>
-                  @if (canRedirect()) {
-                    <button mat-stroked-button color="accent" class="action-btn" (click)="showRedirectForm.set(true)">
-                      <mat-icon>swap_horiz</mat-icon> Redirect to Department
-                    </button>
-                  }
                 }
-                @if (appointment()!.status === 'PendingAssignment' && canAssign()) {
-                  <button mat-raised-button color="primary" class="action-btn" (click)="showAssignForm.set(true)">
-                    <mat-icon>assignment_ind</mat-icon> Assign Employee
+                @if (appointment()!.status === 'Pending' && canRedirect()) {
+                  <button mat-stroked-button color="accent" class="action-btn" (click)="showRedirectForm.set(true)">
+                    <mat-icon>swap_horiz</mat-icon> Redirect to Department
                   </button>
                 }
-                @if (appointment()!.status === 'Approved' && canApprove()) {
+                @if (appointment()!.status === 'Pending' && canAssign()) {
+                  <button mat-raised-button color="primary" class="action-btn" (click)="showAssignForm.set(true)">
+                    <mat-icon>assignment_ind</mat-icon> {{ appointment()!.assignedEmployeeId ? 'Reassign Employee' : 'Assign Employee' }}
+                  </button>
+                }
+                @if (appointment()!.status === 'Approved' && canDecide()) {
                   <button mat-raised-button color="primary" class="action-btn" (click)="completeAppointment()">
                     <mat-icon>done_all</mat-icon> Mark Complete
                   </button>
                 }
-                @if ((appointment()!.status === 'Pending' || appointment()!.status === 'Approved') && isHost()) {
+                @if ((appointment()!.status === 'Pending' || appointment()!.status === 'Approved') && canDecide()) {
                   <button mat-stroked-button color="warn" class="action-btn" (click)="cancelAppointment()">
                     <mat-icon>cancel</mat-icon> Cancel
                   </button>
@@ -219,7 +219,7 @@ import { Department } from '../../../core/models/common.model';
                   <mat-form-field appearance="outline" class="full-width">
                     <mat-label>Select Employee</mat-label>
                     <mat-select [(ngModel)]="assignEmployeeId">
-                      @for (emp of employees(); track emp.id) {
+                      @for (emp of assignableEmployees(); track emp.id) {
                         <mat-option [value]="emp.id">{{ emp.fullName }}</mat-option>
                       }
                     </mat-select>
@@ -284,6 +284,16 @@ export class AppointmentDetailComponent implements OnInit {
   assignEmployeeId: number | null = null;
   assignNotes = '';
 
+  assignableEmployees = computed(() => {
+    const apt = this.appointment();
+    const role = this.authService.getUserRole();
+    if (role !== 'DepartmentHead' || !apt) {
+      return this.employees().filter(e => e.status === 'Active');
+    }
+    const departmentId = apt.assignedDepartmentId ?? apt.departmentId;
+    return this.employees().filter(e => e.departmentId === departmentId && e.status === 'Active');
+  });
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) this.loadAppointment(Number(id));
@@ -303,23 +313,27 @@ export class AppointmentDetailComponent implements OnInit {
     });
   }
 
-  canApprove(): boolean {
+  canDecide(): boolean {
+    const role = this.authService.getUserRole();
+    if (role === 'Admin' || role === 'CEO') return true;
+    if (role === 'DepartmentHead') return false;
+
+    const user = this.authService.getCurrentUser();
+    const apt = this.appointment();
+    if (!user || !apt) return false;
+    if (apt.assignedEmployeeId === user.employeeId) return true;
+    if (apt.assignedEmployeeId == null && apt.employeeId === user.employeeId) return true;
+    return apt.delegatedToEmployeeId === user.employeeId;
+  }
+
+  canAssign(): boolean {
     const role = this.authService.getUserRole();
     return role === 'Admin' || role === 'CEO' || role === 'DepartmentHead';
   }
 
   canRedirect(): boolean {
-    return this.canApprove();
-  }
-
-  canAssign(): boolean {
-    return this.canApprove();
-  }
-
-  isHost(): boolean {
-    const user = this.authService.getCurrentUser();
-    const apt = this.appointment();
-    return user != null && apt != null && (user.employeeId === apt.employeeId || user.role === 'Admin');
+    const role = this.authService.getUserRole();
+    return role === 'Admin' || role === 'CEO';
   }
 
   approveAppointment(): void {

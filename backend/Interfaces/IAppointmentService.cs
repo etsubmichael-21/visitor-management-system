@@ -7,6 +7,7 @@ public interface IAppointmentService
 {
     Task<PagedResponse<AppointmentResponseDto>> GetAllAsync(PageRequest request);
     Task<PagedResponse<AppointmentResponseDto>> GetAllByEmployeeAsync(int employeeId, PageRequest request);
+    Task<PagedResponse<AppointmentResponseDto>> GetAllByDepartmentAsync(int departmentId, PageRequest request);
     Task<PagedResponse<AppointmentResponseDto>> GetAllByVisitorAsync(int visitorId, PageRequest request);
     Task<AppointmentResponseDto?> GetByIdAsync(int id);
     Task<AppointmentResponseDto> CreateAsync(AppointmentCreateDto dto);
@@ -27,6 +28,9 @@ public interface IAppointmentService
     Task<IReadOnlyList<AppointmentResponseDto>> GetTodayAsync();
     Task<IReadOnlyList<AppointmentResponseDto>> GetByDepartmentAsync(int departmentId);
     Task<IReadOnlyList<AppointmentResponseDto>> GetConfidentialAsync();
+    Task<IReadOnlyList<AppointmentResponseDto>> GetConfidentialByDepartmentAsync(int departmentId);
+    Task<IReadOnlyList<AppointmentResponseDto>> GetPendingByDepartmentAsync(int departmentId);
+    Task<IReadOnlyList<AppointmentResponseDto>> GetTodayByDepartmentAsync(int departmentId);
     Task<RescheduleResponseDto> RequestRescheduleAsync(int appointmentId, RescheduleRequestDto dto, int userId);
     Task<RescheduleResponseDto> ApproveRescheduleAsync(int appointmentId, int requestId, int userId);
     Task<RescheduleResponseDto> RejectRescheduleAsync(int appointmentId, int requestId, int userId);

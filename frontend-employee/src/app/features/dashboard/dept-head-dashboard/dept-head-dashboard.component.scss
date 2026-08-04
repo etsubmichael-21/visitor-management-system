@@ -29,4 +29,16 @@
     .activity-item p { font-size: 12px; color: #666; margin: 2px 0; }
     .activity-item small { font-size: 11px; color: #999; }
     .empty-state { text-align: center; color: #999; padding: 24px; }
-    @media (max-width: 768px) { .content-row { grid-template-columns: 1fr; } }
+    .apt-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+    .apt-item:last-child { border-bottom: none; }
+    .apt-info { flex: 1; min-width: 0; }
+    .apt-info strong { font-size: 14px; display: block; }
+    .apt-info p { font-size: 12px; color: #666; margin: 2px 0; }
+    .apt-info small { font-size: 11px; color: #999; }
+    .apt-assign { min-width: 150px; }
+    .assignee-chip { display: inline-flex; align-items: center; gap: 4px; background: #e8f5e9; color: #0F6B3A; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .assignee-chip mat-icon { font-size: 16px; height: 16px; width: 16px; }
+    .assignee-chip.unassigned { background: #fff3e0; color: #E65100; }
+    .apt-actions { display: flex; align-items: center; gap: 8px; }
+    .assign-select { width: 170px; margin-bottom: -1.25em; }
+    @media (max-width: 768px) { .content-row { grid-template-columns: 1fr; } .apt-item { flex-wrap: wrap; } }

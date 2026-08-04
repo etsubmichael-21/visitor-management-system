@@ -1,112 +1,110 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DashboardService } from '../../../core/services/dashboard.service';
-import { DashboardData } from '../../../core/models/dashboard.model';
+import { AppointmentService } from '../../../core/services/appointment.service';
+import { EmployeeService } from '../../../core/services/employee.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { DeptHeadDashboardData, DeptHeadPendingAppointment } from '../../../core/models/dashboard.model';
+import { Employee } from '../../../core/models/employee.model';
 
 @Component({
   selector: 'app-dept-head-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatCardModule, MatIconModule, MatButtonModule],
+  imports: [
+    CommonModule, RouterLink, FormsModule,
+    MatCardModule, MatIconModule, MatButtonModule,
+    MatSelectModule, MatFormFieldModule, MatSnackBarModule
+  ],
   template: `
     <div class="dept-dashboard">
       <div class="welcome-banner">
         <h2>Welcome, {{ userName() }}!</h2>
-        <p>Here's your department overview for today.</p>
+        <p>{{ dashboardData()?.departmentName || 'Your department' }} overview</p>
       </div>
 
       <div class="stat-row">
-        <div class="stat-card" style="border-left: 4px solid #0F6B3A;">
-          <div class="stat-icon" style="background: #e8f5e9; color: #0F6B3A;"><mat-icon>event_available</mat-icon></div>
-          <div class="stat-info">
-            <h3>{{ dashboardData()?.stats?.totalVisitorsToday || 0 }}</h3>
-            <p>Today's Visitors</p>
-          </div>
-        </div>
         <div class="stat-card" style="border-left: 4px solid #1565c0;">
-          <div class="stat-icon" style="background: #e3f2fd; color: #1565c0;"><mat-icon>pending_actions</mat-icon></div>
+          <div class="stat-icon" style="background: #e3f2fd; color: #1565c0;"><mat-icon>assignment_late</mat-icon></div>
           <div class="stat-info">
-            <h3>{{ dashboardData()?.stats?.pendingAppointments || 0 }}</h3>
-            <p>Pending Approvals</p>
+            <h3>{{ dashboardData()?.pendingAppointments || 0 }}</h3>
+            <p>Awaiting Assignment</p>
           </div>
         </div>
-        <div class="stat-card" style="border-left: 4px solid #D4A017;">
-          <div class="stat-icon" style="background: #fff8e1; color: #D4A017;"><mat-icon>people</mat-icon></div>
+        <div class="stat-card" style="border-left: 4px solid #0F6B3A;">
+          <div class="stat-icon" style="background: #e8f5e9; color: #0F6B3A;"><mat-icon>pending_actions</mat-icon></div>
           <div class="stat-info">
-            <h3>{{ dashboardData()?.stats?.checkedInVisitors || 0 }}</h3>
-            <p>Active Visitors</p>
+            <h3>{{ dashboardData()?.assignedPendingAppointments || 0 }}</h3>
+            <p>Assigned - Pending Decision</p>
           </div>
         </div>
         <div class="stat-card" style="border-left: 4px solid #7b1fa2;">
           <div class="stat-icon" style="background: #f3e5f5; color: #7b1fa2;"><mat-icon>people_outline</mat-icon></div>
           <div class="stat-info">
-            <h3>{{ dashboardData()?.stats?.totalEmployees || 0 }}</h3>
+            <h3>{{ dashboardData()?.totalEmployees || 0 }}</h3>
             <p>Team Members</p>
+          </div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #D4A017;">
+          <div class="stat-icon" style="background: #fff8e1; color: #D4A017;"><mat-icon>groups</mat-icon></div>
+          <div class="stat-info">
+            <h3>{{ dashboardData()?.totalVisitorsThisMonth || 0 }}</h3>
+            <p>Visitors This Month</p>
           </div>
         </div>
       </div>
 
-      <div class="content-row">
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title>Pending Appointments</mat-card-title>
-            <button mat-button color="primary" routerLink="/dept/appointments">View All</button>
-          </mat-card-header>
-          <mat-card-content>
-            @for (apt of dashboardData()?.todayAppointments || []; track apt.id) {
-              <div class="apt-item">
-                <div class="apt-time">{{ apt.time }}</div>
-                <div class="apt-info">
-                  <strong>{{ apt.visitorName }}</strong>
-                  <p>{{ apt.purpose }}</p>
-                </div>
-                <span class="ecx-status-badge" [ngClass]="apt.status.toLowerCase()">{{ apt.status }}</span>
-              </div>
-            }
-            @if (!dashboardData()?.todayAppointments?.length) {
-              <p class="empty-state">No pending appointments</p>
-            }
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title>Active Visitors</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            @for (v of dashboardData()?.activeVisitors || []; track v.id) {
-              <div class="visitor-item">
-                <div class="visitor-info">
-                  <strong>{{ v.visitorName }}</strong>
-                  <p>Visiting {{ v.hostName }} | Floor: {{ v.floor || 'N/A' }}</p>
-                  <small>Checked in: {{ v.checkInTime }}</small>
-                </div>
-                <span class="badge" *ngIf="v.badgeNumber">{{ v.badgeNumber }}</span>
-              </div>
-            }
-            @if (!dashboardData()?.activeVisitors?.length) {
-              <p class="empty-state">No active visitors</p>
-            }
-          </mat-card-content>
-        </mat-card>
-      </div>
-
-      <mat-card class="activity-card">
-        <mat-card-header><mat-card-title>Recent Activity</mat-card-title></mat-card-header>
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Pending Appointments</mat-card-title>
+          <button mat-button color="primary" routerLink="/dept/appointments">View All</button>
+        </mat-card-header>
         <mat-card-content>
-          @for (activity of dashboardData()?.recentActivities || []; track activity.id) {
-            <div class="activity-item">
-              <mat-icon [style.color]="activity.color">{{ activity.icon }}</mat-icon>
-              <div>
-                <strong>{{ activity.title }}</strong>
-                <p>{{ activity.description }}</p>
-                <small>{{ activity.timestamp }}</small>
+          @for (apt of dashboardData()?.pendingAppointmentsList || []; track apt.id) {
+            <div class="apt-item">
+              <div class="apt-info">
+                <strong>{{ apt.visitorName }}</strong>
+                <p>{{ apt.purpose }}</p>
+                <small>{{ apt.requestedDate }} &middot; {{ apt.requestedStartTime }} - {{ apt.requestedEndTime }}</small>
+              </div>
+              <div class="apt-assign">
+                @if (apt.assignedEmployeeName) {
+                  <span class="assignee-chip">
+                    <mat-icon>person_pin</mat-icon> {{ apt.assignedEmployeeName }}
+                  </span>
+                } @else {
+                  <span class="assignee-chip unassigned">Unassigned</span>
+                }
+              </div>
+              <div class="apt-actions">
+                @if (!apt.assignedEmployeeId) {
+                  <mat-form-field appearance="outline" class="assign-select">
+                    <mat-select [ngModel]="selectedAssignee()[apt.id]" (ngModelChange)="onAssigneeChange(apt.id, $event)">
+                      <mat-option [value]="null">Select</mat-option>
+                      @for (emp of assignableEmployees(); track emp.id) {
+                        <mat-option [value]="emp.id">{{ emp.fullName }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <button mat-raised-button color="primary" [disabled]="!selectedAssignee()[apt.id]" (click)="assignAppointment(apt)">
+                    <mat-icon>assignment_ind</mat-icon> Assign
+                  </button>
+                }
+                <button mat-stroked-button [routerLink]="['/appointments', apt.id]">
+                  <mat-icon>visibility</mat-icon> View
+                </button>
               </div>
             </div>
+          }
+          @if (!dashboardData()?.pendingAppointmentsList?.length) {
+            <p class="empty-state">No pending appointments in your department</p>
           }
         </mat-card-content>
       </mat-card>
@@ -116,23 +114,54 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class DeptHeadDashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);
+  private appointmentService = inject(AppointmentService);
+  private employeeService = inject(EmployeeService);
   private authService = inject(AuthService);
-  dashboardData = signal<DashboardData | null>(null);
+  private snackBar = inject(MatSnackBar);
+
+  dashboardData = signal<DeptHeadDashboardData | null>(null);
   userName = signal('');
+  employees = signal<Employee[]>([]);
+  selectedAssignee = signal<Record<number, number | null>>({});
+
+  assignableEmployees = () =>
+    this.employees().filter(e => e.departmentId === this.dashboardData()?.departmentId && e.status === 'Active');
+
+  onAssigneeChange(appointmentId: number, employeeId: number | null): void {
+    this.selectedAssignee.set({ ...this.selectedAssignee(), [appointmentId]: employeeId });
+  }
 
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
     this.userName.set(user ? user.fullName : '');
 
+    this.loadDashboard();
+
+    this.employeeService.getAll({ limit: 200 }).subscribe({
+      next: (res) => { if (res.success && res.data) this.employees.set(res.data.items || []); },
+      error: () => { /* employee list is non-critical for rendering */ }
+    });
+  }
+
+  private loadDashboard(): void {
     this.dashboardService.getDeptHeadDashboard().subscribe({
-      next: (res) => { if (res.success) this.dashboardData.set(res.data); },
-      error: () => {
-        this.dashboardData.set({
-          stats: { totalVisitorsToday: 12, totalVisitorsThisWeek: 60, totalVisitorsThisMonth: 180, activeAppointments: 95, pendingAppointments: 5, checkedInVisitors: 4, totalEmployees: 15, totalDepartments: 1, unreadNotifications: 1 },
-          visitorChart: { labels: [], data: [], type: 'weekly' }, departmentChart: { labels: [], data: [], type: 'weekly' },
-          hourlyTraffic: [], recentActivities: [], todayAppointments: [], activeVisitors: [], pendingApprovals: 5, confidentialAppointments: 0
-        });
-      }
+      next: (res) => { if (res.success && res.data) this.dashboardData.set(res.data); },
+      error: () => this.snackBar.open('Failed to load department dashboard', 'Close', { duration: 3000 })
+    });
+  }
+
+  assignAppointment(apt: DeptHeadPendingAppointment): void {
+    const employeeId = this.selectedAssignee()[apt.id];
+    if (!employeeId) return;
+
+    this.appointmentService.assignEmployee({ appointmentId: apt.id, newEmployeeId: employeeId }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.snackBar.open('Employee assigned to appointment', 'Close', { duration: 3000 });
+          this.loadDashboard();
+        }
+      },
+      error: () => this.snackBar.open('Failed to assign employee', 'Close', { duration: 3000 })
     });
   }
 }

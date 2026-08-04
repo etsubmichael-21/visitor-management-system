@@ -108,9 +108,9 @@ export class VisitorService {
   getVisitorRecentAppointments(): Observable<Appointment[]> {
     return this.api.get<any>('/dashboard/visitor').pipe(
       map((res) => (res.data?.recentAppointments ?? []).map((a: any) => ({
-        id: String(a.id),
-        visitorId: String(a.visitorId),
-        employeeId: String(a.employeeId),
+        id: Number(a.id),
+        visitorId: Number(a.visitorId),
+        employeeId: Number(a.employeeId),
         employeeName: a.employeeName,
         departmentName: a.departmentName,
         purpose: a.purpose,

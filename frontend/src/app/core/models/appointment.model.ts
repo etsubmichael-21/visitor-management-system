@@ -1,12 +1,13 @@
 export interface Appointment {
-  id: string;
-  visitorId: string;
+  id: number;
+  visitorId: number;
   visitorName?: string;
   visitorEmail?: string;
   visitorPhone?: string;
-  employeeId: string;
+  employeeId: number;
   employeeName?: string;
   employeePosition?: string;
+  departmentId?: number;
   departmentName?: string;
   requestedDate: string;
   requestedStartTime: string;
@@ -20,15 +21,15 @@ export interface Appointment {
   appointmentCode?: string;
   rejectionReason?: string;
   notes?: string;
-  delegatedToEmployeeId?: string;
+  delegatedToEmployeeId?: number;
   delegatedToEmployeeName?: string;
-  originalEmployeeId?: string;
+  originalEmployeeId?: number;
   originalEmployeeName?: string;
-  assignedDepartmentId?: string;
+  assignedDepartmentId?: number;
   assignedDepartmentName?: string;
-  assignedEmployeeId?: string;
+  assignedEmployeeId?: number;
   assignedEmployeeName?: string;
-  redirectedFromDepartmentId?: string;
+  redirectedFromDepartmentId?: number;
   redirectedFromDepartmentName?: string;
   redirectReason?: string;
   attachments: any[];

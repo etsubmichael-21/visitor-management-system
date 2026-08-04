@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
 import { Department, CreateDepartmentRequest } from '../models/common.model';
 import { ApiResponse } from '../models/common.model';
@@ -9,7 +9,9 @@ export class DepartmentService {
   constructor(private api: ApiService) {}
 
   getAll(): Observable<ApiResponse<Department[]>> {
-    return this.api.get<Department[]>('/departments');
+    return this.api.getList<Department>('/departments').pipe(
+      map((res) => ({ ...res, data: res.data?.items ?? [] }))
+    );
   }
 
   getById(id: number): Observable<ApiResponse<Department>> {

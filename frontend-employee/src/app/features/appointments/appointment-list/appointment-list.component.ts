@@ -57,7 +57,6 @@ interface TabConfig {
               <mat-select [(ngModel)]="selectedStatus" (ngModelChange)="onStatusFilterChange()">
                 <mat-option value="">All Statuses</mat-option>
                 <mat-option value="Pending">Pending</mat-option>
-                <mat-option value="PendingAssignment">Pending Assignment</mat-option>
                 <mat-option value="Approved">Approved</mat-option>
                 <mat-option value="Rejected">Rejected</mat-option>
                 <mat-option value="Completed">Completed</mat-option>
@@ -213,7 +212,6 @@ export class AppointmentListComponent implements OnInit {
     { label: 'All', statuses: [] },
     { label: 'Active', statuses: ['Approved', 'Rescheduled'] },
     { label: 'Pending', statuses: ['Pending'] },
-    { label: 'Pending Assignment', statuses: ['PendingAssignment'] },
     { label: 'Completed', statuses: ['Completed'] },
     { label: 'Rejected', statuses: ['Rejected'] },
     { label: 'Cancelled', statuses: ['Cancelled'] }

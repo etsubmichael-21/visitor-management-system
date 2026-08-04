@@ -27,7 +27,7 @@ export class AppointmentService {
     return this.api.getPaged<Appointment>('/appointments', params).pipe(map((res) => res.data));
   }
 
-  getAppointment(id: string): Observable<Appointment> {
+  getAppointment(id: string | number): Observable<Appointment> {
     return this.api.get<Appointment>(`/appointments/${id}`).pipe(map((res) => res.data));
   }
 
@@ -44,7 +44,7 @@ export class AppointmentService {
     return this.api.uploadWithProgress<Appointment>('/appointments', this.toFormData(data, supportingLetter));
   }
 
-  getSupportingLetter(id: string, download = true): Observable<Blob> {
+  getSupportingLetter(id: string | number, download = true): Observable<Blob> {
     return this.api.download(`/appointments/${id}/supporting-letter${download ? '?download=true' : ''}`);
   }
 
@@ -64,11 +64,11 @@ export class AppointmentService {
     return fd;
   }
 
-  rescheduleAppointment(id: string, data: RescheduleRequest): Observable<Appointment> {
+  rescheduleAppointment(id: string | number, data: RescheduleRequest): Observable<Appointment> {
     return this.api.post<Appointment>(`/appointments/${id}/reschedule`, data).pipe(map((res) => res.data));
   }
 
-  cancelAppointment(id: string, reason?: string): Observable<Appointment> {
+  cancelAppointment(id: string | number, reason?: string): Observable<Appointment> {
     return this.api.post<Appointment>(`/appointments/${id}/cancel`, { reason }).pipe(map((res) => res.data));
   }
 

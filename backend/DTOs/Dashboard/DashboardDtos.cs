@@ -43,6 +43,7 @@ public class DepartmentHeadDashboardDto
     public string DepartmentName { get; set; } = string.Empty;
     public int TotalEmployees { get; set; }
     public int PendingAppointments { get; set; }
+    public int AssignedPendingAppointments { get; set; }
     public int ApprovedThisWeek { get; set; }
     public int TotalVisitorsThisMonth { get; set; }
     public List<AppointmentResponseDto> PendingAppointmentsList { get; set; } = new();

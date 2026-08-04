@@ -36,6 +36,7 @@ public class AppointmentResponseDto
     public int EmployeeId { get; set; }
     public string EmployeeName { get; set; } = string.Empty;
     public string EmployeePosition { get; set; } = string.Empty;
+    public int DepartmentId { get; set; }
     public string DepartmentName { get; set; } = string.Empty;
     public DateOnly RequestedDate { get; set; }
     public DateTimeOffset RequestedStartTime { get; set; }

@@ -33,4 +33,10 @@ public static class ClaimsPrincipalExtensions
         var role = user.GetRole();
         return role is "Admin" or "CEO" or "DepartmentHead";
     }
+
+    public static bool IsSuperAdmin(this ClaimsPrincipal user)
+    {
+        var role = user.GetRole();
+        return role is "Admin" or "CEO";
+    }
 }

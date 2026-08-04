@@ -68,3 +68,33 @@ export interface DashboardData {
   pendingApprovals?: number;
   confidentialAppointments?: number;
 }
+
+export interface DeptHeadDashboardData {
+  departmentId: number;
+  departmentName: string;
+  totalEmployees: number;
+  pendingAppointments: number;
+  assignedPendingAppointments: number;
+  approvedThisWeek: number;
+  totalVisitorsThisMonth: number;
+  pendingAppointmentsList: DeptHeadPendingAppointment[];
+}
+
+export interface DeptHeadPendingAppointment {
+  id: number;
+  visitorName: string;
+  employeeName: string;
+  departmentName: string;
+  purpose: string;
+  status: string;
+  requestedDate: string;
+  requestedStartTime: string;
+  requestedEndTime: string;
+  isConfidential: boolean;
+  assignedEmployeeId?: number;
+  assignedEmployeeName?: string;
+  assignedDepartmentId?: number;
+  assignedDepartmentName?: string;
+  notes?: string;
+  createdAt: string;
+}

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
@@ -167,6 +167,7 @@ export class RescheduleComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private appointmentService = inject(AppointmentService);
+  private cdr = inject(ChangeDetectorRef);
 
   appointmentId: string = '';
   appointment: Appointment | null = null;
@@ -198,10 +199,12 @@ export class RescheduleComponent implements OnInit {
       next: (data) => {
         this.appointment = data;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.errorMessage = err?.error?.message || 'Failed to load appointment details.';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -229,14 +232,16 @@ export class RescheduleComponent implements OnInit {
         next: () => {
           this.successMessage = 'Appointment rescheduled successfully.';
           this.submitting = false;
+          this.cdr.markForCheck();
           setTimeout(() => {
             this.router.navigate(['/appointments']);
           }, 1200);
         },
         error: (err) => {
           this.errorMessage =
-            err?.error?.message || 'Failed to reschedule appointment. Please try again.';
+            (err && (err as any).message) || 'Failed to reschedule appointment. Please try again.';
           this.submitting = false;
+          this.cdr.markForCheck();
         },
       });
   }

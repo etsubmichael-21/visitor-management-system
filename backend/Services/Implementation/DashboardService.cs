@@ -54,19 +54,85 @@ public class DashboardService : IDashboardService
             TotalAppointments = await _context.Appointments.CountAsync(a => a.RequestedDate >= monthStart),
             ConfidentialAppointments = await _context.Appointments.CountAsync(a => a.IsConfidential && a.RequestedDate >= monthStart),
             PendingActions = await _context.Appointments.CountAsync(a => a.Status == "Pending"),
-            ApprovedThisMonth = await _context.Appointments.CountAsync(a => a.Status == "Approved" && a.ApprovalDate >= monthStart.ToDateTime(TimeOnly.MinValue)),
-            RejectedThisMonth = await _context.Appointments.CountAsync(a => a.Status == "Rejected" && a.ApprovalDate >= monthStart.ToDateTime(TimeOnly.MinValue))
+            ApprovedThisMonth = await _context.Appointments.CountAsync(a => a.Status == "Approved" && a.ApprovalDate >= new DateTimeOffset(monthStart.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)),
+            RejectedThisMonth = await _context.Appointments.CountAsync(a => a.Status == "Rejected" && a.ApprovalDate >= new DateTimeOffset(monthStart.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero))
         };
     }
 
     public async Task<DepartmentHeadDashboardDto> GetDepartmentHeadDashboardAsync(int departmentId)
     {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var weekStart = today.AddDays(-(int)today.DayOfWeek);
+        var monthStart = new DateOnly(today.Year, today.Month, 1);
+
         var dept = await _context.Departments.FindAsync(departmentId);
+
+        var awaitingAssignment = await _context.Appointments
+            .CountAsync(a => a.Status == "Pending" && a.AssignedEmployeeId == null
+                && (a.AssignedDepartmentId == departmentId
+                    || (a.AssignedDepartmentId == null && a.Employee.DepartmentId == departmentId)));
+
+        var assignedPending = await _context.Appointments
+            .CountAsync(a => a.Status == "Pending" && a.AssignedEmployeeId != null
+                && (a.AssignedDepartmentId == departmentId
+                    || (a.AssignedDepartmentId == null && a.Employee.DepartmentId == departmentId)));
+
+        var approvedThisWeek = await _context.Appointments
+            .CountAsync(a => a.Status == "Approved" && a.ApprovalDate >= new DateTimeOffset(weekStart.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)
+                && (a.AssignedDepartmentId == departmentId
+                    || (a.AssignedDepartmentId == null && a.Employee.DepartmentId == departmentId)));
+
+        var totalVisitorsThisMonth = await _context.Appointments
+            .CountAsync(a => a.RequestedDate >= monthStart && a.RequestedDate <= today
+                && (a.AssignedDepartmentId == departmentId
+                    || (a.AssignedDepartmentId == null && a.Employee.DepartmentId == departmentId)));
+
+        var pendingAppointments = await _context.Appointments
+            .Include(a => a.Visitor)
+            .Include(a => a.Employee).ThenInclude(e => e.Department)
+            .Include(a => a.AssignedEmployee).ThenInclude(e => e.Department)
+            .Where(a => a.Status == "Pending"
+                && (a.AssignedDepartmentId == departmentId
+                    || (a.AssignedDepartmentId == null && a.Employee.DepartmentId == departmentId)))
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(20)
+            .Select(a => new AppointmentResponseDto
+            {
+                Id = a.Id,
+                VisitorId = a.VisitorId,
+                VisitorName = a.Visitor.FullName,
+                EmployeeId = a.EmployeeId,
+                EmployeeName = a.Employee.FullName,
+                DepartmentName = a.Employee.Department.Name,
+                Purpose = a.Purpose,
+                Status = a.Status,
+                RequestedDate = a.RequestedDate,
+                RequestedStartTime = a.RequestedStartTime,
+                RequestedEndTime = a.RequestedEndTime,
+                CheckInAllowed = a.CheckInAllowed,
+                IsConfidential = a.IsConfidential,
+                AppointmentCode = a.AppointmentCode,
+                Notes = a.Notes,
+                AssignedEmployeeId = a.AssignedEmployeeId,
+                AssignedEmployeeName = a.AssignedEmployee != null ? a.AssignedEmployee.FullName : null,
+                AssignedDepartmentId = a.AssignedDepartmentId,
+                AssignedDepartmentName = a.AssignedDepartment != null ? a.AssignedDepartment.Name : null,
+                CreatedAt = a.CreatedAt
+            }).ToListAsync();
+
+        _logger.LogInformation("[Dashboard:DepartmentHead] DepartmentId={DepartmentId} DepartmentName={DepartmentName} AwaitingAssignment={Awaiting} AssignedPending={AssignedPending} ApprovedThisWeek={ApprovedWeek} VisitorsThisMonth={VisitorsMonth}",
+            departmentId, dept?.Name ?? "", awaitingAssignment, assignedPending, approvedThisWeek, totalVisitorsThisMonth);
+
         return new DepartmentHeadDashboardDto
         {
-            DepartmentId = departmentId, DepartmentName = dept?.Name ?? "",
+            DepartmentId = departmentId,
+            DepartmentName = dept?.Name ?? "",
             TotalEmployees = await _context.Employees.CountAsync(e => e.DepartmentId == departmentId),
-            PendingAppointments = await _context.Appointments.CountAsync(a => a.Employee.DepartmentId == departmentId && a.Status == "Pending")
+            PendingAppointments = awaitingAssignment,
+            AssignedPendingAppointments = assignedPending,
+            ApprovedThisWeek = approvedThisWeek,
+            TotalVisitorsThisMonth = totalVisitorsThisMonth,
+            PendingAppointmentsList = pendingAppointments
         };
     }
 

@@ -1,7 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -39,7 +41,7 @@ import { Appointment } from '../../../core/models/appointment.model';
         </a>
         <div>
           <h1 class="page-title">Appointment Details</h1>
-          <p class="page-subtitle">Appointment #{{ appointment?.id?.substring(0, 8) || '...' }}</p>
+          <p class="page-subtitle">Appointment #{{ appointment?.appointmentCode || '...' }}</p>
         </div>
       </div>
 
@@ -198,9 +200,11 @@ import { Appointment } from '../../../core/models/appointment.model';
   `,
   styleUrls: ['./appointment-detail.component.scss'],
 })
-export class AppointmentDetailComponent implements OnInit {
+export class AppointmentDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private appointmentService = inject(AppointmentService);
+  private cdr = inject(ChangeDetectorRef);
+  private destroy$ = new Subject<void>();
 
   appointment: Appointment | null = null;
   loading = true;
@@ -211,21 +215,50 @@ export class AppointmentDetailComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
+    console.log(`[AppointmentDetail] Appointment ID received from route: ${id}`);
+
     if (id) {
-      this.appointmentService.getAppointment(id).subscribe({
-        next: (apt) => {
-          this.appointment = apt;
-          this.loading = false;
-        },
-        error: () => {
-          this.errorMessage = 'Failed to load appointment details.';
-          this.loading = false;
-        },
-      });
+      this.loadAppointment(id);
     } else {
       this.errorMessage = 'Invalid appointment ID.';
       this.loading = false;
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private loadAppointment(id: string): void {
+    this.loading = true;
+    const url = `/appointments/${id}`;
+    console.log(`[AppointmentDetail] Calling API: ${url}`);
+
+    this.appointmentService
+      .getAppointment(id)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.loading = false;
+          this.cdr.markForCheck();
+          console.log('[AppointmentDetail] Loading state set to false (finalize).');
+        })
+      )
+      .subscribe({
+        next: (apt) => {
+          console.log(`[AppointmentDetail] Appointment loaded: id=${apt.id} status=${apt.status}`);
+          this.appointment = apt;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          const message =
+            (err && (err as any).message) || 'Failed to load appointment details.';
+          console.error(`[AppointmentDetail] Failed to load appointment: ${message}`);
+          this.errorMessage = message;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   cancelAppointment(): void {

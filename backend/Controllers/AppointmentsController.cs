@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using EcxVisitorManagement.Data;
 using EcxVisitorManagement.DTOs.Appointments;
 using EcxVisitorManagement.DTOs.Common;
 using EcxVisitorManagement.Extensions;
@@ -13,16 +15,32 @@ namespace EcxVisitorManagement.Controllers;
 public class AppointmentsController : ControllerBase
 {
     private readonly IAppointmentService _appointmentService;
+    private readonly AppDbContext _context;
+    private readonly ILogger<AppointmentsController> _logger;
 
-    public AppointmentsController(IAppointmentService appointmentService) => _appointmentService = appointmentService;
+    public AppointmentsController(IAppointmentService appointmentService, AppDbContext context, ILogger<AppointmentsController> logger)
+    {
+        _appointmentService = appointmentService;
+        _context = context;
+        _logger = logger;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
     {
-        if (User.IsAdminOrHigher())
+        if (User.IsSuperAdmin() || User.GetRole() == "Receptionist")
         {
             var result = await _appointmentService.GetAllAsync(request);
             return Ok(ApiResponse<PagedResponse<AppointmentResponseDto>>.Ok(result));
+        }
+
+        if (User.GetRole() == "DepartmentHead")
+        {
+            var departmentId = await GetCurrentEmployeeDepartmentIdAsync();
+            if (departmentId == null) return Forbid();
+
+            var deptResult = await _appointmentService.GetAllByDepartmentAsync(departmentId.Value, request);
+            return Ok(ApiResponse<PagedResponse<AppointmentResponseDto>>.Ok(deptResult));
         }
 
         var employeeId = User.GetEmployeeId();
@@ -45,9 +63,24 @@ public class AppointmentsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
+        var role = User.GetRole();
+        var employeeId = User.GetEmployeeId();
+        var visitorId = User.GetVisitorId();
+        _logger.LogInformation("[Appointments:GetById] Endpoint hit. AppointmentId={Id} Role={Role} EmployeeId={EmployeeId} VisitorId={VisitorId}",
+            id, role, employeeId, visitorId);
+
         var result = await _appointmentService.GetByIdAsync(id);
         if (result == null) return NotFound(ApiResponse<AppointmentResponseDto>.NotFound("Appointment not found"));
-        return Ok(ApiResponse<AppointmentResponseDto>.Ok(result));
+
+        if (!await CanViewAppointmentAsync(result))
+        {
+            _logger.LogWarning("[Appointments:GetById] AppointmentId={Id} access denied for Role={Role} EmployeeId={EmployeeId} VisitorId={VisitorId}",
+                id, role, employeeId, visitorId);
+            return Forbid();
+        }
+
+        _logger.LogInformation("[Appointments:GetById] AppointmentId={Id} returning OK", id);
+        return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment retrieved successfully."));
     }
 
     [HttpPost]
@@ -65,15 +98,7 @@ public class AppointmentsController : ControllerBase
         if (appointment == null)
             return NotFound(ApiResponse<object>.NotFound("Appointment not found"));
 
-        var visitorId = User.GetVisitorId();
-        var employeeId = User.GetEmployeeId();
-        var isVisitorOwner = visitorId.HasValue && appointment.VisitorId == visitorId.Value;
-        var isAssignedEmployee = employeeId.HasValue
-            && (appointment.EmployeeId == employeeId.Value
-                || appointment.DelegatedToEmployeeId == employeeId.Value
-                || appointment.AssignedEmployeeId == employeeId.Value);
-
-        if (!User.IsAdminOrHigher() && !isVisitorOwner && !isAssignedEmployee)
+        if (!await CanViewAppointmentAsync(appointment))
             return Forbid();
 
         try
@@ -176,7 +201,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpPost("{id}/redirect-department")]
-    [Authorize(Roles = "Admin,CEO,DepartmentHead")]
+    [Authorize(Roles = "Admin,CEO")]
     public async Task<IActionResult> RedirectToDepartment(int id, [FromBody] AppointmentDepartmentRedirectDto dto)
     {
         try
@@ -195,6 +220,24 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
+            if (User.GetRole() == "DepartmentHead")
+            {
+                var departmentId = await GetCurrentEmployeeDepartmentIdAsync();
+                if (departmentId == null) return Forbid();
+
+                var effectiveDepartmentId = await GetEffectiveDepartmentIdAsync(id);
+                if (effectiveDepartmentId == null)
+                    return NotFound(ApiResponse<AppointmentResponseDto>.NotFound("Appointment not found"));
+                if (effectiveDepartmentId.Value != departmentId.Value)
+                    return Forbid();
+
+                var targetEmployee = await _context.Employees.FindAsync(dto.NewEmployeeId);
+                if (targetEmployee == null)
+                    return BadRequest(ApiResponse<AppointmentResponseDto>.BadRequest("Target employee not found"));
+                if (targetEmployee.DepartmentId != departmentId.Value)
+                    return Forbid();
+            }
+
             var userId = User.GetUserId();
             var result = await _appointmentService.AssignEmployeeAsync(id, dto, userId);
             return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Appointment assigned to employee"));
@@ -295,8 +338,30 @@ public class AppointmentsController : ControllerBase
     [HttpGet("by-visitor/{visitorId}")]
     public async Task<IActionResult> GetByVisitor(int visitorId)
     {
-        var result = await _appointmentService.GetByVisitorAsync(visitorId);
-        return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+        var callerVisitorId = User.GetVisitorId();
+        if (callerVisitorId != null)
+        {
+            if (callerVisitorId.Value != visitorId)
+                return Forbid();
+            var visitorResult = await _appointmentService.GetByVisitorAsync(visitorId);
+            return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(visitorResult));
+        }
+
+        if (User.IsSuperAdmin())
+        {
+            var result = await _appointmentService.GetByVisitorAsync(visitorId);
+            return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+        }
+
+        var employeeId = User.GetEmployeeId();
+        if (employeeId == null)
+            return Forbid();
+
+        if (!await HasRelationToVisitorAsync(employeeId.Value, visitorId))
+            return Forbid();
+
+        var empResult = await _appointmentService.GetByVisitorAsync(visitorId);
+        return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(empResult));
     }
 
     [HttpGet("by-employee/{employeeId}")]
@@ -316,10 +381,19 @@ public class AppointmentsController : ControllerBase
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
     {
-        if (User.IsAdminOrHigher())
+        if (User.IsSuperAdmin())
         {
             var result = await _appointmentService.GetPendingAsync();
             return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+        }
+
+        if (User.GetRole() == "DepartmentHead")
+        {
+            var departmentId = await GetCurrentEmployeeDepartmentIdAsync();
+            if (departmentId == null) return Forbid();
+
+            var deptResult = await _appointmentService.GetPendingByDepartmentAsync(departmentId.Value);
+            return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(deptResult));
         }
 
         var employeeId = User.GetEmployeeId();
@@ -333,10 +407,19 @@ public class AppointmentsController : ControllerBase
     [HttpGet("today")]
     public async Task<IActionResult> GetToday()
     {
-        if (User.IsAdminOrHigher())
+        if (User.IsSuperAdmin())
         {
             var result = await _appointmentService.GetTodayAsync();
             return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+        }
+
+        if (User.GetRole() == "DepartmentHead")
+        {
+            var departmentId = await GetCurrentEmployeeDepartmentIdAsync();
+            if (departmentId == null) return Forbid();
+
+            var deptResult = await _appointmentService.GetTodayByDepartmentAsync(departmentId.Value);
+            return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(deptResult));
         }
 
         var employeeId = User.GetEmployeeId();
@@ -351,6 +434,13 @@ public class AppointmentsController : ControllerBase
     [Authorize(Roles = "Admin,CEO,DepartmentHead")]
     public async Task<IActionResult> GetByDepartment(int departmentId)
     {
+        if (User.GetRole() == "DepartmentHead")
+        {
+            var myDepartmentId = await GetCurrentEmployeeDepartmentIdAsync();
+            if (myDepartmentId == null || myDepartmentId.Value != departmentId)
+                return Forbid();
+        }
+
         var result = await _appointmentService.GetByDepartmentAsync(departmentId);
         return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
     }
@@ -359,17 +449,28 @@ public class AppointmentsController : ControllerBase
     [Authorize(Roles = "Admin,CEO,DepartmentHead")]
     public async Task<IActionResult> GetConfidential()
     {
+        if (User.GetRole() == "DepartmentHead")
+        {
+            var departmentId = await GetCurrentEmployeeDepartmentIdAsync();
+            if (departmentId == null) return Forbid();
+
+            var deptResult = await _appointmentService.GetConfidentialByDepartmentAsync(departmentId.Value);
+            return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(deptResult));
+        }
+
         var result = await _appointmentService.GetConfidentialAsync();
         return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
     }
 
     private async Task<int?> EnsureOwnershipAsync(int appointmentId)
     {
-        if (User.IsAdminOrHigher())
+        if (User.IsSuperAdmin())
         {
-            var userId = User.GetUserId();
-            return userId;
+            return User.GetUserId();
         }
+
+        if (User.GetRole() == "DepartmentHead")
+            return null;
 
         var employeeId = User.GetEmployeeId();
         if (employeeId == null) return null;
@@ -377,9 +478,87 @@ public class AppointmentsController : ControllerBase
         var appointment = await _appointmentService.GetByIdAsync(appointmentId);
         if (appointment == null) return null;
 
-        if (appointment.EmployeeId != employeeId.Value)
+        var id = employeeId.Value;
+        var isAssigned = appointment.AssignedEmployeeId == id;
+        var isLegacyHost = appointment.AssignedEmployeeId == null && appointment.EmployeeId == id;
+        var isDelegated = appointment.DelegatedToEmployeeId == id;
+
+        if (!isAssigned && !isLegacyHost && !isDelegated)
             return null;
 
         return User.GetUserId();
+    }
+
+    private async Task<bool> CanViewAppointmentAsync(AppointmentResponseDto appointment)
+    {
+        if (User.IsSuperAdmin())
+            return true;
+
+        var role = User.GetRole();
+        var employeeId = User.GetEmployeeId();
+        var visitorId = User.GetVisitorId();
+
+        if (role == "DepartmentHead")
+        {
+            if (employeeId == null)
+                return false;
+            var headDepartmentId = await GetCurrentEmployeeDepartmentIdAsync();
+            if (headDepartmentId == null)
+                return false;
+            var effectiveDepartmentId = appointment.AssignedDepartmentId ?? appointment.DepartmentId;
+            return effectiveDepartmentId == headDepartmentId.Value;
+        }
+
+        if (employeeId != null)
+        {
+            var id = employeeId.Value;
+            return appointment.AssignedEmployeeId == id
+                || appointment.DelegatedToEmployeeId == id
+                || appointment.OriginalEmployeeId == id
+                || (appointment.AssignedEmployeeId == null && appointment.EmployeeId == id);
+        }
+
+        if (visitorId != null)
+            return appointment.VisitorId == visitorId.Value;
+
+        return false;
+    }
+
+    private async Task<bool> HasRelationToVisitorAsync(int employeeId, int visitorId)
+    {
+        if (User.GetRole() == "DepartmentHead")
+        {
+            var departmentId = await GetCurrentEmployeeDepartmentIdAsync();
+            if (departmentId == null) return false;
+
+            return await _context.Appointments.AnyAsync(a =>
+                a.VisitorId == visitorId &&
+                (a.AssignedDepartmentId == departmentId.Value
+                    || (a.AssignedDepartmentId == null && a.Employee.DepartmentId == departmentId.Value)));
+        }
+
+        return await _context.Appointments.AnyAsync(a =>
+            a.VisitorId == visitorId &&
+            (a.EmployeeId == employeeId
+                || a.AssignedEmployeeId == employeeId
+                || a.DelegatedToEmployeeId == employeeId
+                || a.OriginalEmployeeId == employeeId));
+    }
+
+    private async Task<int?> GetCurrentEmployeeDepartmentIdAsync()
+    {
+        var employeeId = User.GetEmployeeId();
+        if (employeeId == null) return null;
+        var employee = await _context.Employees.FindAsync(employeeId.Value);
+        return employee?.DepartmentId;
+    }
+
+    private async Task<int?> GetEffectiveDepartmentIdAsync(int appointmentId)
+    {
+        var appointment = await _context.Appointments
+            .Include(a => a.Employee)
+            .FirstOrDefaultAsync(a => a.Id == appointmentId);
+        if (appointment == null) return null;
+        return appointment.AssignedDepartmentId ?? appointment.Employee.DepartmentId;
     }
 }
