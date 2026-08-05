@@ -14,7 +14,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { VisitService } from '../../../core/services/visit.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { AppointmentService } from '../../../core/services/appointment.service';
 import { Visit, VisitStatus } from '../../../core/models/visit.model';
+import { Appointment, AppointmentProperty } from '../../../core/models/appointment.model';
 
 interface ReturnedItemRow {
   key: number;
@@ -127,9 +129,9 @@ interface ReturnedItemRow {
             <div class="returned-items-section">
               <div class="returned-items-head">
                 <h3>Returned Items</h3>
-                @if (visitorHasItems(selectedVisitor()!)) {
+                @if (visitorHasItems(selectedVisitor()!) || (selectedAppointment()?.properties?.length ?? 0) > 0) {
                   <span class="property-status unverified">
-                    <mat-icon>info</mat-icon> Visitor brought in items &mdash; confirm returned items
+                    <mat-icon>info</mat-icon> Verified items are pre-filled &mdash; confirm returned items, use Add Item for anything new
                   </span>
                 }
               </div>
@@ -283,6 +285,7 @@ export class CheckOutComponent implements OnInit {
   private authService = inject(AuthService);
   private route = inject(ActivatedRoute);
   private snackBar = inject(MatSnackBar);
+  private appointmentService = inject(AppointmentService);
 
   activeColumns = ['visitor', 'badge', 'host', 'department', 'checkIn', 'status', 'actions'];
   checkedOutColumns = ['visitor', 'badge', 'host', 'department', 'checkIn', 'checkOut', 'duration', 'status'];
@@ -290,6 +293,7 @@ export class CheckOutComponent implements OnInit {
   activeVisitors = signal<Visit[]>([]);
   checkedOutVisitors = signal<Visit[]>([]);
   selectedVisitor = signal<Visit | null>(null);
+  selectedAppointment = signal<Appointment | null>(null);
   activeLoading = signal(false);
   checkedOutLoading = signal(false);
   isLoading = signal(false);
@@ -352,9 +356,67 @@ export class CheckOutComponent implements OnInit {
     });
   }
 
-  selectVisitor(visitor: Visit): void { this.selectedVisitor.set(visitor); }
+  selectVisitor(visitor: Visit): void {
+    this.selectedVisitor.set(visitor);
+    this.selectedAppointment.set(null);
+    this.badgeReturned = false;
+    this.notes = '';
+    this.loadVerificationItems(visitor);
+  }
 
-  cancelSelection(): void { this.selectedVisitor.set(null); }
+  cancelSelection(): void {
+    this.selectedVisitor.set(null);
+    this.selectedAppointment.set(null);
+    this.returnedItems.set([]);
+    this.returnedItemsError.set('');
+  }
+
+  private loadVerificationItems(visitor: Visit): void {
+    this.returnedItems.set([]);
+    this.returnedItemsError.set('');
+    const appointmentId = visitor.appointmentId;
+    if (!appointmentId) {
+      this.prefillFromVisitItems(visitor);
+      return;
+    }
+    this.appointmentService.getById(appointmentId).subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.selectedAppointment.set(res.data);
+          const verified = (res.data.properties || []).filter((p) => p.isVerified);
+          if (verified.length) {
+            this.returnedItems.set(verified.map((p) => this.rowFromProperty(p)));
+            return;
+          }
+        }
+        this.prefillFromVisitItems(visitor);
+      },
+      error: () => this.prefillFromVisitItems(visitor)
+    });
+  }
+
+  private prefillFromVisitItems(visitor: Visit): void {
+    const items = visitor.visitorItems as any;
+    if (!Array.isArray(items) || !items.length) return;
+    this.returnedItems.set(items.map((i: any) => ({
+      key: this.nextItemKey++,
+      itemName: i.itemName ?? i.name ?? '',
+      description: i.description ?? '',
+      quantity: i.quantity > 0 ? i.quantity : 1,
+      remarks: ''
+    })));
+  }
+
+  private rowFromProperty(p: AppointmentProperty): ReturnedItemRow {
+    const details = [p.brand, p.model, p.serialNumber].filter(Boolean);
+    return {
+      key: this.nextItemKey++,
+      itemName: p.propertyName || p.propertyType,
+      description: details.join(' / '),
+      quantity: p.quantity > 0 ? p.quantity : 1,
+      remarks: ''
+    };
+  }
 
   visitorHasItems(v: Visit): boolean {
     const items = v.visitorItems as any;
@@ -397,6 +459,13 @@ export class CheckOutComponent implements OnInit {
   }
 
   itemsSummary(v: Visit): string {
+    const aptProps = (this.selectedAppointment()?.properties || []).filter((p) => p.isVerified);
+    if (aptProps.length) {
+      return aptProps.map((p) => {
+        const name = p.propertyName || p.propertyType || 'Item';
+        return p.quantity > 1 ? `${name} x${p.quantity}` : name;
+      }).join(', ');
+    }
     const items = v.visitorItems as any;
     if (!items) return 'None';
     if (Array.isArray(items)) {
@@ -461,6 +530,7 @@ export class CheckOutComponent implements OnInit {
             : { ...visitor, status: 'CheckedOut' as VisitStatus, checkOutTime: new Date().toISOString() };
           this.checkedOutVisitors.update(list => [checkedOut, ...list]);
           this.selectedVisitor.set(null);
+          this.selectedAppointment.set(null);
           this.returnedItems.set([]);
           this.returnedItemsError.set('');
           this.badgeReturned = false;
