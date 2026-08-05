@@ -10,6 +10,7 @@ public interface IAppointmentRepository : IGenericRepository<Appointment>
     Task<PagedResponse<Appointment>> GetPagedByVisitorIdAsync(int visitorId, PageRequest request);
     Task<IReadOnlyList<Appointment>> GetByVisitorIdAsync(int visitorId);
     Task<IReadOnlyList<Appointment>> GetByEmployeeIdAsync(int employeeId);
+    Task<IReadOnlyList<Appointment>> GetByEmployeeAndDateAsync(int employeeId, DateOnly date);
     Task<IReadOnlyList<Appointment>> GetPendingAsync();
     Task<IReadOnlyList<Appointment>> GetPendingByEmployeeIdAsync(int employeeId);
     Task<IReadOnlyList<Appointment>> GetTodayAsync();

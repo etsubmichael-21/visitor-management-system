@@ -63,6 +63,7 @@ export const routes: Routes = [
 
       // Security routes
       { path: 'security/dashboard', loadComponent: () => import('./features/dashboard/security-dashboard/security-dashboard.component').then(m => m.SecurityDashboardComponent), canActivate: [RoleGuard], data: { roles: ['Security'] } },
+      { path: 'security/verify', loadComponent: () => import('./features/verify/verify.component').then(m => m.VerifyComponent), canActivate: [RoleGuard], data: { roles: ['Security'] } },
       { path: 'security/check-out', loadComponent: () => import('./features/visits/check-out/check-out.component').then(m => m.CheckOutComponent), canActivate: [RoleGuard], data: { roles: ['Security'] } },
       { path: 'security/active', loadComponent: () => import('./features/visits/visit-list/visit-list.component').then(m => m.VisitListComponent), canActivate: [RoleGuard], data: { roles: ['Security'] } },
 

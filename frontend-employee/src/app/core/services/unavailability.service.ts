@@ -22,6 +22,10 @@ export class UnavailabilityService {
     return this.api.post<EmployeeUnavailability>('/employee-unavailability', data);
   }
 
+  update(id: number, data: CreateUnavailabilityRequest): Observable<ApiResponse<EmployeeUnavailability>> {
+    return this.api.put<EmployeeUnavailability>(`/employee-unavailability/${id}`, data);
+  }
+
   delete(id: number): Observable<ApiResponse<any>> {
     return this.api.delete<any>(`/employee-unavailability/${id}`);
   }

@@ -4,6 +4,7 @@ export interface Appointment {
   visitorName: string;
   visitorEmail: string;
   visitorPhone: string;
+  visitorCompany?: string;
   employeeId: number;
   employeeName: string;
   employeePosition: string;
@@ -15,6 +16,9 @@ export interface Appointment {
   purpose: string;
   status: AppointmentStatus;
   checkInAllowed: boolean;
+  visitCheckInTime?: string;
+  visitCheckOutTime?: string;
+  badgeNumber?: string;
   isConfidential: boolean;
   appointmentCode?: string;
   rejectionReason?: string;
@@ -31,6 +35,10 @@ export interface Appointment {
   assignedBy?: number;
   assignedAt?: string;
   supportingLetter?: SupportingLetter | null;
+  propertyAuthorizationLetter?: PropertyAuthorizationLetter | null;
+  properties?: AppointmentProperty[];
+  hasProperties?: boolean;
+  allPropertiesVerified?: boolean;
   commentCount: number;
   createdAt: string;
   updatedAt?: string;
@@ -43,6 +51,42 @@ export interface SupportingLetter {
   fileSize: number;
   contentType: string;
   uploadedAt?: string;
+}
+
+export interface PropertyAuthorizationLetter {
+  fileName: string;
+  originalFileName: string;
+  filePath: string;
+  fileSize: number;
+  contentType: string;
+  uploadedAt?: string;
+}
+
+export interface AppointmentProperty {
+  id: number;
+  propertyName?: string;
+  propertyType: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  assetTagNumber?: string;
+  quantity: number;
+  description?: string;
+  isVerified: boolean;
+  verificationStatus?: string;
+  verifiedAt?: string;
+  verifiedByUserName?: string;
+}
+
+export interface PropertyVerificationItem {
+  id?: number;
+  propertyType: string;
+  propertyName?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  quantity: number;
+  verificationStatus: string;
 }
 
 export type AppointmentStatus = 'Pending' | 'PendingAssignment' | 'Approved' | 'Rejected' | 'Cancelled' | 'Completed' | 'EmployeeUnavailable' | 'Rescheduled' | 'Delegated';

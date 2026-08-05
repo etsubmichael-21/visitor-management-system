@@ -61,6 +61,19 @@ export class AppointmentService {
     if (data.appointmentMethod) fd.append('appointmentMethod', data.appointmentMethod);
     if (data.notes) fd.append('notes', data.notes);
     if (supportingLetter) fd.append('supportingLetter', supportingLetter, supportingLetter.name);
+    fd.append('hasProperties', String(!!data.hasProperties));
+    if (data.hasProperties && data.properties?.length) {
+      data.properties.forEach((p, i) => {
+        fd.append(`Properties[${i}].PropertyName`, p.propertyName ?? '');
+        if (p.propertyType) fd.append(`Properties[${i}].PropertyType`, p.propertyType);
+        if (p.brand) fd.append(`Properties[${i}].Brand`, p.brand);
+        if (p.model) fd.append(`Properties[${i}].Model`, p.model);
+        fd.append(`Properties[${i}].SerialNumber`, p.serialNumber ?? '');
+        if (p.assetTagNumber) fd.append(`Properties[${i}].AssetTagNumber`, p.assetTagNumber);
+        fd.append(`Properties[${i}].Quantity`, String(p.quantity && p.quantity > 0 ? p.quantity : 1));
+        if (p.description) fd.append(`Properties[${i}].Description`, p.description);
+      });
+    }
     return fd;
   }
 

@@ -116,6 +116,73 @@ public class AppointmentsController : ControllerBase
         catch (InvalidOperationException ex) { return BadRequest(ApiResponse<object>.BadRequest(ex.Message)); }
     }
 
+    [HttpGet("{id}/property-authorization-letter")]
+    public async Task<IActionResult> GetPropertyAuthorizationLetter(int id, [FromQuery] bool download = false)
+    {
+        var appointment = await _appointmentService.GetByIdAsync(id);
+        if (appointment == null)
+            return NotFound(ApiResponse<object>.NotFound("Appointment not found"));
+
+        if (!await CanViewAppointmentAsync(appointment))
+            return Forbid();
+
+        try
+        {
+            var file = await _appointmentService.GetPropertyAuthorizationLetterAsync(id);
+            if (file == null)
+                return NotFound(ApiResponse<object>.NotFound("No property authorization letter uploaded for this appointment."));
+
+            var stream = new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return download
+                ? File(stream, file.ContentType, file.OriginalFileName)
+                : File(stream, file.ContentType);
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ApiResponse<object>.NotFound(ex.Message)); }
+        catch (InvalidOperationException ex) { return BadRequest(ApiResponse<object>.BadRequest(ex.Message)); }
+    }
+
+    [HttpGet("property-verifications")]
+    [Authorize(Roles = "Security,Admin")]
+    public async Task<IActionResult> GetPropertyVerifications()
+    {
+        var result = await _appointmentService.GetPropertyVerificationsAsync();
+        return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+    }
+
+    [HttpGet("property-verifications/verified")]
+    [Authorize(Roles = "Security,Admin")]
+    public async Task<IActionResult> GetVerifiedPropertyVerifications()
+    {
+        var result = await _appointmentService.GetVerifiedPropertyVerificationsAsync();
+        return Ok(ApiResponse<IReadOnlyList<AppointmentResponseDto>>.Ok(result));
+    }
+
+    [HttpPost("{id}/verify-properties")]
+    [Authorize(Roles = "Security,Admin")]
+    public async Task<IActionResult> VerifyProperties(int id, [FromBody] VerifyAppointmentPropertiesDto dto)
+    {
+        try
+        {
+            var result = await _appointmentService.VerifyPropertiesAsync(id, dto?.PropertyIds ?? new List<int>(), User.GetUserId());
+            return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Property items verified"));
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
+        catch (InvalidOperationException ex) { return BadRequest(ApiResponse<AppointmentResponseDto>.BadRequest(ex.Message)); }
+    }
+
+    [HttpPost("{id}/save-property-verification")]
+    [Authorize(Roles = "Security,Admin")]
+    public async Task<IActionResult> SavePropertyVerification(int id, [FromBody] SavePropertyVerificationDto dto)
+    {
+        try
+        {
+            var result = await _appointmentService.SavePropertyVerificationAsync(id, dto, User.GetUserId());
+            return Ok(ApiResponse<AppointmentResponseDto>.Ok(result, "Property verification saved"));
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ApiResponse<AppointmentResponseDto>.NotFound(ex.Message)); }
+        catch (InvalidOperationException ex) { return BadRequest(ApiResponse<AppointmentResponseDto>.BadRequest(ex.Message)); }
+    }
+
     [HttpPost("{id}/approve")]
     public async Task<IActionResult> Approve(int id)
     {
@@ -497,6 +564,9 @@ public class AppointmentsController : ControllerBase
         var role = User.GetRole();
         var employeeId = User.GetEmployeeId();
         var visitorId = User.GetVisitorId();
+
+        if (role == "Security" || role == "Receptionist")
+            return true;
 
         if (role == "DepartmentHead")
         {

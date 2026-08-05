@@ -5,8 +5,12 @@ export interface EmployeeUnavailability {
   unavailabilityType: string;
   startDate: string;
   endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  repeat?: string;
   reason?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CreateUnavailabilityRequest {
@@ -14,5 +18,8 @@ export interface CreateUnavailabilityRequest {
   unavailabilityType: string;
   startDate: string;
   endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  repeat?: string;
   reason?: string;
 }

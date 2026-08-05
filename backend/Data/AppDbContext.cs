@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<EmailQueue> EmailQueues => Set<EmailQueue>();
     public DbSet<SmsQueue> SmsQueues => Set<SmsQueue>();
     public DbSet<VisitorItem> VisitorItems => Set<VisitorItem>();
+    public DbSet<AppointmentProperty> AppointmentProperties => Set<AppointmentProperty>();
     public DbSet<AppointmentAttachment> AppointmentAttachments => Set<AppointmentAttachment>();
     public DbSet<AppointmentComment> AppointmentComments => Set<AppointmentComment>();
     public DbSet<EmployeeUnavailability> EmployeeUnavailabilities => Set<EmployeeUnavailability>();
@@ -64,7 +65,7 @@ public class AppDbContext : DbContext
             entity.HasIndex(v => v.CheckInTime);
             entity.HasOne(v => v.Visitor).WithMany(vs => vs.Visits).HasForeignKey(v => v.VisitorId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(v => v.Employee).WithMany(e => e.Visits).HasForeignKey(v => v.EmployeeId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(v => v.Appointment).WithMany().HasForeignKey(v => v.AppointmentId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(v => v.Appointment).WithMany(a => a.Visits).HasForeignKey(v => v.AppointmentId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Appointment>(entity =>
@@ -108,6 +109,14 @@ public class AppDbContext : DbContext
         {
             entity.HasIndex(vi => vi.VisitId);
             entity.HasOne(vi => vi.Visit).WithMany(v => v.VisitorItems).HasForeignKey(vi => vi.VisitId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AppointmentProperty>(entity =>
+        {
+            entity.HasIndex(ap => ap.AppointmentId);
+            entity.HasIndex(ap => ap.IsVerified);
+            entity.HasOne(ap => ap.Appointment).WithMany(a => a.Properties).HasForeignKey(ap => ap.AppointmentId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(ap => ap.VerifiedByUser).WithMany().HasForeignKey(ap => ap.VerifiedByUserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<AppointmentAttachment>(entity =>

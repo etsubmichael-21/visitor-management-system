@@ -6,8 +6,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { VisitService } from '../../../core/services/visit.service';
+import { AppointmentService } from '../../../core/services/appointment.service';
 import { DashboardData } from '../../../core/models/dashboard.model';
 import { Visit } from '../../../core/models/visit.model';
+import { Appointment } from '../../../core/models/appointment.model';
 
 @Component({
   selector: 'app-security-dashboard',
@@ -94,6 +96,45 @@ import { Visit } from '../../../core/models/visit.model';
           </div>
         </mat-card-content>
       </mat-card>
+
+      <mat-card class="active-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon style="color: #D4A017;">verified_user</mat-icon>
+            Pending Property Verifications
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (pendingPropertyVerifications().length) {
+            <div class="visitor-grid">
+              @for (apt of pendingPropertyVerifications(); track apt.id) {
+                <div class="visitor-card">
+                  <div class="visitor-header">
+                    <div class="visitor-avatar" style="background: #fff8e1; color: #b26a00;">{{ apt.visitorName?.charAt(0) }}</div>
+                    <div class="visitor-main">
+                      <strong>{{ apt.visitorName }}</strong>
+                      <small>{{ apt.requestedDate }} &middot; {{ apt.requestedStartTime }}</small>
+                    </div>
+                  </div>
+                  <div class="visitor-details">
+                    <p><mat-icon>person</mat-icon> Host: {{ apt.employeeName }}</p>
+                    <p><mat-icon>category</mat-icon> {{ apt.properties!.length }} item(s): {{ propertySummary(apt) }}</p>
+                    <p><mat-icon>schedule</mat-icon> Status: {{ apt.status }}</p>
+                  </div>
+                  <button mat-raised-button color="primary" [routerLink]="['/appointments', apt.id]" class="checkout-btn">
+                    <mat-icon>verified_user</mat-icon> Review & Verify
+                  </button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>verified</mat-icon>
+              <p>No property verifications pending</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
     </div>
   `,
   styleUrls: ['./security-dashboard.component.scss']
@@ -101,8 +142,10 @@ import { Visit } from '../../../core/models/visit.model';
 export class SecurityDashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);
   private visitService = inject(VisitService);
+  private appointmentService = inject(AppointmentService);
   dashboardData = signal<DashboardData | null>(null);
   activeVisitors = signal<Visit[]>([]);
+  pendingPropertyVerifications = signal<Appointment[]>([]);
 
   ngOnInit(): void {
     this.dashboardService.getSecurityDashboard().subscribe({
@@ -120,5 +163,16 @@ export class SecurityDashboardComponent implements OnInit {
       next: (res) => { if (res.success) this.activeVisitors.set(res.data || []); },
       error: () => { this.activeVisitors.set([]); }
     });
+
+    this.appointmentService.getPropertyVerifications().subscribe({
+      next: (res) => { if (res.success) this.pendingPropertyVerifications.set(res.data || []); },
+      error: () => { this.pendingPropertyVerifications.set([]); }
+    });
+  }
+
+  propertySummary(apt: Appointment): string {
+    const names = (apt.properties || []).slice(0, 3).map(p => p.propertyName || p.propertyType);
+    const suffix = (apt.properties?.length || 0) > 3 ? '...' : '';
+    return names.join(', ') + suffix;
   }
 }

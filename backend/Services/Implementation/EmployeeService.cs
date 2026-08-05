@@ -65,19 +65,19 @@ public class EmployeeService : IEmployeeService
     public async Task<List<EmployeeUnavailabilityResponseDto>> GetUnavailabilityAsync(int employeeId)
     {
         return await _context.EmployeeUnavailabilities.Where(u => u.EmployeeId == employeeId).Include(u => u.Employee)
-            .Select(u => new EmployeeUnavailabilityResponseDto { Id = u.Id, EmployeeId = u.EmployeeId, EmployeeName = u.Employee.FullName, UnavailabilityType = u.UnavailabilityType, StartDate = u.StartDate, EndDate = u.EndDate, Reason = u.Reason, CreatedAt = u.CreatedAt }).ToListAsync();
+            .Select(u => new EmployeeUnavailabilityResponseDto { Id = u.Id, EmployeeId = u.EmployeeId, EmployeeName = u.Employee.FullName, UnavailabilityType = u.UnavailabilityType, StartDate = u.StartDate, EndDate = u.EndDate, StartTime = u.StartTime, EndTime = u.EndTime, Repeat = u.Repeat, Reason = u.Reason, CreatedAt = u.CreatedAt, UpdatedAt = u.UpdatedAt }).ToListAsync();
     }
 
     public async Task<EmployeeUnavailabilityResponseDto> AddUnavailabilityAsync(EmployeeUnavailabilityCreateDto dto, int userId)
     {
         var employee = await _repository.GetByIdAsync(dto.EmployeeId) ?? throw new KeyNotFoundException("Employee not found");
-        var unavailability = new EmployeeUnavailability { EmployeeId = dto.EmployeeId, UnavailabilityType = dto.UnavailabilityType, StartDate = dto.StartDate, EndDate = dto.EndDate, Reason = dto.Reason, CreatedBy = userId, CreatedAt = DateTimeOffset.UtcNow };
+        var unavailability = new EmployeeUnavailability { EmployeeId = dto.EmployeeId, UnavailabilityType = dto.UnavailabilityType, StartDate = dto.StartDate, EndDate = dto.EndDate, StartTime = dto.StartTime, EndTime = dto.EndTime, Repeat = string.IsNullOrWhiteSpace(dto.Repeat) ? "None" : dto.Repeat, Reason = dto.Reason, CreatedBy = userId, CreatedAt = DateTimeOffset.UtcNow };
         _context.EmployeeUnavailabilities.Add(unavailability);
         await _context.SaveChangesAsync();
 
         await _context.Entry(unavailability).Reference(u => u.Employee).LoadAsync();
 
-        return new EmployeeUnavailabilityResponseDto { Id = unavailability.Id, EmployeeId = dto.EmployeeId, EmployeeName = employee.FullName, UnavailabilityType = dto.UnavailabilityType, StartDate = dto.StartDate, EndDate = dto.EndDate, Reason = dto.Reason, CreatedAt = unavailability.CreatedAt };
+        return new EmployeeUnavailabilityResponseDto { Id = unavailability.Id, EmployeeId = dto.EmployeeId, EmployeeName = employee.FullName, UnavailabilityType = dto.UnavailabilityType, StartDate = dto.StartDate, EndDate = dto.EndDate, StartTime = dto.StartTime, EndTime = dto.EndTime, Repeat = unavailability.Repeat, Reason = dto.Reason, CreatedAt = unavailability.CreatedAt, UpdatedAt = unavailability.UpdatedAt };
     }
 
     public async Task RemoveUnavailabilityAsync(int unavailabilityId)

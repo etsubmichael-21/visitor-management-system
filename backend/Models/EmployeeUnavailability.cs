@@ -24,6 +24,16 @@ public class EmployeeUnavailability
     [Column("end_date")]
     public DateOnly? EndDate { get; set; }
 
+    [Column("start_time")]
+    public TimeOnly? StartTime { get; set; }
+
+    [Column("end_time")]
+    public TimeOnly? EndTime { get; set; }
+
+    [Column("repeat")]
+    [MaxLength(20)]
+    public string? Repeat { get; set; }
+
     [Column("reason")]
     public string? Reason { get; set; }
 

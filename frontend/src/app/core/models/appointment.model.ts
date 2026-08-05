@@ -70,6 +70,19 @@ export interface AppointmentRequest {
   routeType?: string;
   appointmentMethod?: string;
   notes?: string;
+  hasProperties?: boolean;
+  properties?: AppointmentPropertyRequest[];
+}
+
+export interface AppointmentPropertyRequest {
+  propertyName: string;
+  propertyType?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  assetTagNumber?: string;
+  quantity?: number;
+  description?: string;
 }
 
 export interface RescheduleRequest {

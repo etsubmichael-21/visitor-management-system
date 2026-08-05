@@ -24,6 +24,16 @@ import { AppointmentRequest } from '../../../core/models/appointment.model';
 import { Department } from '../../../core/models/department.model';
 import { Employee } from '../../../core/models/employee.model';
 
+interface PropertyRow {
+  propertyName: string;
+  propertyType: string;
+  brand: string;
+  model: string;
+  serialNumber: string;
+  quantity: number;
+  description: string;
+}
+
 @Component({
   selector: 'app-appointment-form',
   standalone: true,
@@ -250,6 +260,74 @@ import { Employee } from '../../../core/models/employee.model';
               }
             </div>
 
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>inventory_2</mat-icon>
+                Visitor Properties (Optional)
+              </h3>
+
+              <p class="field-label">Will you bring any company property into the ECX facility?</p>
+              <mat-radio-group [(ngModel)]="wantsProperties" name="wantsProperties" class="radio-group" (ngModelChange)="onPropertiesToggle()">
+                <mat-radio-button [value]="false">No</mat-radio-button>
+                <mat-radio-button [value]="true">Yes</mat-radio-button>
+              </mat-radio-group>
+
+              <div class="property-panel-wrap" [class.expanded]="wantsProperties">
+                <div class="property-panel-inner">
+                  @for (row of propertyRows; track $index) {
+                    <div class="property-row">
+                      <div class="property-row-head">
+                        <span class="property-row-label">Property {{ $index + 1 }}</span>
+                        <button type="button" mat-icon-button matTooltip="Remove property" aria-label="Remove property" (click)="removePropertyRow($index)">
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      </div>
+                      <div class="property-grid">
+                        @if (row.propertyType === 'Other') {
+                          <mat-form-field appearance="outline">
+                            <mat-label>Property Name *</mat-label>
+                            <input matInput [(ngModel)]="row.propertyName" [ngModelOptions]="{standalone: true}" placeholder="e.g. Custom device name">
+                          </mat-form-field>
+                        }
+                        <mat-form-field appearance="outline">
+                          <mat-label>Property Type</mat-label>
+                          <mat-select [(ngModel)]="row.propertyType" [ngModelOptions]="{standalone: true}" (ngModelChange)="onPropertyTypeChange(row)">
+                            @for (type of propertyTypes; track type) {
+                              <mat-option [value]="type">{{ type }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                          <mat-label>Brand (Optional)</mat-label>
+                          <input matInput [(ngModel)]="row.brand" [ngModelOptions]="{standalone: true}">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                          <mat-label>Model (Optional)</mat-label>
+                          <input matInput [(ngModel)]="row.model" [ngModelOptions]="{standalone: true}">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                          <mat-label>Serial Number *</mat-label>
+                          <input matInput [(ngModel)]="row.serialNumber" [ngModelOptions]="{standalone: true}">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                          <mat-label>Quantity</mat-label>
+                          <input matInput type="number" min="1" [(ngModel)]="row.quantity" [ngModelOptions]="{standalone: true}">
+                        </mat-form-field>
+                      </div>
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Description (Optional)</mat-label>
+                        <textarea matInput [(ngModel)]="row.description" [ngModelOptions]="{standalone: true}" rows="2"></textarea>
+                      </mat-form-field>
+                    </div>
+                  }
+
+                  <button type="button" mat-stroked-button color="primary" class="add-property-btn" (click)="addPropertyRow()">
+                    <mat-icon>add</mat-icon> Add Another Property
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div class="form-actions">
               <a mat-stroked-button routerLink="/appointments">Cancel</a>
               <button mat-flat-button color="primary" type="submit" [disabled]="submitting">
@@ -312,6 +390,10 @@ export class AppointmentFormComponent implements OnInit {
     'image/jpeg',
     'image/png',
   ];
+
+  propertyTypes = ['Laptop', 'Desktop Computer', 'Monitor', 'Printer', 'Camera', 'Mobile Phone', 'Tablet', 'External Hard Drive', 'USB Flash Drive', 'Network Device', 'Other'];
+  wantsProperties = false;
+  propertyRows: PropertyRow[] = [];
 
   ngOnInit(): void {
     this.departmentService.getDepartments().subscribe({
@@ -391,6 +473,32 @@ export class AppointmentFormComponent implements OnInit {
     if (user?.visitorId) {
       this.form.visitorId = user.visitorId;
     }
+    const properties = this.propertyRows
+      .filter((r) => r.propertyType?.trim() || r.propertyName?.trim())
+      .map((r) => ({
+        propertyName: r.propertyType === 'Other' ? r.propertyName.trim() : '',
+        propertyType: r.propertyType?.trim() || undefined,
+        brand: r.brand?.trim() || undefined,
+        model: r.model?.trim() || undefined,
+        serialNumber: r.serialNumber?.trim() || undefined,
+        quantity: r.quantity > 0 ? r.quantity : 1,
+        description: r.description?.trim() || undefined,
+      }));
+
+    if (this.wantsProperties) {
+      if (!properties.length) {
+        this.errorMessage = 'Please register at least one property item.';
+        return;
+      }
+      const missing = properties.find((p) => (!p.propertyName && p.propertyType === 'Other') || !p.serialNumber);
+      if (missing) {
+        this.errorMessage = 'Property Name is required for type "Other", and Serial Number is required for every property item.';
+        return;
+      }
+    }
+
+    this.form.hasProperties = this.wantsProperties;
+    this.form.properties = this.wantsProperties ? properties : undefined;
     this.submitting = true;
     this.errorMessage = '';
     this.uploadProgress = 0;
@@ -469,5 +577,25 @@ export class AppointmentFormComponent implements OnInit {
     if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(1) + ' MB';
     if (size >= 1024) return (size / 1024).toFixed(1) + ' KB';
     return size + ' B';
+  }
+
+  onPropertiesToggle(): void {
+    if (this.wantsProperties && !this.propertyRows.length) {
+      this.addPropertyRow();
+    }
+  }
+
+  addPropertyRow(): void {
+    this.propertyRows.push({ propertyName: '', propertyType: '', brand: '', model: '', serialNumber: '', quantity: 1, description: '' });
+  }
+
+  onPropertyTypeChange(row: PropertyRow): void {
+    if (row.propertyType !== 'Other') {
+      row.propertyName = '';
+    }
+  }
+
+  removePropertyRow(index: number): void {
+    this.propertyRows.splice(index, 1);
   }
 }

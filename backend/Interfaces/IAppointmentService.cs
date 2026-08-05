@@ -35,10 +35,15 @@ public interface IAppointmentService
     Task<RescheduleResponseDto> ApproveRescheduleAsync(int appointmentId, int requestId, int userId);
     Task<RescheduleResponseDto> RejectRescheduleAsync(int appointmentId, int requestId, int userId);
     Task<SupportingLetterDownloadDto?> GetSupportingLetterAsync(int appointmentId);
+    Task<SupportingLetterDownloadDto?> GetPropertyAuthorizationLetterAsync(int appointmentId);
+    Task<AppointmentResponseDto> VerifyPropertiesAsync(int id, List<int> propertyIds, int userId);
+    Task<AppointmentResponseDto> SavePropertyVerificationAsync(int id, SavePropertyVerificationDto dto, int userId);
+    Task<IReadOnlyList<AppointmentResponseDto>> GetPropertyVerificationsAsync();
+    Task<IReadOnlyList<AppointmentResponseDto>> GetVerifiedPropertyVerificationsAsync();
     Task<List<AppointmentAttachmentDto>> GetAttachmentsAsync(int appointmentId);
     Task<AppointmentAttachmentDto> UploadAttachmentAsync(int appointmentId, string fileName, string filePath, int fileSize, string contentType, int userId);
     Task DeleteAttachmentAsync(int appointmentId, int attachmentId);
     Task<List<AppointmentCommentDto>> GetCommentsAsync(int appointmentId);
     Task<AppointmentCommentDto> AddCommentAsync(int appointmentId, AppointmentCommentCreateDto dto, int userId);
-    Task HandleEmployeeUnavailabilityAsync(int employeeId, string type, DateOnly startDate, DateOnly? endDate, string? reason, int createdByUserId);
+    Task HandleEmployeeUnavailabilityAsync(int employeeId, string type, DateOnly startDate, DateOnly? endDate, TimeOnly? startTime, TimeOnly? endTime, string? reason, int createdByUserId);
 }

@@ -71,6 +71,20 @@ import { Department } from '../../../core/models/common.model';
                     <p><strong>Host:</strong> {{ selectedAppointment()!.employeeName }}</p>
                     <p><strong>Purpose:</strong> {{ selectedAppointment()!.purpose }}</p>
                   </div>
+                  @if (selectedAppointment()!.hasProperties) {
+                    <div class="apt-property-banner" [class.warn]="!selectedAppointment()!.allPropertiesVerified" [class.ok]="selectedAppointment()!.allPropertiesVerified">
+                      <mat-icon>{{ selectedAppointment()!.allPropertiesVerified ? 'verified' : 'warning' }}</mat-icon>
+                      <div>
+                        <strong>{{ selectedAppointment()!.allPropertiesVerified ? 'Property Verified' : 'Unverified Property Items' }}</strong>
+                        <span *ngIf="!selectedAppointment()!.allPropertiesVerified">
+                          This visitor registered {{ selectedAppointment()!.properties!.length }} property item(s). Security must verify them before check-in.
+                        </span>
+                        <span *ngIf="selectedAppointment()!.allPropertiesVerified">
+                          All registered property items have been verified by Security.
+                        </span>
+                      </div>
+                    </div>
+                  }
                 </div>
               }
             </div>

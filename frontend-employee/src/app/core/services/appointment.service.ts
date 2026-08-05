@@ -9,7 +9,8 @@ import {
   RejectAppointmentRequest,
   DelegateAppointmentRequest,
   RedirectToDepartmentRequest,
-  AssignEmployeeRequest
+  AssignEmployeeRequest,
+  PropertyVerificationItem
 } from '../models/appointment.model';
 import { ApiResponse, PaginatedResponse } from '../models/common.model';
 
@@ -85,5 +86,25 @@ export class AppointmentService {
 
   getSupportingLetter(id: number, download = true): Observable<Blob> {
     return this.api.download(`/appointments/${id}/supporting-letter${download ? '?download=true' : ''}`);
+  }
+
+  getPropertyAuthorizationLetter(id: number, download = true): Observable<Blob> {
+    return this.api.download(`/appointments/${id}/property-authorization-letter${download ? '?download=true' : ''}`);
+  }
+
+  verifyProperties(id: number, propertyIds: number[]): Observable<ApiResponse<Appointment>> {
+    return this.api.post<Appointment>(`/appointments/${id}/verify-properties`, { propertyIds });
+  }
+
+  savePropertyVerification(id: number, items: PropertyVerificationItem[]): Observable<ApiResponse<Appointment>> {
+    return this.api.post<Appointment>(`/appointments/${id}/save-property-verification`, { items });
+  }
+
+  getPropertyVerifications(): Observable<ApiResponse<Appointment[]>> {
+    return this.api.get<Appointment[]>('/appointments/property-verifications');
+  }
+
+  getVerifiedPropertyVerifications(): Observable<ApiResponse<Appointment[]>> {
+    return this.api.get<Appointment[]>('/appointments/property-verifications/verified');
   }
 }

@@ -130,7 +130,7 @@ export class RegisterComponent {
       finalize(() => this.loading = false)
     ).subscribe({
       next: () => {
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/appointments/new']);
       },
       error: (err) => {
         this.errorMessage = err.message || 'Registration failed. Please try again.';

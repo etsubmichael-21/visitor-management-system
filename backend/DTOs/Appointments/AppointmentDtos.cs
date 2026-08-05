@@ -15,6 +15,9 @@ public class AppointmentCreateDto
     public string? AppointmentMethod { get; set; }
     public string? Notes { get; set; }
     public IFormFile? SupportingLetter { get; set; }
+    public bool HasProperties { get; set; }
+    public List<AppointmentPropertyCreateDto>? Properties { get; set; }
+    public IFormFile? PropertyAuthorizationLetter { get; set; }
 }
 
 public class AppointmentUpdateDto
@@ -33,6 +36,7 @@ public class AppointmentResponseDto
     public string VisitorName { get; set; } = string.Empty;
     public string VisitorEmail { get; set; } = string.Empty;
     public string VisitorPhone { get; set; } = string.Empty;
+    public string? VisitorCompany { get; set; }
     public int EmployeeId { get; set; }
     public string EmployeeName { get; set; } = string.Empty;
     public string EmployeePosition { get; set; } = string.Empty;
@@ -46,6 +50,9 @@ public class AppointmentResponseDto
     public DateTimeOffset? EmployeeResponse { get; set; }
     public DateTimeOffset? ApprovalDate { get; set; }
     public bool CheckInAllowed { get; set; }
+    public DateTimeOffset? VisitCheckInTime { get; set; }
+    public DateTimeOffset? VisitCheckOutTime { get; set; }
+    public string? BadgeNumber { get; set; }
     public bool IsConfidential { get; set; }
     public string? RouteType { get; set; }
     public string? AppointmentMethod { get; set; }
@@ -68,6 +75,10 @@ public class AppointmentResponseDto
     public DateTimeOffset? AssignedAt { get; set; }
     public List<AppointmentAttachmentDto> Attachments { get; set; } = new();
     public int CommentCount { get; set; }
+    public List<AppointmentPropertyDto> Properties { get; set; } = new();
+    public PropertyAuthorizationLetterDto? PropertyAuthorizationLetter { get; set; }
+    public bool HasProperties { get; set; }
+    public bool AllPropertiesVerified { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 }
@@ -141,6 +152,67 @@ public class SupportingLetterDto
     public long FileSize { get; set; }
     public string ContentType { get; set; } = string.Empty;
     public DateTimeOffset? UploadedAt { get; set; }
+}
+
+public class PropertyAuthorizationLetterDto
+{
+    public string FileName { get; set; } = string.Empty;
+    public string OriginalFileName { get; set; } = string.Empty;
+    public string FilePath { get; set; } = string.Empty;
+    public long FileSize { get; set; }
+    public string ContentType { get; set; } = string.Empty;
+    public DateTimeOffset? UploadedAt { get; set; }
+}
+
+public class AppointmentPropertyCreateDto
+{
+    public string? PropertyName { get; set; }
+    public string? PropertyType { get; set; }
+    public string? Brand { get; set; }
+    public string? Model { get; set; }
+    public string? SerialNumber { get; set; }
+    public string? AssetTagNumber { get; set; }
+    public int Quantity { get; set; } = 1;
+    public string? Description { get; set; }
+}
+
+public class AppointmentPropertyDto
+{
+    public int Id { get; set; }
+    public string? PropertyName { get; set; }
+    public string PropertyType { get; set; } = string.Empty;
+    public string? Brand { get; set; }
+    public string? Model { get; set; }
+    public string? SerialNumber { get; set; }
+    public string? AssetTagNumber { get; set; }
+    public int Quantity { get; set; }
+    public string? Description { get; set; }
+    public bool IsVerified { get; set; }
+    public string? VerificationStatus { get; set; }
+    public DateTimeOffset? VerifiedAt { get; set; }
+    public string? VerifiedByUserName { get; set; }
+}
+
+public class PropertyVerificationItemDto
+{
+    public int? Id { get; set; }
+    public string PropertyType { get; set; } = string.Empty;
+    public string? PropertyName { get; set; }
+    public string? Brand { get; set; }
+    public string? Model { get; set; }
+    public string? SerialNumber { get; set; }
+    public int Quantity { get; set; } = 1;
+    public string VerificationStatus { get; set; } = string.Empty;
+}
+
+public class SavePropertyVerificationDto
+{
+    public List<PropertyVerificationItemDto> Items { get; set; } = new();
+}
+
+public class VerifyAppointmentPropertiesDto
+{
+    public List<int> PropertyIds { get; set; } = new();
 }
 
 public class SupportingLetterDownloadDto

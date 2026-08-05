@@ -20,6 +20,20 @@ public class AppointmentService : IAppointmentService
     };
     private const long MaxSupportingLetterSize = 10L * 1024 * 1024;
 
+    private static readonly string[] AllowedPropertyLetterExtensions = { ".pdf", ".jpg", ".jpeg", ".png" };
+    private static readonly string[] AllowedPropertyLetterContentTypes =
+    {
+        "application/pdf",
+        "image/jpeg",
+        "image/png"
+    };
+    private const long MaxPropertyLetterSize = 10L * 1024 * 1024;
+
+    private static readonly HashSet<string> InactiveAppointmentStatuses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Rejected", "Cancelled", "Completed", "Expired"
+    };
+
     private readonly IAppointmentRepository _repository;
     private readonly INotificationRepository _notificationRepository;
     private readonly IVisitorNotificationRepository _visitorNotificationRepository;
@@ -139,33 +153,134 @@ public class AppointmentService : IAppointmentService
         if (dto.EmployeeId <= 0)
             throw new InvalidOperationException("A host employee is required. Please select a department and host employee.");
 
-        var supportingLetter = dto.SupportingLetter != null && dto.SupportingLetter.Length > 0
-            ? await SaveSupportingLetterAsync(dto.SupportingLetter)
-            : null;
-
-        var appointment = new Appointment
+        // Reject the request when the host employee already has an active appointment
+        // that overlaps the requested date and time. A row-level lock on the employee
+        // serializes concurrent booking attempts for the same employee so that two
+        // simultaneous submissions cannot both pass this check.
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        Appointment created;
+        try
         {
-            VisitorId = dto.VisitorId,
-            EmployeeId = dto.EmployeeId,
-            RequestedDate = dto.RequestedDate,
-            RequestedStartTime = dto.RequestedStartTime,
-            RequestedEndTime = dto.RequestedEndTime,
-            Purpose = dto.Purpose,
-            IsConfidential = dto.IsConfidential,
-            RouteType = dto.RouteType,
-            AppointmentMethod = dto.AppointmentMethod,
-            Notes = dto.Notes,
-            Status = "Pending",
-            AppointmentCode = GenerateCode(),
-            AttachmentFileName = supportingLetter?.FileName,
-            AttachmentOriginalFileName = supportingLetter?.OriginalFileName,
-            AttachmentPath = supportingLetter?.FilePath,
-            AttachmentSize = supportingLetter?.FileSize,
-            AttachmentContentType = supportingLetter?.ContentType,
-            AttachmentUploadedAt = supportingLetter != null ? DateTimeOffset.UtcNow : null,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        var created = await _repository.AddAsync(appointment);
+            await _context.Database.ExecuteSqlRawAsync("SELECT id FROM employees WHERE id = {0} FOR UPDATE", dto.EmployeeId);
+
+            var existingAppointments = await _repository.GetByEmployeeAndDateAsync(dto.EmployeeId, dto.RequestedDate);
+            var hasConflict = existingAppointments.Any(a =>
+                !InactiveAppointmentStatuses.Contains(a.Status)
+                && Overlaps(a.RequestedStartTime, a.RequestedEndTime, dto.RequestedStartTime, dto.RequestedEndTime));
+
+            if (hasConflict)
+                throw new InvalidOperationException("The selected employee already has an appointment at the chosen date and time. Please choose another available time.");
+
+            var unavailabilityRecords = await _context.EmployeeUnavailabilities
+                .Where(u => u.EmployeeId == dto.EmployeeId
+                    && u.StartDate <= dto.RequestedDate
+                    && (u.EndDate == null || u.EndDate >= dto.RequestedDate))
+                .ToListAsync();
+
+            foreach (var ua in unavailabilityRecords)
+            {
+                // Weekly recurrence only blocks every 7th day starting from the unavailability's start date.
+                if (string.Equals(ua.Repeat, "Weekly", StringComparison.OrdinalIgnoreCase)
+                    && (dto.RequestedDate.DayNumber - ua.StartDate.DayNumber) % 7 != 0)
+                {
+                    continue;
+                }
+
+                if (ua.StartTime.HasValue && ua.EndTime.HasValue)
+                {
+                    if (dto.RequestedStartTime.ToOffset(TimeSpan.FromHours(3)).TimeOfDay < ua.EndTime.Value.ToTimeSpan()
+                        && dto.RequestedEndTime.ToOffset(TimeSpan.FromHours(3)).TimeOfDay > ua.StartTime.Value.ToTimeSpan())
+                    {
+                        throw new InvalidOperationException("The employee is unavailable during the selected date and time.");
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("The employee is unavailable during the selected date and time.");
+                }
+            }
+
+            var supportingLetter = dto.SupportingLetter != null && dto.SupportingLetter.Length > 0
+                ? await SaveSupportingLetterAsync(dto.SupportingLetter)
+                : null;
+
+            var propertyLetter = dto.PropertyAuthorizationLetter != null && dto.PropertyAuthorizationLetter.Length > 0
+                ? await SavePropertyAuthorizationLetterAsync(dto.PropertyAuthorizationLetter)
+                : null;
+
+            var properties = new List<AppointmentProperty>();
+            if (dto.HasProperties)
+            {
+                var propertyItems = (dto.Properties ?? new List<AppointmentPropertyCreateDto>())
+                    .Where(p => !string.IsNullOrWhiteSpace(p.PropertyName)
+                        || !string.IsNullOrWhiteSpace(p.PropertyType)
+                        || !string.IsNullOrWhiteSpace(p.SerialNumber))
+                    .ToList();
+
+                if (propertyItems.Count == 0)
+                    throw new InvalidOperationException("Property items are required when the visitor declares they are bringing property into the facility.");
+
+                foreach (var p in propertyItems)
+                {
+                    if (string.Equals(p.PropertyType?.Trim(), "Other", StringComparison.OrdinalIgnoreCase)
+                        && string.IsNullOrWhiteSpace(p.PropertyName))
+                        throw new InvalidOperationException("Property name is required for property type 'Other'.");
+                    if (string.IsNullOrWhiteSpace(p.SerialNumber))
+                        throw new InvalidOperationException("Serial number is required for each property item.");
+
+                    properties.Add(new AppointmentProperty
+                    {
+                        PropertyName = (p.PropertyName ?? string.Empty).Trim(),
+                        PropertyType = (p.PropertyType ?? string.Empty).Trim(),
+                        Brand = p.Brand,
+                        Model = p.Model,
+                        SerialNumber = p.SerialNumber.Trim(),
+                        AssetTagNumber = p.AssetTagNumber,
+                        Quantity = p.Quantity > 0 ? p.Quantity : 1,
+                        Description = p.Description,
+                        CreatedAt = DateTimeOffset.UtcNow
+                    });
+                }
+            }
+
+            var appointment = new Appointment
+            {
+                VisitorId = dto.VisitorId,
+                EmployeeId = dto.EmployeeId,
+                RequestedDate = dto.RequestedDate,
+                RequestedStartTime = dto.RequestedStartTime,
+                RequestedEndTime = dto.RequestedEndTime,
+                Purpose = dto.Purpose,
+                IsConfidential = dto.IsConfidential,
+                RouteType = dto.RouteType,
+                AppointmentMethod = dto.AppointmentMethod,
+                Notes = dto.Notes,
+                Status = "Pending",
+                AppointmentCode = GenerateCode(),
+                AttachmentFileName = supportingLetter?.FileName,
+                AttachmentOriginalFileName = supportingLetter?.OriginalFileName,
+                AttachmentPath = supportingLetter?.FilePath,
+                AttachmentSize = supportingLetter?.FileSize,
+                AttachmentContentType = supportingLetter?.ContentType,
+                AttachmentUploadedAt = supportingLetter != null ? DateTimeOffset.UtcNow : null,
+                PropertyLetterFileName = propertyLetter?.FileName,
+                PropertyLetterOriginalFileName = propertyLetter?.OriginalFileName,
+                PropertyLetterPath = propertyLetter?.FilePath,
+                PropertyLetterSize = propertyLetter?.FileSize,
+                PropertyLetterContentType = propertyLetter?.ContentType,
+                PropertyLetterUploadedAt = propertyLetter != null ? DateTimeOffset.UtcNow : null,
+                HasProperties = dto.HasProperties,
+                Properties = properties,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            created = await _repository.AddAsync(appointment);
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
 
         var visitor = await _visitorRepository.GetByIdAsync(dto.VisitorId);
         var employee = await _employeeRepository.GetByIdAsync(dto.EmployeeId);
@@ -226,7 +341,7 @@ public class AppointmentService : IAppointmentService
                 employee?.Department?.Name ?? "", dto.RequestedDate,
                 dto.RequestedStartTime, dto.RequestedEndTime,
                 dto.Purpose, dto.Notes,
-                hasSupportingLetter: appointment.AttachmentPath != null);
+                hasSupportingLetter: created.AttachmentPath != null);
         }
 
         if (!dto.IsConfidential)
@@ -263,10 +378,167 @@ public class AppointmentService : IAppointmentService
             }
         }
 
+        // Property verification is intentionally NOT sent at creation time.
+        // It is triggered only after the assigned employee approves the appointment.
+
         _logger.LogInformation("[Appointment:Created] AppointmentId={AppointmentId} VisitorId={VisitorId} VisitorName={VisitorName} EmployeeId={EmployeeId} DepartmentId={DepartmentId} AppointmentDate={AppointmentDate} AppointmentStatus={AppointmentStatus}",
             created.Id, dto.VisitorId, visitor?.FullName ?? "", dto.EmployeeId, employee?.DepartmentId, dto.RequestedDate, created.Status);
 
         return MapToDto(created);
+    }
+
+    public async Task<AppointmentResponseDto> VerifyPropertiesAsync(int id, List<int> propertyIds, int userId)
+    {
+        var appointment = await LoadWithDetailsAsync(id);
+        if (appointment.Properties == null || appointment.Properties.Count == 0)
+            throw new InvalidOperationException("This appointment has no registered property items.");
+
+        var requestedIds = propertyIds?.Where(x => x > 0).ToHashSet() ?? new HashSet<int>();
+        if (requestedIds.Count == 0)
+            requestedIds = appointment.Properties.Where(p => !p.IsVerified).Select(p => p.Id).ToHashSet();
+
+        var verifiedCount = 0;
+        foreach (var property in appointment.Properties.Where(p => requestedIds.Contains(p.Id)))
+        {
+            if (property.IsVerified) continue;
+            property.IsVerified = true;
+            property.VerifiedAt = DateTimeOffset.UtcNow;
+            property.VerifiedByUserId = userId;
+            property.UpdatedAt = DateTimeOffset.UtcNow;
+            verifiedCount++;
+        }
+
+        if (verifiedCount == 0)
+            throw new InvalidOperationException("No matching unverified property items found.");
+
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("[Appointment:VerifyProperties] AppointmentId={AppointmentId} VerifiedCount={VerifiedCount} UserId={UserId}",
+            appointment.Id, verifiedCount, userId);
+
+        return MapToDto(appointment);
+    }
+
+    public async Task<AppointmentResponseDto> SavePropertyVerificationAsync(int id, SavePropertyVerificationDto dto, int userId)
+    {
+        var appointment = await LoadWithDetailsAsync(id);
+        if (appointment.Properties == null || appointment.Properties.Count == 0)
+            throw new InvalidOperationException("This appointment has no registered property items.");
+
+        var items = dto?.Items ?? new List<PropertyVerificationItemDto>();
+        var validStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Verified", "Missing", "Additional Property", "Rejected"
+        };
+
+        foreach (var item in items)
+        {
+            if (string.IsNullOrWhiteSpace(item.PropertyType))
+                throw new InvalidOperationException("Property Type is required for every property item.");
+            if (item.Quantity <= 0)
+                throw new InvalidOperationException("Quantity must be greater than zero for every property item.");
+            if (string.Equals(item.PropertyType.Trim(), "Other", StringComparison.OrdinalIgnoreCase)
+                && string.IsNullOrWhiteSpace(item.PropertyName))
+                throw new InvalidOperationException("Property Name is required when Property Type is 'Other'.");
+            if (string.IsNullOrWhiteSpace(item.VerificationStatus)
+                || !validStatuses.Contains(item.VerificationStatus.Trim()))
+                throw new InvalidOperationException("A valid verification status is required for every property item.");
+        }
+
+        var submittedIds = items.Where(i => i.Id.HasValue && i.Id.Value > 0).Select(i => i.Id!.Value).ToHashSet();
+
+        var removed = appointment.Properties.Where(p => !submittedIds.Contains(p.Id)).ToList();
+        foreach (var property in removed)
+            _context.AppointmentProperties.Remove(property);
+
+        foreach (var item in items)
+        {
+            if (item.Id.HasValue && item.Id.Value > 0)
+            {
+                var property = appointment.Properties.FirstOrDefault(p => p.Id == item.Id.Value);
+                if (property == null)
+                    throw new InvalidOperationException("One or more property items no longer exist on this appointment.");
+                property.PropertyName = (item.PropertyName ?? string.Empty).Trim();
+                property.PropertyType = item.PropertyType.Trim();
+                property.Brand = string.IsNullOrWhiteSpace(item.Brand) ? null : item.Brand.Trim();
+                property.Model = string.IsNullOrWhiteSpace(item.Model) ? null : item.Model.Trim();
+                property.SerialNumber = string.IsNullOrWhiteSpace(item.SerialNumber) ? null : item.SerialNumber.Trim();
+                property.Quantity = item.Quantity;
+                property.VerificationStatus = item.VerificationStatus.Trim();
+                property.IsVerified = true;
+                property.VerifiedAt = DateTimeOffset.UtcNow;
+                property.VerifiedByUserId = userId;
+                property.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+            else
+            {
+                appointment.Properties.Add(new AppointmentProperty
+                {
+                    AppointmentId = appointment.Id,
+                    PropertyName = (item.PropertyName ?? string.Empty).Trim(),
+                    PropertyType = item.PropertyType.Trim(),
+                    Brand = string.IsNullOrWhiteSpace(item.Brand) ? null : item.Brand.Trim(),
+                    Model = string.IsNullOrWhiteSpace(item.Model) ? null : item.Model.Trim(),
+                    SerialNumber = string.IsNullOrWhiteSpace(item.SerialNumber) ? null : item.SerialNumber.Trim(),
+                    Quantity = item.Quantity,
+                    Description = null,
+                    VerificationStatus = item.VerificationStatus.Trim(),
+                    IsVerified = true,
+                    VerifiedAt = DateTimeOffset.UtcNow,
+                    VerifiedByUserId = userId,
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("[Appointment:SavePropertyVerification] AppointmentId={AppointmentId} ItemsSaved={Count} UserId={UserId}",
+            appointment.Id, items.Count, userId);
+
+        return MapToDto(appointment);
+    }
+
+    public async Task<IReadOnlyList<AppointmentResponseDto>> GetPropertyVerificationsAsync()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var appointments = await _context.Appointments
+            .Include(a => a.Visitor)
+            .Include(a => a.Employee).ThenInclude(e => e.Department)
+            .Include(a => a.Visits)
+            .Include(a => a.Properties).ThenInclude(p => p.VerifiedByUser)
+            .Where(a => a.RequestedDate >= today
+                && a.Status == "Approved"
+                && a.Properties.Any(p => !p.IsVerified))
+            .OrderBy(a => a.RequestedDate).ThenBy(a => a.RequestedStartTime)
+            .ToListAsync();
+        return appointments.Select(MapToDto).ToList();
+    }
+
+    public async Task<IReadOnlyList<AppointmentResponseDto>> GetVerifiedPropertyVerificationsAsync()
+    {
+        var appointments = await _context.Appointments
+            .Include(a => a.Visitor)
+            .Include(a => a.Employee).ThenInclude(e => e.Department)
+            .Include(a => a.Visits)
+            .Include(a => a.Properties).ThenInclude(p => p.VerifiedByUser)
+            .Where(a => a.Properties.Any(p => p.IsVerified))
+            .OrderByDescending(a => a.RequestedDate).ThenByDescending(a => a.RequestedStartTime)
+            .ToListAsync();
+        return appointments.Select(MapToDto).ToList();
+    }
+
+    public async Task<SupportingLetterDownloadDto?> GetPropertyAuthorizationLetterAsync(int appointmentId)
+    {
+        var appointment = await _repository.GetByIdAsync(appointmentId);
+        if (appointment == null) throw new KeyNotFoundException("Appointment not found");
+        if (string.IsNullOrWhiteSpace(appointment.PropertyLetterPath)) return null;
+
+        var fullPath = ResolvePropertyLetterPath(appointment.PropertyLetterPath);
+        return new SupportingLetterDownloadDto
+        {
+            FullPath = fullPath,
+            OriginalFileName = appointment.PropertyLetterOriginalFileName ?? "property-authorization-letter",
+            ContentType = appointment.PropertyLetterContentType ?? "application/octet-stream"
+        };
     }
 
     public async Task<AppointmentResponseDto> ApproveAsync(int id, int userId)
@@ -346,6 +618,27 @@ public class AppointmentService : IAppointmentService
             var securityDepartment = await _context.Departments.FirstOrDefaultAsync(d => d.Name == "Security");
             if (securityDepartment != null && !string.IsNullOrEmpty(securityDepartment.Email))
                 await _emailService.SendAsync(securityDepartment.Email, subject, $"<p>{message}</p>");
+        }
+
+        if (appointment.Properties != null && appointment.Properties.Count > 0)
+        {
+            var propertyCount = appointment.Properties.Count;
+            var propertyNames = string.Join(", ", appointment.Properties.Take(5).Select(p =>
+                !string.IsNullOrWhiteSpace(p.PropertyName) ? p.PropertyName : p.PropertyType));
+            foreach (var securityEmployee in await GetSecurityEmployeesAsync())
+            {
+                await _notificationRepository.AddAsync(new Notification
+                {
+                    EmployeeId = securityEmployee.Id,
+                    AppointmentId = appointment.Id,
+                    Title = "Visitor Property Verification Required",
+                    Message = $"Visitor {appointment.Visitor?.FullName ?? "Visitor"} registered {propertyCount} item(s) of property ({propertyNames}) for the appointment on {appointment.RequestedDate}. Please verify the property items on arrival.",
+                    NotificationType = "Info",
+                    Priority = "High",
+                    Channel = "InApp",
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
         }
 
         return MapToDto(appointment);
@@ -985,7 +1278,7 @@ public class AppointmentService : IAppointmentService
         };
     }
 
-    public async Task HandleEmployeeUnavailabilityAsync(int employeeId, string type, DateOnly startDate, DateOnly? endDate, string? reason, int createdByUserId)
+    public async Task HandleEmployeeUnavailabilityAsync(int employeeId, string type, DateOnly startDate, DateOnly? endDate, TimeOnly? startTime, TimeOnly? endTime, string? reason, int createdByUserId)
     {
         var effectiveEndDate = endDate ?? startDate;
         var affectedAppointments = await _context.Appointments
@@ -996,6 +1289,12 @@ public class AppointmentService : IAppointmentService
                 && a.RequestedDate <= effectiveEndDate
                 && (a.Status == "Pending" || a.Status == "Approved"))
             .ToListAsync();
+
+        if (startTime.HasValue && endTime.HasValue)
+            affectedAppointments = affectedAppointments
+                .Where(a => a.RequestedStartTime.ToOffset(TimeSpan.FromHours(3)).TimeOfDay < endTime.Value.ToTimeSpan()
+                    && a.RequestedEndTime.ToOffset(TimeSpan.FromHours(3)).TimeOfDay > startTime.Value.ToTimeSpan())
+                .ToList();
 
         foreach (var appointment in affectedAppointments)
         {
@@ -1033,6 +1332,8 @@ public class AppointmentService : IAppointmentService
             .Include(a => a.RedirectedFromDepartment)
             .Include(a => a.Attachments)
             .Include(a => a.Comments)
+            .Include(a => a.Properties).ThenInclude(p => p.VerifiedByUser)
+            .Include(a => a.Visits)
             .FirstOrDefaultAsync(a => a.Id == id);
         return appointment ?? throw new KeyNotFoundException("Appointment not found");
     }
@@ -1101,6 +1402,63 @@ public class AppointmentService : IAppointmentService
             throw new InvalidOperationException("Unsupported file type. Only PDF, DOC, DOCX, JPG, JPEG, and PNG files are allowed.");
     }
 
+    private async Task<PropertyAuthorizationLetterDto?> SavePropertyAuthorizationLetterAsync(IFormFile file)
+    {
+        ValidatePropertyAuthorizationLetter(file);
+
+        var safeOriginalName = Path.GetFileName(file.FileName).Trim();
+        if (string.IsNullOrWhiteSpace(safeOriginalName))
+            safeOriginalName = "property-authorization-letter";
+
+        var extension = Path.GetExtension(safeOriginalName).ToLowerInvariant();
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var directory = Path.Combine(_env.ContentRootPath, "uploads", "appointments", "property-letters");
+        Directory.CreateDirectory(directory);
+
+        var fullPath = Path.Combine(directory, fileName);
+        await using (var stream = new FileStream(fullPath, FileMode.Create, FileAccess.Write))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        return new PropertyAuthorizationLetterDto
+        {
+            FileName = fileName,
+            OriginalFileName = safeOriginalName,
+            FilePath = fileName,
+            FileSize = file.Length,
+            ContentType = file.ContentType,
+            UploadedAt = DateTimeOffset.UtcNow
+        };
+    }
+
+    private static void ValidatePropertyAuthorizationLetter(IFormFile file)
+    {
+        if (file.Length == 0)
+            throw new InvalidOperationException("The uploaded property authorization letter is empty.");
+
+        if (file.Length > MaxPropertyLetterSize)
+            throw new InvalidOperationException("The property authorization letter exceeds the maximum allowed size of 10 MB.");
+
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!AllowedPropertyLetterExtensions.Contains(extension))
+            throw new InvalidOperationException("Unsupported file type. Only PDF, JPG, JPEG, and PNG files are allowed.");
+
+        var isKnownContentType = AllowedPropertyLetterContentTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase);
+        var isOctetStream = string.Equals(file.ContentType, "application/octet-stream", StringComparison.OrdinalIgnoreCase);
+        if (!isKnownContentType && !isOctetStream)
+            throw new InvalidOperationException("Unsupported file type. Only PDF, JPG, JPEG, and PNG files are allowed.");
+    }
+
+    private string ResolvePropertyLetterPath(string storedPath)
+    {
+        var fileName = Path.GetFileName(storedPath);
+        if (string.IsNullOrWhiteSpace(fileName) || fileName != storedPath)
+            throw new InvalidOperationException("Invalid property authorization letter path.");
+
+        return Path.Combine(_env.ContentRootPath, "uploads", "appointments", "property-letters", fileName);
+    }
+
     private string ResolveSupportingLetterPath(string storedPath)
     {
         var fileName = Path.GetFileName(storedPath);
@@ -1112,6 +1470,23 @@ public class AppointmentService : IAppointmentService
 
     private static string GenerateCode() => $"APT-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
 
+    private static bool Overlaps(DateTimeOffset aStart, DateTimeOffset aEnd, DateTimeOffset bStart, DateTimeOffset bEnd)
+    {
+        var aHasDuration = aEnd > aStart;
+        var bHasDuration = bEnd > bStart;
+
+        if (!aHasDuration && !bHasDuration)
+            return aStart == bStart;
+
+        if (!aHasDuration)
+            return bStart <= aStart && aStart < bEnd;
+
+        if (!bHasDuration)
+            return aStart <= bStart && bStart < aEnd;
+
+        return aStart < bEnd && bStart < aEnd;
+    }
+
     private static AppointmentResponseDto MapToDto(Appointment a) => new()
     {
         Id = a.Id,
@@ -1119,6 +1494,7 @@ public class AppointmentService : IAppointmentService
         VisitorName = a.Visitor?.FullName ?? "",
         VisitorEmail = a.Visitor?.Email ?? "",
         VisitorPhone = a.Visitor?.Phone ?? "",
+        VisitorCompany = a.Visitor?.Organization,
         EmployeeId = a.EmployeeId,
         EmployeeName = a.Employee?.FullName ?? "",
         EmployeePosition = a.Employee?.Position ?? "",
@@ -1132,6 +1508,9 @@ public class AppointmentService : IAppointmentService
         EmployeeResponse = a.EmployeeResponse,
         ApprovalDate = a.ApprovalDate,
         CheckInAllowed = a.CheckInAllowed,
+        VisitCheckInTime = a.Visits?.FirstOrDefault()?.CheckInTime,
+        VisitCheckOutTime = a.Visits?.FirstOrDefault()?.CheckOutTime,
+        BadgeNumber = a.Visits?.FirstOrDefault()?.BadgeNumber,
         IsConfidential = a.IsConfidential,
         RouteType = a.RouteType,
         AppointmentMethod = a.AppointmentMethod,
@@ -1169,6 +1548,33 @@ public class AppointmentService : IAppointmentService
             ContentType = aa.ContentType,
             CreatedAt = aa.CreatedAt
         }).ToList() ?? new(),
+        Properties = a.Properties?.Select(p => new AppointmentPropertyDto
+        {
+            Id = p.Id,
+            PropertyName = p.PropertyName,
+            PropertyType = p.PropertyType,
+            Brand = p.Brand,
+            Model = p.Model,
+            SerialNumber = p.SerialNumber,
+            AssetTagNumber = p.AssetTagNumber,
+            Quantity = p.Quantity,
+            Description = p.Description,
+            IsVerified = p.IsVerified,
+            VerificationStatus = p.VerificationStatus,
+            VerifiedAt = p.VerifiedAt,
+            VerifiedByUserName = p.VerifiedByUser?.FullName
+        }).ToList() ?? new(),
+        PropertyAuthorizationLetter = a.PropertyLetterPath == null ? null : new PropertyAuthorizationLetterDto
+        {
+            FileName = a.PropertyLetterFileName ?? "",
+            OriginalFileName = a.PropertyLetterOriginalFileName ?? "",
+            FilePath = a.PropertyLetterPath ?? "",
+            FileSize = a.PropertyLetterSize ?? 0,
+            ContentType = a.PropertyLetterContentType ?? "",
+            UploadedAt = a.PropertyLetterUploadedAt
+        },
+        HasProperties = a.HasProperties || a.Properties?.Any() == true,
+        AllPropertiesVerified = a.Properties?.Any() == true && a.Properties.All(p => p.IsVerified),
         CommentCount = a.Comments?.Count ?? 0,
         CreatedAt = a.CreatedAt,
         UpdatedAt = a.UpdatedAt

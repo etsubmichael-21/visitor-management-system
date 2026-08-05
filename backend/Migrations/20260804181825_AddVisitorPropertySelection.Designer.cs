@@ -3,6 +3,7 @@ using System;
 using EcxVisitorManagement.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EcxVisitorManagement.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260804181825_AddVisitorPropertySelection")]
+    partial class AddVisitorPropertySelection
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -404,11 +407,6 @@ namespace EcxVisitorManagement.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("VerificationStatus")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("verification_status");
-
                     b.Property<DateTimeOffset?>("VerifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("verified_at");
@@ -761,26 +759,13 @@ namespace EcxVisitorManagement.Migrations
                         .HasColumnType("date")
                         .HasColumnName("end_date");
 
-                    b.Property<TimeOnly?>("EndTime")
-                        .HasColumnType("time without time zone")
-                        .HasColumnName("end_time");
-
                     b.Property<string>("Reason")
                         .HasColumnType("text")
                         .HasColumnName("reason");
 
-                    b.Property<string>("Repeat")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("repeat");
-
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date")
                         .HasColumnName("start_date");
-
-                    b.Property<TimeOnly?>("StartTime")
-                        .HasColumnType("time without time zone")
-                        .HasColumnName("start_time");
 
                     b.Property<string>("UnavailabilityType")
                         .IsRequired()
@@ -1679,7 +1664,7 @@ namespace EcxVisitorManagement.Migrations
             modelBuilder.Entity("EcxVisitorManagement.Models.Visit", b =>
                 {
                     b.HasOne("EcxVisitorManagement.Models.Appointment", "Appointment")
-                        .WithMany("Visits")
+                        .WithMany()
                         .HasForeignKey("AppointmentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
@@ -1742,8 +1727,6 @@ namespace EcxVisitorManagement.Migrations
                     b.Navigation("Properties");
 
                     b.Navigation("RescheduleRequests");
-
-                    b.Navigation("Visits");
                 });
 
             modelBuilder.Entity("EcxVisitorManagement.Models.Department", b =>

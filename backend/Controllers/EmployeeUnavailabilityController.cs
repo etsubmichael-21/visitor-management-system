@@ -60,6 +60,9 @@ public class EmployeeUnavailabilityController : ControllerBase
             UnavailabilityType = dto.UnavailabilityType,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
+            StartTime = dto.StartTime,
+            EndTime = dto.EndTime,
+            Repeat = string.IsNullOrWhiteSpace(dto.Repeat) ? "None" : dto.Repeat,
             Reason = dto.Reason,
             CreatedBy = userId,
             CreatedAt = DateTimeOffset.UtcNow
@@ -68,7 +71,7 @@ public class EmployeeUnavailabilityController : ControllerBase
         await _context.SaveChangesAsync();
 
         await _appointmentService.HandleEmployeeUnavailabilityAsync(
-            dto.EmployeeId, dto.UnavailabilityType, dto.StartDate, dto.EndDate, dto.Reason, userId);
+            dto.EmployeeId, dto.UnavailabilityType, dto.StartDate, dto.EndDate, dto.StartTime, dto.EndTime, dto.Reason, userId);
 
         var created = await _context.EmployeeUnavailabilities
             .Include(u => u.Employee)
@@ -78,12 +81,54 @@ public class EmployeeUnavailabilityController : ControllerBase
             ApiResponse<EmployeeUnavailabilityDto>.Ok(MapToDto(created)));
     }
 
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,CEO,DepartmentHead,Employee")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateEmployeeUnavailabilityDto dto)
+    {
+        var entity = await _context.EmployeeUnavailabilities.FindAsync(id);
+        if (entity == null) return NotFound(ApiResponse<EmployeeUnavailabilityDto>.NotFound("Not found"));
+
+        var currentUser = await _context.Users.FindAsync(
+            int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value));
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var isManager = role is "Admin" or "CEO" or "DepartmentHead";
+        if (!isManager && currentUser?.EmployeeId != entity.EmployeeId)
+            return Forbid();
+
+        entity.UnavailabilityType = dto.UnavailabilityType;
+        entity.StartDate = dto.StartDate;
+        entity.EndDate = dto.EndDate;
+        entity.StartTime = dto.StartTime;
+        entity.EndTime = dto.EndTime;
+        entity.Repeat = string.IsNullOrWhiteSpace(dto.Repeat) ? "None" : dto.Repeat;
+        entity.Reason = dto.Reason;
+        entity.UpdatedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync();
+
+        await _appointmentService.HandleEmployeeUnavailabilityAsync(
+            entity.EmployeeId, entity.UnavailabilityType, entity.StartDate, entity.EndDate, entity.StartTime, entity.EndTime, entity.Reason, currentUser?.Id ?? 0);
+
+        var updated = await _context.EmployeeUnavailabilities
+            .Include(u => u.Employee)
+            .FirstAsync(u => u.Id == entity.Id);
+
+        return Ok(ApiResponse<EmployeeUnavailabilityDto>.Ok(MapToDto(updated)));
+    }
+
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin,CEO,DepartmentHead")]
+    [Authorize(Roles = "Admin,CEO,DepartmentHead,Employee")]
     public async Task<IActionResult> Delete(int id)
     {
         var entity = await _context.EmployeeUnavailabilities.FindAsync(id);
         if (entity == null) return NotFound(ApiResponse<object>.NotFound("Not found"));
+
+        var currentUser = await _context.Users.FindAsync(
+            int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value));
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var isManager = role is "Admin" or "CEO" or "DepartmentHead";
+        if (!isManager && currentUser?.EmployeeId != entity.EmployeeId)
+            return Forbid();
+
         _context.EmployeeUnavailabilities.Remove(entity);
         await _context.SaveChangesAsync();
         return Ok(ApiResponse<object>.Ok(null!, "Deleted successfully"));
@@ -97,7 +142,11 @@ public class EmployeeUnavailabilityController : ControllerBase
         UnavailabilityType = u.UnavailabilityType,
         StartDate = u.StartDate,
         EndDate = u.EndDate,
+        StartTime = u.StartTime,
+        EndTime = u.EndTime,
+        Repeat = u.Repeat,
         Reason = u.Reason,
-        CreatedAt = u.CreatedAt
+        CreatedAt = u.CreatedAt,
+        UpdatedAt = u.UpdatedAt
     };
 }

@@ -9,15 +9,31 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AppointmentService } from '../../../core/services/appointment.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EmployeeService } from '../../../core/services/employee.service';
 import { DepartmentService } from '../../../core/services/department.service';
-import { Appointment } from '../../../core/models/appointment.model';
+import { Appointment, PropertyVerificationItem } from '../../../core/models/appointment.model';
 import { Employee } from '../../../core/models/employee.model';
 import { Department } from '../../../core/models/common.model';
+
+type VerificationStatus = 'Verified' | 'Missing' | 'Additional Property' | 'Rejected';
+
+interface VerificationRow {
+  key: number;
+  id?: number;
+  propertyType: string;
+  propertyName: string;
+  brand: string;
+  model: string;
+  serialNumber: string;
+  quantity: number;
+  status: VerificationStatus;
+  error?: string;
+}
 
 @Component({
   selector: 'app-appointment-detail',
@@ -25,7 +41,7 @@ import { Department } from '../../../core/models/common.model';
   imports: [
     CommonModule, RouterLink, FormsModule,
     MatCardModule, MatIconModule, MatButtonModule, MatDividerModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule,
+    MatFormFieldModule, MatInputModule, MatSelectModule, MatTooltipModule,
     MatDialogModule, MatSnackBarModule
   ],
   template: `
@@ -105,6 +121,152 @@ import { Department } from '../../../core/models/common.model';
                   </div>
                 } @else {
                   <p class="no-letter">No supporting letter uploaded.</p>
+                }
+              </div>
+
+              <mat-divider></mat-divider>
+              <div class="property-section">
+                <div class="property-section-head">
+                  <h3>Visitor Properties</h3>
+                  @if (appointment()!.properties?.length) {
+                    <span class="property-status" [class.verified]="appointment()!.allPropertiesVerified" [class.unverified]="!appointment()!.allPropertiesVerified">
+                      <mat-icon>{{ appointment()!.allPropertiesVerified ? 'verified' : 'warning' }}</mat-icon>
+                      {{ appointment()!.allPropertiesVerified ? 'Property Verified' : 'Verification Required' }}
+                    </span>
+                  }
+                </div>
+
+                @if (canEditProperties()) {
+                  <div class="verification-table-wrap">
+                    <table class="verification-table">
+                      <thead>
+                        <tr>
+                          <th>Property Type</th>
+                          <th>Property Name</th>
+                          <th>Brand</th>
+                          <th>Model</th>
+                          <th>Serial Number</th>
+                          <th>Qty</th>
+                          <th>Status</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (row of verificationRows(); track row.key) {
+                          <tr [class.invalid]="row.error">
+                            <td>
+                              <mat-form-field appearance="outline">
+                                <mat-label>Type</mat-label>
+                                <mat-select [(ngModel)]="row.propertyType" (ngModelChange)="onVerificationTypeChange(row)">
+                                  @for (type of propertyTypes; track type) {
+                                    <mat-option [value]="type">{{ type }}</mat-option>
+                                  }
+                                </mat-select>
+                              </mat-form-field>
+                            </td>
+                            <td>
+                              @if (row.propertyType === 'Other') {
+                                <mat-form-field appearance="outline">
+                                  <mat-label>Name *</mat-label>
+                                  <input matInput [(ngModel)]="row.propertyName" placeholder="e.g. Custom device">
+                                </mat-form-field>
+                              }
+                            </td>
+                            <td>
+                              <mat-form-field appearance="outline">
+                                <mat-label>Brand</mat-label>
+                                <input matInput [(ngModel)]="row.brand">
+                              </mat-form-field>
+                            </td>
+                            <td>
+                              <mat-form-field appearance="outline">
+                                <mat-label>Model</mat-label>
+                                <input matInput [(ngModel)]="row.model">
+                              </mat-form-field>
+                            </td>
+                            <td>
+                              <mat-form-field appearance="outline">
+                                <mat-label>Serial</mat-label>
+                                <input matInput [(ngModel)]="row.serialNumber">
+                              </mat-form-field>
+                            </td>
+                            <td>
+                              <mat-form-field appearance="outline" class="qty-field">
+                                <mat-label>Qty</mat-label>
+                                <input matInput type="number" min="1" [(ngModel)]="row.quantity">
+                              </mat-form-field>
+                            </td>
+                            <td>
+                              <mat-form-field appearance="outline" class="status-field">
+                                <mat-label>Status</mat-label>
+                                <mat-select [(ngModel)]="row.status">
+                                  @for (s of verificationStatuses; track s) {
+                                    <mat-option [value]="s">{{ s }}</mat-option>
+                                  }
+                                </mat-select>
+                              </mat-form-field>
+                            </td>
+                            <td>
+                              <button type="button" mat-icon-button matTooltip="Remove property" aria-label="Remove property" (click)="removeVerificationRow($index)">
+                                <mat-icon>delete_outline</mat-icon>
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  @if (verificationError()) {
+                    <p class="verification-error"><mat-icon>error</mat-icon> {{ verificationError() }}</p>
+                  }
+
+                  <div class="verification-actions">
+                    <button type="button" mat-stroked-button color="primary" (click)="addVerificationRow()">
+                      <mat-icon>add</mat-icon> Add Property
+                    </button>
+                    <button mat-raised-button color="primary" class="verify-props-btn" (click)="saveVerification()" [disabled]="verifyingProps()">
+                      <mat-icon>verified_user</mat-icon> {{ verifyingProps() ? 'Saving...' : 'Verify Properties' }}
+                    </button>
+                  </div>
+                } @else if (appointment()!.properties?.length) {
+                  <div class="property-list">
+                    @for (p of appointment()!.properties; track p.id) {
+                      <div class="property-item" [class.unverified]="!p.isVerified">
+                        <div class="property-item-name">
+                          <mat-icon>{{ p.isVerified ? 'check_circle' : 'schedule' }}</mat-icon>
+                          <strong>{{ p.propertyName || p.propertyType || 'Property item' }}</strong>
+                          @if (p.quantity > 1) {
+                            <span class="property-qty">×{{ p.quantity }}</span>
+                          }
+                          @if (p.verificationStatus) {
+                            <span class="property-status-chip">{{ p.verificationStatus }}</span>
+                          }
+                        </div>
+                        @if (p.brand) {
+                          <div class="property-item-line"><span>Brand:</span> {{ p.brand }}</div>
+                        }
+                        @if (p.model) {
+                          <div class="property-item-line"><span>Model:</span> {{ p.model }}</div>
+                        }
+                        @if (p.serialNumber) {
+                          <div class="property-item-line"><span>Serial Number:</span> {{ p.serialNumber }}</div>
+                        }
+                        @if (p.description) {
+                          <div class="property-item-line"><span>Description:</span> {{ p.description }}</div>
+                        }
+                        @if (p.isVerified && p.verifiedByUserName) {
+                          <div class="property-item-line verified-by"><span>Verified by:</span> {{ p.verifiedByUserName }}</div>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  @if (!appointment()!.allPropertiesVerified) {
+                    <p class="property-warn"><mat-icon>warning</mat-icon> Security must verify these property items before check-in.</p>
+                  }
+                } @else {
+                  <p class="no-letter">No visitor properties declared.</p>
                 }
               </div>
             </mat-card-content>
@@ -276,6 +438,12 @@ export class AppointmentDetailComponent implements OnInit {
   showDelegateForm = signal(false);
   showRedirectForm = signal(false);
   showAssignForm = signal(false);
+  verifyingProps = signal(false);
+  verificationRows = signal<VerificationRow[]>([]);
+  verificationError = signal('');
+  propertyTypes = ['Laptop', 'Desktop Computer', 'Monitor', 'Printer', 'Camera', 'Mobile Phone', 'Tablet', 'External Hard Drive', 'USB Flash Drive', 'Network Device', 'Other'];
+  verificationStatuses: VerificationStatus[] = ['Verified', 'Missing', 'Additional Property', 'Rejected'];
+  private nextRowKey = 1;
   rejectReason = '';
   delegateEmployeeId: number | null = null;
   delegateNotes = '';
@@ -309,9 +477,21 @@ export class AppointmentDetailComponent implements OnInit {
 
   loadAppointment(id: number): void {
     this.appointmentService.getById(id).subscribe({
-      next: (res) => { if (res.success) this.appointment.set(res.data); }
+      next: (res) => {
+        if (res.success) {
+          this.appointment.set(res.data);
+          this.buildVerificationRows();
+        }
+      }
     });
   }
+
+  canEditProperties = computed(() => {
+    const apt = this.appointment();
+    if (!apt || !apt.properties?.length || apt.allPropertiesVerified) return false;
+    const role = this.authService.getUserRole();
+    return role === 'Security' || role === 'Admin';
+  });
 
   canDecide(): boolean {
     const role = this.authService.getUserRole();
@@ -334,6 +514,102 @@ export class AppointmentDetailComponent implements OnInit {
   canRedirect(): boolean {
     const role = this.authService.getUserRole();
     return role === 'Admin' || role === 'CEO';
+  }
+  buildVerificationRows(): void {
+    const apt = this.appointment();
+    const rows: VerificationRow[] = (apt?.properties ?? []).map((p) => ({
+      key: this.nextRowKey++,
+      id: p.id,
+      propertyType: p.propertyType || '',
+      propertyName: p.propertyName || '',
+      brand: p.brand || '',
+      model: p.model || '',
+      serialNumber: p.serialNumber || '',
+      quantity: p.quantity > 0 ? p.quantity : 1,
+      status: (p.verificationStatus as VerificationStatus) || 'Verified',
+    }));
+    this.verificationRows.set(rows);
+    this.verificationError.set('');
+  }
+
+  addVerificationRow(): void {
+    this.verificationRows.update((rows) => [
+      ...rows,
+      {
+        key: this.nextRowKey++,
+        propertyType: '',
+        propertyName: '',
+        brand: '',
+        model: '',
+        serialNumber: '',
+        quantity: 1,
+        status: 'Additional Property',
+      },
+    ]);
+    this.verificationError.set('');
+  }
+
+  removeVerificationRow(index: number): void {
+    this.verificationRows.update((rows) => rows.filter((_, i) => i !== index));
+    this.verificationError.set('');
+  }
+
+  onVerificationTypeChange(row: VerificationRow): void {
+    if (row.propertyType !== 'Other') {
+      row.propertyName = '';
+    }
+    row.error = undefined;
+  }
+
+  saveVerification(): void {
+    const apt = this.appointment();
+    if (!apt) return;
+
+    const rows = this.verificationRows();
+    let firstError: string | null = null;
+    const checked = rows.map((r) => {
+      const row: VerificationRow = { ...r, error: undefined };
+      if (!row.propertyType?.trim()) {
+        row.error = 'Property Type is required for every property item.';
+      } else if (row.propertyType === 'Other' && !row.propertyName?.trim()) {
+        row.error = 'Property Name is required when Property Type is Other.';
+      } else if (!row.quantity || row.quantity < 1) {
+        row.error = 'Quantity must be greater than zero.';
+      }
+      if (row.error && !firstError) firstError = row.error;
+      return row;
+    });
+    this.verificationRows.set(checked);
+    this.verificationError.set(firstError ?? '');
+    if (firstError) {
+      this.snackBar.open(firstError, 'Close', { duration: 4000 });
+      return;
+    }
+
+    this.verifyingProps.set(true);
+    const items: PropertyVerificationItem[] = rows.map((r) => ({
+      id: r.id,
+      propertyType: r.propertyType.trim(),
+      propertyName: r.propertyName.trim() || undefined,
+      brand: r.brand.trim() || undefined,
+      model: r.model.trim() || undefined,
+      serialNumber: r.serialNumber.trim() || undefined,
+      quantity: r.quantity,
+      verificationStatus: r.status,
+    }));
+    this.appointmentService.savePropertyVerification(apt.id, items).subscribe({
+      next: (res) => {
+        this.verifyingProps.set(false);
+        if (res.success) {
+          this.snackBar.open('Property verification saved', 'Close', { duration: 3000 });
+          this.loadAppointment(apt.id);
+        }
+      },
+      error: (err) => {
+        this.verifyingProps.set(false);
+        this.snackBar.open(err.error?.message || 'Failed to save property verification', 'Close', { duration: 3000 });
+      }
+    });
   }
 
   approveAppointment(): void {

@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-home',
@@ -29,10 +30,10 @@ import { MatCardModule } from '@angular/material/card';
           check in seamlessly, and stay connected — all from one modern portal.
         </p>
         <div class="hero-actions">
-          <a mat-flat-button routerLink="/auth/register" class="btn-primary">
+          <button mat-flat-button type="button" class="btn-primary" (click)="onBookAppointment()">
             <mat-icon>person_add</mat-icon>
-            Register as Visitor
-          </a>
+            Book Appointment
+          </button>
           <a mat-stroked-button routerLink="/auth/login" class="btn-outline">
             <mat-icon>login</mat-icon>
             Sign In
@@ -147,10 +148,21 @@ import { MatCardModule } from '@angular/material/card';
   styleUrls: ['./home.component.scss'],
 })
 export class HomeComponent {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
   features = [
     { icon: 'event_available', title: 'Easy Scheduling', desc: 'Book appointments with your host in advance. Pick your preferred date and time.', bg: 'linear-gradient(135deg, #d1fae5, #a7f3d0)', color: '#059669' },
     { icon: 'speed', title: 'Fast Check-In', desc: 'Skip the queue with pre-approved digital passes and streamlined check-in.', bg: 'linear-gradient(135deg, #fef3c7, #fde68a)', color: '#d97706' },
     { icon: 'notifications_active', title: 'Real-time Updates', desc: 'Receive instant notifications about your appointment status and visitor updates.', bg: 'linear-gradient(135deg, #dbeafe, #93c5fd)', color: '#2563eb' },
     { icon: 'lock', title: 'Secure Access', desc: 'Enterprise-grade security ensures your data and facility access are fully protected.', bg: 'linear-gradient(135deg, #fce7f3, #fbcfe8)', color: '#db2777' },
   ];
+
+  onBookAppointment(): void {
+    if (this.authService.isLoggedIn && !this.authService.isTokenExpired()) {
+      this.router.navigate(['/appointments/new']);
+    } else {
+      this.router.navigate(['/auth/register']);
+    }
+  }
 }

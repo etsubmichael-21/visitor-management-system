@@ -22,6 +22,7 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Include(a => a.Employee).ThenInclude(e => e.Department)
             .Include(a => a.DelegatedToEmployee)
             .Include(a => a.Attachments)
+            .Include(a => a.Properties)
             .AsQueryable();
 
         query = ApplyFilters(query, request);
@@ -50,6 +51,7 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Include(a => a.Employee).ThenInclude(e => e.Department)
             .Include(a => a.DelegatedToEmployee)
             .Include(a => a.Attachments)
+            .Include(a => a.Properties)
             .Where(a => a.AssignedEmployeeId == employeeId || a.EmployeeId == employeeId)
             .AsQueryable();
 
@@ -80,6 +82,7 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Include(a => a.AssignedEmployee).ThenInclude(e => e.Department)
             .Include(a => a.DelegatedToEmployee)
             .Include(a => a.Attachments)
+            .Include(a => a.Properties)
             .Where(a => a.AssignedDepartmentId == departmentId
                 || (a.AssignedDepartmentId == null && a.Employee.DepartmentId == departmentId))
             .AsQueryable();
@@ -109,6 +112,8 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Include(a => a.DelegatedToEmployee).Include(a => a.OriginalEmployee)
             .Include(a => a.Attachments).Include(a => a.Comments).ThenInclude(c => c.User)
             .Include(a => a.RescheduleRequests).ThenInclude(r => r.RequestedByUser)
+            .Include(a => a.Properties).ThenInclude(p => p.VerifiedByUser)
+            .Include(a => a.Visits)
             .FirstOrDefaultAsync(a => a.Id == id);
 
     public async Task<PagedResponse<Appointment>> GetPagedByVisitorIdAsync(int visitorId, PageRequest request)
@@ -116,6 +121,7 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
         var query = _dbSet
             .Include(a => a.Employee).ThenInclude(e => e.Department)
             .Include(a => a.DelegatedToEmployee)
+            .Include(a => a.Properties)
             .Where(a => a.VisitorId == visitorId)
             .AsQueryable();
 
@@ -167,7 +173,15 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
             .Include(a => a.Employee).ThenInclude(e => e.Department)
             .Include(a => a.AssignedEmployee).ThenInclude(e => e.Department)
             .Include(a => a.DelegatedToEmployee).Include(a => a.Attachments)
+            .Include(a => a.Properties)
             .OrderByDescending(a => a.CreatedAt).ToListAsync();
+
+    public async Task<IReadOnlyList<Appointment>> GetByEmployeeAndDateAsync(int employeeId, DateOnly date) =>
+        await _dbSet.Where(a => a.RequestedDate == date
+                && (a.EmployeeId == employeeId
+                    || a.AssignedEmployeeId == employeeId
+                    || a.DelegatedToEmployeeId == employeeId))
+            .ToListAsync();
 
     public async Task<IReadOnlyList<Appointment>> GetPendingAsync() =>
         await _dbSet.Where(a => a.Status == "Pending").Include(a => a.Visitor)

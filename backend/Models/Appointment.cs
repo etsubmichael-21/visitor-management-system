@@ -122,6 +122,31 @@ public class Appointment
     [Column("attachment_uploaded_at")]
     public DateTimeOffset? AttachmentUploadedAt { get; set; }
 
+    [Column("property_letter_file_name")]
+    [MaxLength(255)]
+    public string? PropertyLetterFileName { get; set; }
+
+    [Column("property_letter_original_name")]
+    [MaxLength(255)]
+    public string? PropertyLetterOriginalFileName { get; set; }
+
+    [Column("property_letter_path")]
+    [MaxLength(500)]
+    public string? PropertyLetterPath { get; set; }
+
+    [Column("property_letter_size")]
+    public long? PropertyLetterSize { get; set; }
+
+    [Column("property_letter_content_type")]
+    [MaxLength(120)]
+    public string? PropertyLetterContentType { get; set; }
+
+    [Column("property_letter_uploaded_at")]
+    public DateTimeOffset? PropertyLetterUploadedAt { get; set; }
+
+    [Column("has_properties")]
+    public bool HasProperties { get; set; }
+
     [Column("created_at")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
@@ -156,4 +181,6 @@ public class Appointment
     public ICollection<AppointmentAttachment> Attachments { get; set; } = new List<AppointmentAttachment>();
     public ICollection<AppointmentComment> Comments { get; set; } = new List<AppointmentComment>();
     public ICollection<RescheduleRequest> RescheduleRequests { get; set; } = new List<RescheduleRequest>();
+    public ICollection<AppointmentProperty> Properties { get; set; } = new List<AppointmentProperty>();
+    public ICollection<Visit> Visits { get; set; } = new List<Visit>();
 }

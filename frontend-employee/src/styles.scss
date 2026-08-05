@@ -263,6 +263,11 @@ html, body {
   color: #6B7280;
 }
 
+.ecx-status-badge.employeeunavailable {
+  background-color: #ede7f6;
+  color: #7b1fa2;
+}
+
 .ecx-status-badge.active {
   background-color: #EAF5EE;
   color: var(--ecx-green);
