@@ -207,6 +207,7 @@ export class CheckInComponent implements OnInit {
   isLoading = signal(false);
   checkInMode = 'walkin';
   appointmentSearch = '';
+  private appointmentSearchTimeout: any;
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -240,10 +241,13 @@ export class CheckInComponent implements OnInit {
   }
 
   searchAppointments(): void {
-    if (this.appointmentSearch.length < 2) { this.matchedAppointments.set([]); return; }
-    this.appointmentService.getAll({ search: this.appointmentSearch, status: 'Approved', limit: 10 }).subscribe({
-      next: (res) => { if (res.success && res.data) this.matchedAppointments.set(res.data.items || []); }
-    });
+    clearTimeout(this.appointmentSearchTimeout);
+    this.appointmentSearchTimeout = setTimeout(() => {
+      if (this.appointmentSearch.trim().length < 2) { this.matchedAppointments.set([]); return; }
+      this.appointmentService.getAll({ search: this.appointmentSearch.trim(), status: 'Approved', limit: 10 }).subscribe({
+        next: (res) => { if (res.success && res.data) this.matchedAppointments.set(res.data.items || []); }
+      });
+    }, 300);
   }
 
   selectAppointment(event: any): void {

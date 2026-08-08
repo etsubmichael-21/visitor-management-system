@@ -482,10 +482,17 @@ $ecx-gold-pale: #FFF8E1;
   justify-content: center;
   border: 2px solid $ecx-gold-bright;
   transition: border-color 0.2s;
+  overflow: hidden;
 
   &.avatar-size-lg {
     width: 38px;
     height: 38px;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }
 
@@ -542,6 +549,13 @@ $ecx-gold-pale: #FFF8E1;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .account-initials-lg {
@@ -647,6 +661,29 @@ $ecx-gold-pale: #FFF8E1;
   align-items: center;
   gap: 12px;
   background: linear-gradient(135deg, $ecx-green-pale, $ecx-green-light);
+}
+
+.sidenav-user-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sidenav-avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid $ecx-green;
+  background: linear-gradient(135deg, $ecx-green, $ecx-green-dark);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .sidebar-logo {

@@ -14,7 +14,14 @@ public class EmployeeRepository : GenericRepository<Employee>, IEmployeeReposito
     {
         var query = _dbSet.Include(e => e.Department).AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(e => e.FullName.Contains(request.Search) || e.Email.Contains(request.Search) || e.Position.Contains(request.Search));
+        {
+            var term = request.Search.Trim();
+            query = query.Where(e => EF.Functions.ILike(e.FullName, $"%{term}%")
+                || EF.Functions.ILike(e.Email, $"%{term}%")
+                || EF.Functions.ILike(e.Phone, $"%{term}%")
+                || EF.Functions.ILike(e.Position, $"%{term}%")
+                || EF.Functions.ILike(e.Department.Name, $"%{term}%"));
+        }
         var totalCount = await query.CountAsync();
         query = request.SortBy?.ToLower() switch
         {
@@ -40,7 +47,8 @@ public class EmployeeRepository : GenericRepository<Employee>, IEmployeeReposito
         await _dbSet.Include(e => e.Schedules).FirstOrDefaultAsync(e => e.Id == id);
 
     public async Task<IReadOnlyList<Employee>> SearchAsync(string query) =>
-        await _dbSet.Where(e => e.FullName.Contains(query) || e.Email.Contains(query)).Include(e => e.Department).ToListAsync();
+        await _dbSet.Where(e => EF.Functions.ILike(e.FullName, $"%{query.Trim()}%")
+            || EF.Functions.ILike(e.Email, $"%{query.Trim()}%")).Include(e => e.Department).ToListAsync();
 
     public async Task<bool> IsAvailableOnDateAsync(int employeeId, DateOnly date)
     {

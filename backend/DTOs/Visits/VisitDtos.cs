@@ -27,6 +27,17 @@ public class CheckOutRequest
 {
     public string SecurityOfficer { get; set; } = string.Empty;
     public string? Remark { get; set; }
+    public List<CheckoutItemInputDto>? Items { get; set; }
+}
+
+public class CheckoutItemInputDto
+{
+    public int? AppointmentPropertyId { get; set; }
+    public string ItemName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int Quantity { get; set; } = 1;
+    public string ReturnStatus { get; set; } = "Returned";
+    public string? Remarks { get; set; }
 }
 
 public class VisitResponseDto
@@ -53,7 +64,26 @@ public class VisitResponseDto
     public bool IsDestinationKnown { get; set; }
     public string? RedirectNote { get; set; }
     public List<VisitorItemDto> VisitorItems { get; set; } = new();
+    public List<CheckoutItemDto> CheckoutItems { get; set; } = new();
     public bool AllItemsVerified { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+public class CheckoutItemDto
+{
+    public int Id { get; set; }
+    public int? AppointmentPropertyId { get; set; }
+    public string ItemName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int Quantity { get; set; }
+    public string ReturnStatus { get; set; } = "Returned";
+    public string? Remarks { get; set; }
+    public bool IsFromVerification { get; set; }
+    public string? Brand { get; set; }
+    public string? Model { get; set; }
+    public string? SerialNumber { get; set; }
+    public string? VerifiedByUserName { get; set; }
+    public DateTimeOffset? VerifiedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }
 

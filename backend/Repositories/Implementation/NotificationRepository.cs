@@ -13,6 +13,13 @@ public class NotificationRepository : GenericRepository<Notification>, INotifica
     public override async Task<PagedResponse<Notification>> GetPagedAsync(DTOs.Common.PageRequest request)
     {
         var query = _dbSet.Include(n => n.Employee).Include(n => n.Appointment).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var term = request.Search.Trim();
+            query = query.Where(n => EF.Functions.ILike(n.Title, $"%{term}%")
+                || EF.Functions.ILike(n.Message, $"%{term}%")
+                || EF.Functions.ILike(n.NotificationType, $"%{term}%"));
+        }
         var totalCount = await query.CountAsync();
         query = query.OrderByDescending(n => n.CreatedAt);
         var items = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync();

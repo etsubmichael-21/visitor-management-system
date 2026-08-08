@@ -35,6 +35,10 @@ export class ErrorInterceptor implements HttpInterceptor {
           friendlyMessage = 'A server error occurred. Please try again later.';
         } else if (error.error?.message) {
           friendlyMessage = error.error.message;
+        } else if (error.error?.errors && typeof error.error.errors === 'object') {
+          const first = Object.values(error.error.errors)[0];
+          friendlyMessage = Array.isArray(first) ? String(first[0] ?? '') : String(first ?? '');
+          if (!friendlyMessage) friendlyMessage = 'The submitted data is invalid. Please review the form.';
         }
 
         return throwError(() => ({ status: error.status, message: friendlyMessage }));

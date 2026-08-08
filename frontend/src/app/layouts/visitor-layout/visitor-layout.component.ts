@@ -15,6 +15,7 @@ import { MatRippleModule } from '@angular/material/core';
 import { Subject, takeUntil, switchMap, of, catchError, finalize } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { VisitorService } from '../../core/services/visitor.service';
 import { User } from '../../core/models/auth.model';
 import { Notification } from '../../core/models/notification.model';
 import { RelativeTimePipe } from '../../shared/pipes/relative-time.pipe';
@@ -167,7 +168,11 @@ import { RelativeTimePipe } from '../../shared/pipes/relative-time.pipe';
           matTooltip="Account"
           aria-label="Open account menu">
           <div class="avatar-circle" [class]="'avatar-size-' + avatarSize">
-            <span class="avatar-initials">{{ userInitials }}</span>
+            @if (profilePhotoUrl) {
+              <img [src]="profilePhotoUrl" alt="Profile">
+            } @else {
+              <span class="avatar-initials">{{ userInitials }}</span>
+            }
           </div>
         </button>
 
@@ -176,7 +181,11 @@ import { RelativeTimePipe } from '../../shared/pipes/relative-time.pipe';
             <!-- User Info Header -->
             <div class="account-header">
               <div class="account-avatar-lg">
-                <span class="account-initials-lg">{{ userInitials }}</span>
+                @if (profilePhotoUrl) {
+                  <img [src]="profilePhotoUrl" alt="Profile">
+                } @else {
+                  <span class="account-initials-lg">{{ userInitials }}</span>
+                }
               </div>
               <div class="account-info">
                 <span class="account-name">{{ user?.firstName }} {{ user?.lastName }}</span>
@@ -216,9 +225,16 @@ import { RelativeTimePipe } from '../../shared/pipes/relative-time.pipe';
         <mat-sidenav #sidenav [mode]="sidenavMode" [opened]="sidenavOpened" class="visitor-sidenav">
           <div class="sidenav-header">
             <img src="assets/images/ecx-logo.png" alt="ECX Logo" class="sidebar-logo">
-            <div class="user-info">
-              <div class="user-name">{{ user?.firstName }} {{ user?.lastName }}</div>
-              <div class="user-email">{{ user?.email }}</div>
+            <div class="sidenav-user-wrap">
+              @if (profilePhotoUrl) {
+                <div class="sidenav-avatar">
+                  <img [src]="profilePhotoUrl" alt="Profile">
+                </div>
+              }
+              <div class="user-info">
+                <div class="user-name">{{ user?.firstName }} {{ user?.lastName }}</div>
+                <div class="user-email">{{ user?.email }}</div>
+              </div>
             </div>
           </div>
 
@@ -276,6 +292,7 @@ import { RelativeTimePipe } from '../../shared/pipes/relative-time.pipe';
 export class VisitorLayoutComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
+  private visitorService = inject(VisitorService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
@@ -284,6 +301,7 @@ export class VisitorLayoutComponent implements OnInit, OnDestroy {
   unreadCount = 0;
   sidenavMode: 'side' | 'over' = 'side';
   sidenavOpened = true;
+  profilePhotoUrl: string | null = null;
 
   panelNotifications: Notification[] = [];
   loadingNotifications = false;
@@ -310,6 +328,12 @@ export class VisitorLayoutComponent implements OnInit, OnDestroy {
       this.user = user;
       this.cdr.markForCheck();
     });
+
+    this.visitorService.profile$.pipe(takeUntil(this.destroy$)).subscribe((profile) => {
+      this.profilePhotoUrl = profile ? this.visitorService.resolvePhotoUrl(profile.photoUrl) : null;
+      this.cdr.markForCheck();
+    });
+    this.visitorService.getProfile().pipe(takeUntil(this.destroy$)).subscribe({ error: () => {} });
 
     const visitorId = this.user?.visitorId;
     if (visitorId) {

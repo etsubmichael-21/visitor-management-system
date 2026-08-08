@@ -119,7 +119,31 @@ public class VisitService : IVisitService
         visit.Remark = request.Remark;
         visit.UpdatedAt = DateTimeOffset.UtcNow;
         await _repository.UpdateAsync(visit);
-        return MapToDto(visit);
+
+        if (request.Items != null)
+        {
+            var existing = _context.CheckoutItems.Where(ci => ci.VisitId == id);
+            _context.CheckoutItems.RemoveRange(existing);
+            foreach (var dto in request.Items.Where(i => !string.IsNullOrWhiteSpace(i.ItemName)))
+            {
+                _context.CheckoutItems.Add(new CheckoutItem
+                {
+                    VisitId = id,
+                    AppointmentPropertyId = dto.AppointmentPropertyId,
+                    ItemName = dto.ItemName.Trim(),
+                    Description = dto.Description,
+                    Quantity = dto.Quantity > 0 ? dto.Quantity : 1,
+                    ReturnStatus = string.IsNullOrWhiteSpace(dto.ReturnStatus) ? "Returned" : dto.ReturnStatus,
+                    Remarks = dto.Remarks,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                });
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        var updated = await _repository.GetWithItemsAsync(id);
+        return MapToDto(updated ?? visit);
     }
 
     public async Task<VisitResponseDto> CancelAsync(int id)
@@ -178,6 +202,12 @@ public class VisitService : IVisitService
         return visit.VisitorItems.Select(MapItemToDto).ToList();
     }
 
+    public async Task<List<CheckoutItemDto>> GetCheckoutItemsAsync(int visitId)
+    {
+        var visit = await _repository.GetWithItemsAsync(visitId) ?? throw new KeyNotFoundException("Visit not found");
+        return visit.CheckoutItems.Select(MapCheckoutItemToDto).ToList();
+    }
+
     private static VisitResponseDto MapToDto(Visit v) => new()
     {
         Id = v.Id, VisitorId = v.VisitorId, VisitorName = v.Visitor?.FullName ?? "", VisitorPhone = v.Visitor?.Phone ?? "",
@@ -187,6 +217,7 @@ public class VisitService : IVisitService
         CheckOutTime = v.CheckOutTime, Status = v.Status, BadgeNumber = v.BadgeNumber, SecurityOfficer = v.SecurityOfficer,
         Remark = v.Remark, IsDestinationKnown = v.IsDestinationKnown, RedirectNote = v.RedirectNote,
         VisitorItems = v.VisitorItems?.Select(MapItemToDto).ToList() ?? new(),
+        CheckoutItems = v.CheckoutItems?.Select(MapCheckoutItemToDto).ToList() ?? new(),
         AllItemsVerified = v.VisitorItems?.Any() == true && v.VisitorItems.All(i => i.IsVerified),
         CreatedAt = v.CreatedAt
     };
@@ -205,5 +236,16 @@ public class VisitService : IVisitService
     {
         Id = i.Id, ItemName = i.ItemName, Quantity = i.Quantity, SerialNumber = i.SerialNumber,
         Brand = i.Brand, Description = i.Description, IsVerified = i.IsVerified, VerifiedAt = i.VerifiedAt
+    };
+
+    private static CheckoutItemDto MapCheckoutItemToDto(CheckoutItem i) => new()
+    {
+        Id = i.Id, AppointmentPropertyId = i.AppointmentPropertyId, ItemName = i.ItemName,
+        Description = i.Description, Quantity = i.Quantity, ReturnStatus = i.ReturnStatus,
+        Remarks = i.Remarks, IsFromVerification = i.AppointmentPropertyId != null,
+        Brand = i.AppointmentProperty?.Brand, Model = i.AppointmentProperty?.Model,
+        SerialNumber = i.AppointmentProperty?.SerialNumber,
+        VerifiedByUserName = i.AppointmentProperty?.VerifiedByUser?.FullName,
+        VerifiedAt = i.AppointmentProperty?.VerifiedAt, CreatedAt = i.CreatedAt
     };
 }

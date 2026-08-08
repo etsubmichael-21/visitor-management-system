@@ -26,7 +26,21 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         var query = _dbSet.AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            query = query.Where(e => EF.Property<string>(e, "Name") != null && EF.Property<string>(e, "Name").Contains(request.Search));
+            var search = request.Search.Trim();
+            var prop = typeof(T).GetProperty("Name") ?? typeof(T).GetProperty("FullName");
+            if (prop != null && prop.PropertyType == typeof(string))
+            {
+                var parameter = System.Linq.Expressions.Expression.Parameter(typeof(T), "e");
+                var member = System.Linq.Expressions.Expression.Property(parameter, prop);
+                var toLower = System.Linq.Expressions.Expression.Call(member, "ToLower", System.Type.EmptyTypes);
+                var contains = System.Linq.Expressions.Expression.Call(
+                    toLower,
+                    "Contains",
+                    System.Type.EmptyTypes,
+                    System.Linq.Expressions.Expression.Constant(search.ToLower()));
+                var predicate = System.Linq.Expressions.Expression.Lambda<Func<T, bool>>(contains, parameter);
+                query = query.Where(predicate);
+            }
         }
         var total = await query.CountAsync();
         var items = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync();

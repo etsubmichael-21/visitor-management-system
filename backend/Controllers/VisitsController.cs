@@ -144,4 +144,15 @@ public class VisitsController : ControllerBase
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<IReadOnlyList<VisitorItemDto>>.NotFound(ex.Message)); }
     }
+
+    [HttpGet("{id}/checkout-items")]
+    public async Task<IActionResult> GetCheckoutItems(int id)
+    {
+        try
+        {
+            var result = await _visitService.GetCheckoutItemsAsync(id);
+            return Ok(ApiResponse<List<CheckoutItemDto>>.Ok(result));
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ApiResponse<List<CheckoutItemDto>>.NotFound(ex.Message)); }
+    }
 }

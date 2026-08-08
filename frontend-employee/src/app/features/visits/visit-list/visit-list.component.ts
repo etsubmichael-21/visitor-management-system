@@ -33,12 +33,12 @@ import { Visit } from '../../../core/models/visit.model';
         <div class="filters">
           <mat-form-field appearance="outline">
             <mat-label>Search</mat-label>
-            <input matInput [(ngModel)]="searchTerm" (ngModelChange)="loadVisits()" placeholder="Search visits...">
+            <input matInput [(ngModel)]="searchTerm" (ngModelChange)="onSearch()" placeholder="Search visits...">
             <mat-icon matSuffix>search</mat-icon>
           </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Status</mat-label>
-            <mat-select [(ngModel)]="selectedStatus" (ngModelChange)="loadVisits()">
+            <mat-select [(ngModel)]="selectedStatus" (ngModelChange)="onSearch()">
               <mat-option value="">All</mat-option>
               <mat-option value="Expected">Expected</mat-option>
               <mat-option value="CheckedIn">Checked In</mat-option>
@@ -112,6 +112,7 @@ export class VisitListComponent implements OnInit {
   currentPage = signal(0);
   searchTerm = '';
   selectedStatus = '';
+  private searchTimeout: any;
 
   pageTitle = signal('Visits');
 
@@ -146,6 +147,14 @@ export class VisitListComponent implements OnInit {
         }
       }
     });
+  }
+
+  onSearch(): void {
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => {
+      this.currentPage.set(0);
+      this.loadVisits();
+    }, 300);
   }
 
   onPageChange(event: PageEvent): void { this.pageSize.set(event.pageSize); this.currentPage.set(event.pageIndex); this.loadVisits(); }

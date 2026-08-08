@@ -1,4 +1,5 @@
 using EcxVisitorManagement.Interfaces;
+using EcxVisitorManagement.Models;
 using EcxVisitorManagement.Repositories.Implementation;
 using EcxVisitorManagement.Services.Implementation;
 
@@ -18,6 +19,7 @@ public static class ServiceExtensions
         services.AddScoped<IVisitorNotificationRepository, VisitorNotificationRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IGenericRepository<User>, UserRepository>();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IVisitorService, VisitorService>();

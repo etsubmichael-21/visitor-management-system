@@ -1,15 +1,20 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, switchMap } from 'rxjs';
+import { BehaviorSubject, Observable, map } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { Visitor, VisitorCreate, VisitorProfile, UpdateProfileRequest, VisitorStats } from '../models/visitor.model';
 import { Appointment } from '../models/appointment.model';
 import { PagedResponse, PageRequest } from '../models/paged-response.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class VisitorService {
   private api = inject(ApiService);
   private auth = inject(AuthService);
+
+  private profileSubject = new BehaviorSubject<VisitorProfile | null>(null);
+  readonly profile$ = this.profileSubject.asObservable();
 
   private get visitorId(): number | null {
     const user = this.auth.currentUser;
@@ -17,46 +22,52 @@ export class VisitorService {
   }
 
   getProfile(): Observable<VisitorProfile> {
-    return this.getVisitor(String(this.visitorId)).pipe(
-      map((v) => ({
-        id: String(v.id),
-        fullName: v.fullName,
-        email: v.email,
-        phone: v.phone,
-        photoUrl: v.photoUrl,
-        address: v.address,
-        nationalId: v.nationalId,
-        organization: v.organization,
-        gender: v.gender,
-      }))
+    return this.api.get<Visitor>('/visitors/me').pipe(
+      map((res) => this.toProfile(res.data)),
+      tap((profile) => this.profileSubject.next(profile))
     );
   }
 
   updateProfile(data: UpdateProfileRequest): Observable<VisitorProfile> {
-    const id = this.visitorId;
-    return this.api.put<Visitor>(`/visitors/${id}`, data).pipe(
-      map((res) => {
-        const v = res.data;
-        return {
-          id: String(v.id),
-          fullName: v.fullName,
-          email: v.email,
-          phone: v.phone,
-          photoUrl: v.photoUrl,
-          address: v.address,
-          nationalId: v.nationalId,
-          organization: v.organization,
-          gender: v.gender,
-        };
-      })
+    return this.api.put<Visitor>('/visitors/me', data).pipe(
+      map((res) => this.toProfile(res.data)),
+      tap((profile) => this.profileSubject.next(profile))
     );
   }
 
   uploadPhoto(file: File): Observable<{ photoUrl: string }> {
-    const id = this.visitorId;
     const formData = new FormData();
     formData.append('file', file);
-    return this.api.upload<{ photoUrl: string }>(`/visitors/${id}/photo`, formData).pipe(map((res) => res.data));
+    return this.api.upload<{ photoUrl: string }>('/visitors/me/photo', formData).pipe(
+      map((res) => res.data),
+      tap((data) => {
+        const current = this.profileSubject.value;
+        if (current) {
+          this.profileSubject.next({ ...current, photoUrl: data.photoUrl });
+        }
+      })
+    );
+  }
+
+  resolvePhotoUrl(url?: string | null): string | null {
+    if (!url) return null;
+    if (/^https?:\/\//.test(url)) return url;
+    const base = environment.apiUrl.replace(/\/api\/?$/, '');
+    return base + (url.startsWith('/') ? url : `/${url}`);
+  }
+
+  private toProfile(v: Visitor): VisitorProfile {
+    return {
+      id: String(v.id),
+      fullName: v.fullName,
+      email: v.email,
+      phone: v.phone,
+      photoUrl: v.photoUrl,
+      address: v.address,
+      nationalId: v.nationalId,
+      organization: v.organization,
+      gender: v.gender,
+    };
   }
 
   getVisitorStats(): Observable<VisitorStats> {

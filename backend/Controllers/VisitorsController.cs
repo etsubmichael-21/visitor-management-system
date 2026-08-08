@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EcxVisitorManagement.DTOs.Common;
 using EcxVisitorManagement.DTOs.Visitors;
+using EcxVisitorManagement.Extensions;
 using EcxVisitorManagement.Interfaces;
 
 namespace EcxVisitorManagement.Controllers;
@@ -30,6 +31,16 @@ public class VisitorsController : ControllerBase
         return Ok(ApiResponse<VisitorResponseDto>.Ok(result));
     }
 
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMe()
+    {
+        var visitorId = User.GetVisitorId();
+        if (visitorId == null) return NotFound(ApiResponse<VisitorResponseDto>.NotFound("Visitor profile is not linked to your account"));
+        var result = await _visitorService.GetByIdAsync(visitorId.Value);
+        if (result == null) return NotFound(ApiResponse<VisitorResponseDto>.NotFound("Visitor not found"));
+        return Ok(ApiResponse<VisitorResponseDto>.Ok(result));
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] VisitorCreateDto dto)
     {
@@ -43,6 +54,22 @@ public class VisitorsController : ControllerBase
         try
         {
             var result = await _visitorService.UpdateAsync(id, dto);
+            return Ok(ApiResponse<VisitorResponseDto>.Ok(result));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<VisitorResponseDto>.NotFound(ex.Message));
+        }
+    }
+
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMe([FromBody] VisitorUpdateDto dto)
+    {
+        var visitorId = User.GetVisitorId();
+        if (visitorId == null) return NotFound(ApiResponse<VisitorResponseDto>.NotFound("Visitor profile is not linked to your account"));
+        try
+        {
+            var result = await _visitorService.UpdateAsync(visitorId.Value, dto);
             return Ok(ApiResponse<VisitorResponseDto>.Ok(result));
         }
         catch (KeyNotFoundException ex)
@@ -81,6 +108,32 @@ public class VisitorsController : ControllerBase
             await file.CopyToAsync(stream);
             var photoUrl = $"/uploads/photos/{fileName}";
             var url = await _visitorService.UploadPhotoAsync(id, photoUrl);
+            return Ok(ApiResponse<object>.Ok(new { photoUrl = url }));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.NotFound(ex.Message));
+        }
+    }
+
+    [HttpPost("me/photo")]
+    public async Task<IActionResult> UploadMyPhoto(IFormFile file)
+    {
+        var visitorId = User.GetVisitorId();
+        if (visitorId == null) return NotFound(ApiResponse<object>.NotFound("Visitor profile is not linked to your account"));
+        if (file == null || file.Length == 0)
+            return BadRequest(ApiResponse<object>.BadRequest("No file provided"));
+
+        try
+        {
+            var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "photos");
+            Directory.CreateDirectory(uploadsDir);
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var filePath = Path.Combine(uploadsDir, fileName);
+            using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
+            var photoUrl = $"/uploads/photos/{fileName}";
+            var url = await _visitorService.UploadPhotoAsync(visitorId.Value, photoUrl);
             return Ok(ApiResponse<object>.Ok(new { photoUrl = url }));
         }
         catch (KeyNotFoundException ex)

@@ -147,7 +147,17 @@ public class AppointmentRepository : GenericRepository<Appointment>, IAppointmen
     private static IQueryable<Appointment> ApplyFilters(IQueryable<Appointment> query, PageRequest request)
     {
         if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(a => a.Purpose.Contains(request.Search) || a.Visitor.FullName.Contains(request.Search) || a.Employee.FullName.Contains(request.Search));
+        {
+            var term = request.Search.Trim();
+            query = query.Where(a => EF.Functions.ILike(a.Purpose, $"%{term}%")
+                || EF.Functions.ILike(a.AppointmentCode ?? "", $"%{term}%")
+                || EF.Functions.ILike(a.Visitor.FullName, $"%{term}%")
+                || EF.Functions.ILike(a.Visitor.Email, $"%{term}%")
+                || EF.Functions.ILike(a.Visitor.Phone, $"%{term}%")
+                || EF.Functions.ILike(a.Employee.FullName, $"%{term}%")
+                || EF.Functions.ILike(a.Employee.Email, $"%{term}%")
+                || EF.Functions.ILike(a.Employee.Phone, $"%{term}%"));
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Status))
         {

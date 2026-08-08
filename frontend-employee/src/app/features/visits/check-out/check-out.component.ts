@@ -9,21 +9,28 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTableModule } from '@angular/material/table';
+import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { VisitService } from '../../../core/services/visit.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { AppointmentService } from '../../../core/services/appointment.service';
-import { Visit, VisitStatus } from '../../../core/models/visit.model';
+import { Visit, VisitStatus, CheckoutItem, CheckoutReturnStatus } from '../../../core/models/visit.model';
 import { Appointment, AppointmentProperty } from '../../../core/models/appointment.model';
 
 interface ReturnedItemRow {
   key: number;
+  appointmentPropertyId?: number;
   itemName: string;
+  brand: string;
+  model: string;
+  serialNumber: string;
   description: string;
   quantity: number;
+  returnStatus: CheckoutReturnStatus;
   remarks: string;
+  fromVerification: boolean;
   error?: string;
 }
 
@@ -34,7 +41,7 @@ interface ReturnedItemRow {
     CommonModule, FormsModule,
     MatCardModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatCheckboxModule,
-    MatTableModule, MatTooltipModule, MatProgressSpinnerModule, MatSnackBarModule
+    MatTableModule, MatSelectModule, MatTooltipModule, MatProgressSpinnerModule, MatSnackBarModule
   ],
   template: `
     <div class="check-out">
@@ -51,7 +58,7 @@ interface ReturnedItemRow {
         <mat-card-content>
           <mat-form-field appearance="outline" class="full-width search-field">
             <mat-label>Search by Badge Number or Name</mat-label>
-            <input matInput [(ngModel)]="searchTerm" placeholder="Filter active visitors...">
+            <input matInput [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" placeholder="Filter active visitors...">
             <mat-icon matSuffix>search</mat-icon>
           </mat-form-field>
 
@@ -131,19 +138,28 @@ interface ReturnedItemRow {
                 <h3>Returned Items</h3>
                 @if (visitorHasItems(selectedVisitor()!) || (selectedAppointment()?.properties?.length ?? 0) > 0) {
                   <span class="property-status unverified">
-                    <mat-icon>info</mat-icon> Verified items are pre-filled &mdash; confirm returned items, use Add Item for anything new
+                    <mat-icon>info</mat-icon> Verified items are pre-filled &mdash; confirm returned quantity, status and remarks
                   </span>
                 }
               </div>
 
-              @if (returnedItems().length) {
+              @if (noRegisteredProperties()) {
+                <div class="empty-state">
+                  <mat-icon>inventory_2</mat-icon>
+                  <p>No visitor properties were registered.</p>
+                </div>
+              } @else if (returnedItems().length) {
                 <div class="verification-table-wrap">
                   <table class="verification-table">
                     <thead>
                       <tr>
                         <th>Item Name</th>
+                        <th>Brand</th>
+                        <th>Model</th>
+                        <th>Serial Number</th>
                         <th>Description</th>
                         <th>Qty</th>
+                        <th>Return Status</th>
                         <th>Remarks</th>
                         <th></th>
                       </tr>
@@ -152,16 +168,54 @@ interface ReturnedItemRow {
                       @for (row of returnedItems(); track row.key) {
                         <tr [class.invalid]="row.error">
                           <td>
-                            <mat-form-field appearance="outline">
-                              <mat-label>Item Name *</mat-label>
-                              <input matInput [(ngModel)]="row.itemName" placeholder="e.g. Laptop">
-                            </mat-form-field>
+                            @if (row.fromVerification) {
+                              <span class="readonly-value">{{ row.itemName }}</span>
+                            } @else {
+                              <mat-form-field appearance="outline">
+                                <mat-label>Item Name *</mat-label>
+                                <input matInput [(ngModel)]="row.itemName" placeholder="e.g. Laptop">
+                              </mat-form-field>
+                            }
                           </td>
                           <td>
-                            <mat-form-field appearance="outline">
-                              <mat-label>Description</mat-label>
-                              <input matInput [(ngModel)]="row.description">
-                            </mat-form-field>
+                            @if (row.fromVerification) {
+                              <span class="readonly-value">{{ row.brand || '-' }}</span>
+                            } @else {
+                              <mat-form-field appearance="outline">
+                                <mat-label>Brand</mat-label>
+                                <input matInput [(ngModel)]="row.brand">
+                              </mat-form-field>
+                            }
+                          </td>
+                          <td>
+                            @if (row.fromVerification) {
+                              <span class="readonly-value">{{ row.model || '-' }}</span>
+                            } @else {
+                              <mat-form-field appearance="outline">
+                                <mat-label>Model</mat-label>
+                                <input matInput [(ngModel)]="row.model">
+                              </mat-form-field>
+                            }
+                          </td>
+                          <td>
+                            @if (row.fromVerification) {
+                              <span class="readonly-value">{{ row.serialNumber || '-' }}</span>
+                            } @else {
+                              <mat-form-field appearance="outline">
+                                <mat-label>Serial</mat-label>
+                                <input matInput [(ngModel)]="row.serialNumber">
+                              </mat-form-field>
+                            }
+                          </td>
+                          <td>
+                            @if (row.fromVerification) {
+                              <span class="readonly-value">{{ row.description || '-' }}</span>
+                            } @else {
+                              <mat-form-field appearance="outline">
+                                <mat-label>Description</mat-label>
+                                <input matInput [(ngModel)]="row.description">
+                              </mat-form-field>
+                            }
                           </td>
                           <td>
                             <mat-form-field appearance="outline" class="qty-field">
@@ -170,15 +224,27 @@ interface ReturnedItemRow {
                             </mat-form-field>
                           </td>
                           <td>
-                            <mat-form-field appearance="outline">
-                              <mat-label>Remarks</mat-label>
-                              <input matInput [(ngModel)]="row.remarks">
+                            <mat-form-field appearance="outline" class="status-field">
+                              <mat-label>Status</mat-label>
+                              <mat-select [(ngModel)]="row.returnStatus">
+                                @for (s of returnStatuses; track s) {
+                                  <mat-option [value]="s">{{ returnStatusLabel(s) }}</mat-option>
+                                }
+                              </mat-select>
                             </mat-form-field>
                           </td>
                           <td>
-                            <button type="button" mat-icon-button matTooltip="Remove item" aria-label="Remove item" (click)="removeReturnedItem($index)">
-                              <mat-icon>delete_outline</mat-icon>
-                            </button>
+                            <mat-form-field appearance="outline">
+                              <mat-label>Remarks</mat-label>
+                              <input matInput [(ngModel)]="row.remarks" placeholder="Reason if not returned">
+                            </mat-form-field>
+                          </td>
+                          <td>
+                            @if (!row.fromVerification) {
+                              <button type="button" mat-icon-button matTooltip="Remove item" aria-label="Remove item" (click)="removeReturnedItem($index)">
+                                <mat-icon>delete_outline</mat-icon>
+                              </button>
+                            }
                           </td>
                         </tr>
                       }
@@ -191,11 +257,13 @@ interface ReturnedItemRow {
                 }
               }
 
-              <div class="verification-actions">
-                <button type="button" mat-stroked-button color="primary" (click)="addReturnedItem()">
-                  <mat-icon>add</mat-icon> Add Item
-                </button>
-              </div>
+              @if (!noRegisteredProperties()) {
+                <div class="verification-actions">
+                  <button type="button" mat-stroked-button color="primary" (click)="addReturnedItem()">
+                    <mat-icon>add</mat-icon> Add Item
+                  </button>
+                </div>
+              }
             </div>
 
             <div class="checkbox-row">
@@ -297,16 +365,27 @@ export class CheckOutComponent implements OnInit {
   activeLoading = signal(false);
   checkedOutLoading = signal(false);
   isLoading = signal(false);
-  searchTerm = '';
+  searchTerm = signal('');
   securityOfficer = 'Security Officer';
   returnedItems = signal<ReturnedItemRow[]>([]);
   returnedItemsError = signal('');
+  noRegisteredProperties = signal(false);
   badgeReturned = false;
   notes = '';
+  returnStatuses: CheckoutReturnStatus[] = ['Returned', 'Partially Returned', 'Missing', 'Damaged'];
   private nextItemKey = 1;
 
+  returnStatusLabel(s: CheckoutReturnStatus): string {
+    switch (s) {
+      case 'Partially Returned': return 'Partially Returned';
+      case 'Missing': return 'Missing';
+      case 'Damaged': return 'Damaged';
+      default: return 'Returned';
+    }
+  }
+
   filteredActive = computed(() => {
-    const term = this.searchTerm.trim().toLowerCase();
+    const term = this.searchTerm().trim().toLowerCase();
     if (!term) return this.activeVisitors();
     return this.activeVisitors().filter(v =>
       v.visitorName?.toLowerCase().includes(term) ||
@@ -327,7 +406,7 @@ export class CheckOutComponent implements OnInit {
           if (res.success && res.data) {
             const v = res.data;
             this.activeVisitors.update(list => list.some(x => x.id === v.id) ? list : [v, ...list]);
-            this.selectedVisitor.set(v);
+            this.selectVisitor(v);
           }
         }
       });
@@ -361,6 +440,7 @@ export class CheckOutComponent implements OnInit {
     this.selectedAppointment.set(null);
     this.badgeReturned = false;
     this.notes = '';
+    this.noRegisteredProperties.set(false);
     this.loadVerificationItems(visitor);
   }
 
@@ -369,11 +449,19 @@ export class CheckOutComponent implements OnInit {
     this.selectedAppointment.set(null);
     this.returnedItems.set([]);
     this.returnedItemsError.set('');
+    this.noRegisteredProperties.set(false);
   }
 
   private loadVerificationItems(visitor: Visit): void {
     this.returnedItems.set([]);
     this.returnedItemsError.set('');
+    this.noRegisteredProperties.set(false);
+
+    if (Array.isArray(visitor.checkoutItems) && visitor.checkoutItems.length) {
+      this.prefillFromCheckoutItems(visitor.checkoutItems);
+      return;
+    }
+
     const appointmentId = visitor.appointmentId;
     if (!appointmentId) {
       this.prefillFromVisitItems(visitor);
@@ -383,7 +471,13 @@ export class CheckOutComponent implements OnInit {
       next: (res) => {
         if (res.success && res.data) {
           this.selectedAppointment.set(res.data);
-          const verified = (res.data.properties || []).filter((p) => p.isVerified);
+          const props = res.data.properties || [];
+          if (!props.length) {
+            this.noRegisteredProperties.set(true);
+            this.returnedItems.set([]);
+            return;
+          }
+          const verified = props.filter((p) => p.isVerified);
           if (verified.length) {
             this.returnedItems.set(verified.map((p) => this.rowFromProperty(p)));
             return;
@@ -395,15 +489,36 @@ export class CheckOutComponent implements OnInit {
     });
   }
 
+  private prefillFromCheckoutItems(items: CheckoutItem[]): void {
+    this.returnedItems.set(items.map((i) => ({
+      key: this.nextItemKey++,
+      appointmentPropertyId: i.appointmentPropertyId,
+      itemName: i.itemName,
+      brand: i.brand ?? '',
+      model: i.model ?? '',
+      serialNumber: i.serialNumber ?? '',
+      description: i.description ?? '',
+      quantity: i.quantity > 0 ? i.quantity : 1,
+      returnStatus: i.returnStatus || 'Returned',
+      remarks: i.remarks ?? '',
+      fromVerification: !!i.isFromVerification
+    })));
+  }
+
   private prefillFromVisitItems(visitor: Visit): void {
     const items = visitor.visitorItems as any;
     if (!Array.isArray(items) || !items.length) return;
     this.returnedItems.set(items.map((i: any) => ({
       key: this.nextItemKey++,
       itemName: i.itemName ?? i.name ?? '',
+      brand: '',
+      model: '',
+      serialNumber: '',
       description: i.description ?? '',
       quantity: i.quantity > 0 ? i.quantity : 1,
-      remarks: ''
+      returnStatus: 'Returned',
+      remarks: '',
+      fromVerification: false
     })));
   }
 
@@ -411,14 +526,21 @@ export class CheckOutComponent implements OnInit {
     const details = [p.brand, p.model, p.serialNumber].filter(Boolean);
     return {
       key: this.nextItemKey++,
+      appointmentPropertyId: p.id,
       itemName: p.propertyName || p.propertyType,
-      description: details.join(' / '),
+      brand: p.brand ?? '',
+      model: p.model ?? '',
+      serialNumber: p.serialNumber ?? '',
+      description: p.description || details.join(' / '),
       quantity: p.quantity > 0 ? p.quantity : 1,
-      remarks: ''
+      returnStatus: 'Returned',
+      remarks: '',
+      fromVerification: true
     };
   }
 
   visitorHasItems(v: Visit): boolean {
+    if ((this.selectedAppointment()?.properties?.length ?? 0) > 0) return true;
     const items = v.visitorItems as any;
     if (Array.isArray(items)) return items.length > 0;
     return !!(items && String(items).trim() && String(items).trim().toLowerCase() !== 'none');
@@ -427,7 +549,7 @@ export class CheckOutComponent implements OnInit {
   addReturnedItem(): void {
     this.returnedItems.update((rows) => [
       ...rows,
-      { key: this.nextItemKey++, itemName: '', description: '', quantity: 1, remarks: '' },
+      { key: this.nextItemKey++, itemName: '', brand: '', model: '', serialNumber: '', description: '', quantity: 1, returnStatus: 'Returned', remarks: '', fromVerification: false },
     ]);
     this.returnedItemsError.set('');
   }
@@ -447,9 +569,11 @@ export class CheckOutComponent implements OnInit {
     if (items.length) {
       const lines = items.map((i) => {
         let line = i.itemName.trim();
+        const details = [i.brand, i.model, i.serialNumber].filter(Boolean).map((d) => d!.trim());
+        if (details.length) line += ` (${details.join(' / ')})`;
         if (i.quantity > 0) line += ` (Qty: ${i.quantity})`;
-        if (i.description?.trim()) line += ` - ${i.description.trim()}`;
-        if (i.remarks?.trim()) line += ` [${i.remarks.trim()}]`;
+        if (i.returnStatus !== 'Returned') line += ` [${this.returnStatusLabel(i.returnStatus)}]`;
+        if (i.remarks?.trim()) line += ` (${i.remarks.trim()})`;
         return line;
       });
       parts.push(`Returned Items: ${lines.join('; ')}`);
@@ -503,7 +627,7 @@ export class CheckOutComponent implements OnInit {
     }
     this.returnedItems.set(checked);
 
-    if (!firstError && this.visitorHasItems(visitor) && checked.filter((r) => this.rowHasData(r)).length === 0) {
+    if (!firstError && !this.noRegisteredProperties() && this.visitorHasItems(visitor) && checked.filter((r) => this.rowHasData(r)).length === 0) {
       firstError = 'Visitor brought items into the building. Enter at least one returned item.';
       this.returnedItemsError.set(firstError);
       this.snackBar.open(firstError, 'Close', { duration: 4000 });
@@ -516,9 +640,20 @@ export class CheckOutComponent implements OnInit {
     }
 
     this.isLoading.set(true);
+    const items = this.returnedItems()
+      .filter((r) => this.rowHasData(r))
+      .map((r) => ({
+        appointmentPropertyId: r.appointmentPropertyId,
+        itemName: r.itemName.trim(),
+        description: r.description?.trim() || undefined,
+        quantity: r.quantity > 0 ? r.quantity : 1,
+        returnStatus: r.returnStatus || 'Returned',
+        remarks: r.remarks?.trim() || undefined
+      }));
     this.visitService.checkOut(visitor.id, {
       securityOfficer: this.securityOfficer || 'Security Officer',
-      remark: this.buildRemark()
+      remark: this.buildRemark(),
+      items
     }).subscribe({
       next: (res) => {
         this.isLoading.set(false);
@@ -533,6 +668,7 @@ export class CheckOutComponent implements OnInit {
           this.selectedAppointment.set(null);
           this.returnedItems.set([]);
           this.returnedItemsError.set('');
+          this.noRegisteredProperties.set(false);
           this.badgeReturned = false;
           this.notes = '';
         }

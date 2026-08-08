@@ -33,6 +33,7 @@ public class VisitorService : IVisitorService
         if (dto.FullName != null) visitor.FullName = dto.FullName;
         if (dto.Phone != null) visitor.Phone = dto.Phone;
         if (dto.Address != null) visitor.Address = dto.Address;
+        if (dto.NationalId != null) visitor.NationalId = dto.NationalId;
         if (dto.Organization != null) visitor.Organization = dto.Organization;
         if (dto.Gender != null) visitor.Gender = dto.Gender;
         visitor.UpdatedAt = DateTimeOffset.UtcNow;

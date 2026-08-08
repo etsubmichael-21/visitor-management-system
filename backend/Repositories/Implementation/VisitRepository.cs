@@ -20,7 +20,16 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
         var query = _dbSet.Include(v => v.Visitor).Include(v => v.Employee).ThenInclude(e => e.Department).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(v => v.Visitor.FullName.Contains(request.Search) || v.Employee.FullName.Contains(request.Search));
+        {
+            var term = request.Search.Trim();
+            query = query.Where(v => EF.Functions.ILike(v.Visitor.FullName, $"%{term}%")
+                || EF.Functions.ILike(v.Visitor.Email, $"%{term}%")
+                || EF.Functions.ILike(v.Visitor.Phone, $"%{term}%")
+                || EF.Functions.ILike(v.Employee.FullName, $"%{term}%")
+                || EF.Functions.ILike(v.Employee.Email, $"%{term}%")
+                || EF.Functions.ILike(v.Purpose, $"%{term}%")
+                || EF.Functions.ILike(v.BadgeNumber ?? "", $"%{term}%"));
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Status))
         {
@@ -51,7 +60,9 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
 
     public override async Task<Visit?> GetByIdAsync(int id) =>
         await _dbSet.Include(v => v.Visitor).Include(v => v.Employee).ThenInclude(e => e.Department)
-            .Include(v => v.VisitorItems).FirstOrDefaultAsync(v => v.Id == id);
+            .Include(v => v.VisitorItems)
+            .Include(v => v.CheckoutItems).ThenInclude(ci => ci.AppointmentProperty).ThenInclude(ap => ap.VerifiedByUser)
+            .FirstOrDefaultAsync(v => v.Id == id);
 
     public async Task<IReadOnlyList<Visit>> GetByVisitorIdAsync(int visitorId) =>
         await _dbSet.Where(v => v.VisitorId == visitorId).Include(v => v.Employee).ThenInclude(e => e.Department)
@@ -68,10 +79,13 @@ public class VisitRepository : GenericRepository<Visit>, IVisitRepository
     public async Task<IReadOnlyList<Visit>> GetActiveVisitsAsync() =>
         await _dbSet.Where(v => v.Status == "CheckedIn").Include(v => v.Visitor)
             .Include(v => v.Employee).ThenInclude(e => e.Department).Include(v => v.VisitorItems)
+            .Include(v => v.CheckoutItems).ThenInclude(ci => ci.AppointmentProperty).ThenInclude(ap => ap.VerifiedByUser)
             .OrderByDescending(v => v.CheckInTime).ToListAsync();
 
     public async Task<Visit?> GetWithItemsAsync(int id) =>
-        await _dbSet.Include(v => v.VisitorItems).FirstOrDefaultAsync(v => v.Id == id);
+        await _dbSet.Include(v => v.VisitorItems)
+            .Include(v => v.CheckoutItems).ThenInclude(ci => ci.AppointmentProperty).ThenInclude(ap => ap.VerifiedByUser)
+            .FirstOrDefaultAsync(v => v.Id == id);
 
     public async Task<int> CountTodayAsync() =>
         await _dbSet.CountAsync(v => v.VisitDate == DateOnly.FromDateTime(DateTime.Now));

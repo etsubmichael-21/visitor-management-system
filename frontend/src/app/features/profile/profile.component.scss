@@ -56,6 +56,13 @@
 
     .details-card { padding: 12px; }
 
+    .loading-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 48px 0;
+    }
+
     .details-card h2 {
       font-size: 18px;
       font-weight: 600;

@@ -24,15 +24,13 @@ public class SearchController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GlobalSearch([FromQuery] string q, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var visitorsTask = _visitorService.GetAllAsync(new PageRequest { Page = page, PageSize = pageSize, Search = q });
-        var employeesTask = _employeeService.GetAllAsync(new PageRequest { Page = page, PageSize = pageSize, Search = q });
-
-        await Task.WhenAll(visitorsTask, employeesTask);
+        var visitors = await _visitorService.GetAllAsync(new PageRequest { Page = page, PageSize = pageSize, Search = q });
+        var employees = await _employeeService.GetAllAsync(new PageRequest { Page = page, PageSize = pageSize, Search = q });
 
         return Ok(ApiResponse<object>.Ok(new
         {
-            visitors = visitorsTask.Result,
-            employees = employeesTask.Result
+            visitors,
+            employees
         }));
     }
 

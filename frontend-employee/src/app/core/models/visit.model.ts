@@ -21,8 +21,37 @@ export interface Visit {
   isDestinationKnown: boolean;
   redirectNote?: string;
   visitorItems: string;
+  checkoutItems?: CheckoutItem[];
   allItemsVerified: boolean;
   createdAt: string;
+}
+
+export type CheckoutReturnStatus = 'Returned' | 'Partially Returned' | 'Missing' | 'Damaged';
+
+export interface CheckoutItem {
+  id: number;
+  appointmentPropertyId?: number;
+  itemName: string;
+  description?: string;
+  quantity: number;
+  returnStatus: CheckoutReturnStatus;
+  remarks?: string;
+  isFromVerification: boolean;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  verifiedByUserName?: string;
+  verifiedAt?: string;
+  createdAt: string;
+}
+
+export interface CheckoutItemInput {
+  appointmentPropertyId?: number;
+  itemName: string;
+  description?: string;
+  quantity: number;
+  returnStatus: CheckoutReturnStatus;
+  remarks?: string;
 }
 
 export type VisitStatus = 'Expected' | 'Scheduled' | 'CheckedIn' | 'CheckedOut' | 'Cancelled';
@@ -49,6 +78,7 @@ export interface CheckInRequest {
 export interface CheckOutRequest {
   securityOfficer: string;
   remark?: string;
+  items?: CheckoutItemInput[];
 }
 
 export interface VisitFilter {

@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<EmailQueue> EmailQueues => Set<EmailQueue>();
     public DbSet<SmsQueue> SmsQueues => Set<SmsQueue>();
     public DbSet<VisitorItem> VisitorItems => Set<VisitorItem>();
+    public DbSet<CheckoutItem> CheckoutItems => Set<CheckoutItem>();
     public DbSet<AppointmentProperty> AppointmentProperties => Set<AppointmentProperty>();
     public DbSet<AppointmentAttachment> AppointmentAttachments => Set<AppointmentAttachment>();
     public DbSet<AppointmentComment> AppointmentComments => Set<AppointmentComment>();
@@ -109,6 +110,13 @@ public class AppDbContext : DbContext
         {
             entity.HasIndex(vi => vi.VisitId);
             entity.HasOne(vi => vi.Visit).WithMany(v => v.VisitorItems).HasForeignKey(vi => vi.VisitId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CheckoutItem>(entity =>
+        {
+            entity.HasIndex(ci => ci.VisitId);
+            entity.HasOne(ci => ci.Visit).WithMany(v => v.CheckoutItems).HasForeignKey(ci => ci.VisitId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(ci => ci.AppointmentProperty).WithMany().HasForeignKey(ci => ci.AppointmentPropertyId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<AppointmentProperty>(entity =>

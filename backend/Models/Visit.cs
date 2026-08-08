@@ -70,4 +70,6 @@ public class Visit
     public Appointment? Appointment { get; set; }
 
     public ICollection<VisitorItem> VisitorItems { get; set; } = new List<VisitorItem>();
+
+    public ICollection<CheckoutItem> CheckoutItems { get; set; } = new List<CheckoutItem>();
 }

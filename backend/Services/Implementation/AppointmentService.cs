@@ -490,6 +490,39 @@ public class AppointmentService : IAppointmentService
             }
         }
 
+        var verifiedUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+        var verifiedByName = verifiedUser?.FullName ?? "Security Officer";
+
+        var existingVisit = await _context.Visits.FirstOrDefaultAsync(v => v.AppointmentId == appointment.Id);
+        if (existingVisit == null)
+        {
+            var autoCheckIn = new Visit
+            {
+                VisitorId = appointment.VisitorId,
+                EmployeeId = appointment.EmployeeId,
+                AppointmentId = appointment.Id,
+                Purpose = appointment.Purpose,
+                Status = "CheckedIn",
+                CheckInTime = DateTimeOffset.UtcNow,
+                BadgeNumber = $"B-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}",
+                SecurityOfficer = verifiedByName,
+                VisitDate = DateOnly.FromDateTime(DateTime.Now),
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            _context.Visits.Add(autoCheckIn);
+            appointment.Visits.Add(autoCheckIn);
+            _logger.LogInformation("[Appointment:AutoCheckIn] AppointmentId={AppointmentId} VisitId={VisitId} VerifiedBy={VerifiedByName}",
+                appointment.Id, autoCheckIn.Id, verifiedByName);
+        }
+        else if (existingVisit.Status != "CheckedIn")
+        {
+            existingVisit.Status = "CheckedIn";
+            existingVisit.CheckInTime = DateTimeOffset.UtcNow;
+            existingVisit.UpdatedAt = DateTimeOffset.UtcNow;
+            _logger.LogInformation("[Appointment:AutoCheckIn] AppointmentId={AppointmentId} ExistingVisit={VisitId} UpdatedToCheckedIn",
+                appointment.Id, existingVisit.Id);
+        }
+
         await _context.SaveChangesAsync();
         _logger.LogInformation("[Appointment:SavePropertyVerification] AppointmentId={AppointmentId} ItemsSaved={Count} UserId={UserId}",
             appointment.Id, items.Count, userId);

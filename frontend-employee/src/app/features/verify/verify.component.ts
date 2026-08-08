@@ -287,12 +287,12 @@ interface VerificationRow {
           <div class="filter-bar">
             <mat-form-field appearance="outline">
               <mat-label>Search</mat-label>
-              <input matInput [(ngModel)]="searchTerm" placeholder="Visitor, badge, host...">
+              <input matInput [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" placeholder="Visitor, badge, host...">
               <mat-icon matSuffix>search</mat-icon>
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Department</mat-label>
-              <mat-select [(ngModel)]="filterDepartment">
+              <mat-select [ngModel]="filterDepartment()" (ngModelChange)="filterDepartment.set($event)">
                 <mat-option value="">All</mat-option>
                 @for (dept of departments(); track dept) {
                   <mat-option [value]="dept">{{ dept }}</mat-option>
@@ -301,7 +301,7 @@ interface VerificationRow {
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Host</mat-label>
-              <mat-select [(ngModel)]="filterHost">
+              <mat-select [ngModel]="filterHost()" (ngModelChange)="filterHost.set($event)">
                 <mat-option value="">All</mat-option>
                 @for (host of hosts(); track host) {
                   <mat-option [value]="host">{{ host }}</mat-option>
@@ -375,9 +375,9 @@ export class VerifyComponent implements OnInit {
   verificationStatuses: VerificationStatus[] = ['Verified', 'Missing', 'Additional Property', 'Rejected'];
   private nextRowKey = 1;
 
-  searchTerm = '';
-  filterDepartment = '';
-  filterHost = '';
+  searchTerm = signal('');
+  filterDepartment = signal('');
+  filterHost = signal('');
 
   historyWeekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   historyMonth = signal(new Date().getMonth());
@@ -435,7 +435,7 @@ export class VerifyComponent implements OnInit {
       const monthPrefix = `${this.historyYear()}-${String(this.historyMonth() + 1).padStart(2, '0')}`;
       list = list.filter(a => this.verifyDate(a).startsWith(monthPrefix));
     }
-    const term = this.searchTerm.trim().toLowerCase();
+    const term = this.searchTerm().trim().toLowerCase();
     if (term) {
       list = list.filter(a =>
         a.visitorName?.toLowerCase().includes(term) ||
@@ -443,8 +443,8 @@ export class VerifyComponent implements OnInit {
         a.employeeName?.toLowerCase().includes(term)
       );
     }
-    if (this.filterDepartment) list = list.filter(a => a.departmentName === this.filterDepartment);
-    if (this.filterHost) list = list.filter(a => a.employeeName === this.filterHost);
+    if (this.filterDepartment()) list = list.filter(a => a.departmentName === this.filterDepartment());
+    if (this.filterHost()) list = list.filter(a => a.employeeName === this.filterHost());
     return [...list].sort((x, y) => this.verifyTime(y) - this.verifyTime(x));
   });
 
@@ -588,7 +588,7 @@ export class VerifyComponent implements OnInit {
       next: (res) => {
         this.verifying.set(false);
         if (res.success) {
-          this.snackBar.open('Verification saved. Visitor updated to Verified.', 'Close', { duration: 3000 });
+          this.snackBar.open('Verification saved. Visitor checked in and is now active.', 'Close', { duration: 4000 });
           this.pendingVerifications.update(list => list.filter(a => a.id !== apt.id));
           this.loadVerifiedHistory();
           this.closeVerification();

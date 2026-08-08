@@ -14,7 +14,14 @@ public class VisitorRepository : GenericRepository<Visitor>, IVisitorRepository
     {
         var query = _dbSet.AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(v => v.FullName.Contains(request.Search) || v.Email.Contains(request.Search) || v.Phone.Contains(request.Search));
+        {
+            var term = request.Search.Trim();
+            query = query.Where(v => EF.Functions.ILike(v.FullName, $"%{term}%")
+                || EF.Functions.ILike(v.Email, $"%{term}%")
+                || EF.Functions.ILike(v.Phone, $"%{term}%")
+                || EF.Functions.ILike(v.NationalId ?? "", $"%{term}%")
+                || EF.Functions.ILike(v.Organization ?? "", $"%{term}%"));
+        }
         var totalCount = await query.CountAsync();
         query = request.SortBy?.ToLower() switch
         {
@@ -31,7 +38,9 @@ public class VisitorRepository : GenericRepository<Visitor>, IVisitorRepository
     public async Task<Visitor?> GetByPhoneAsync(string phone) => await _dbSet.FirstOrDefaultAsync(v => v.Phone == phone);
 
     public async Task<IReadOnlyList<Visitor>> SearchAsync(string query) =>
-        await _dbSet.Where(v => v.FullName.Contains(query) || v.Email.Contains(query) || v.Phone.Contains(query)).ToListAsync();
+        await _dbSet.Where(v => EF.Functions.ILike(v.FullName, $"%{query.Trim()}%")
+            || EF.Functions.ILike(v.Email, $"%{query.Trim()}%")
+            || EF.Functions.ILike(v.Phone, $"%{query.Trim()}%")).ToListAsync();
 
     public async Task<IReadOnlyList<Appointment>> GetAppointmentsAsync(int visitorId) =>
         await _context.Appointments.Where(a => a.VisitorId == visitorId).Include(a => a.Employee).ThenInclude(e => e.Department)

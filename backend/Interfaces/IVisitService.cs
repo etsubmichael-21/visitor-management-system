@@ -20,4 +20,5 @@ public interface IVisitService
     Task<VisitorItemDto> AddItemAsync(int visitId, VisitorItemCreateDto dto);
     Task<IReadOnlyList<VisitorItemDto>> AddItemsAsync(int visitId, List<VisitorItemCreateDto> items);
     Task<List<VisitorItemDto>> VerifyItemsAsync(int visitId, List<ItemVerificationDto> items);
+    Task<List<CheckoutItemDto>> GetCheckoutItemsAsync(int visitId);
 }

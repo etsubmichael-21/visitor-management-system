@@ -14,7 +14,10 @@ public class DepartmentRepository : GenericRepository<Department>, IDepartmentRe
     {
         var query = _dbSet.Include(d => d.Employees).AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(d => d.Name.Contains(request.Search));
+        {
+            var term = request.Search.Trim();
+            query = query.Where(d => EF.Functions.ILike(d.Name, $"%{term}%"));
+        }
         var totalCount = await query.CountAsync();
         query = query.OrderBy(d => d.Name);
         var items = await query.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync();

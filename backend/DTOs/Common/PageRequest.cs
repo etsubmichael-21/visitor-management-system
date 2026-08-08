@@ -9,6 +9,8 @@ public class PageRequest
         get => _pageSize;
         set => _pageSize = Math.Clamp(value, 1, 100);
     }
+
+    public int Limit { set => PageSize = value; }
     public string? Search { get; set; }
     public string? Status { get; set; }
     public DateOnly? DateFrom { get; set; }

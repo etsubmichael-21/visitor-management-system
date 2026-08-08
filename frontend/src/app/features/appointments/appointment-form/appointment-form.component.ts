@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpEventType } from '@angular/common/http';
@@ -16,6 +16,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSnackBar, MatSnackBarModule, MatSnackBarRef } from '@angular/material/snack-bar';
 import { AppointmentService } from '../../../core/services/appointment.service';
 import { DepartmentService } from '../../../core/services/department.service';
 import { EmployeeService } from '../../../core/services/employee.service';
@@ -33,6 +34,80 @@ interface PropertyRow {
   quantity: number;
   description: string;
 }
+
+@Component({
+  selector: 'app-appointment-success-toast',
+  standalone: true,
+  imports: [MatIconModule, MatButtonModule],
+  styles: [
+    `
+    :host { display: block; }
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 6px 0;
+      min-width: 320px;
+      max-width: 480px;
+    }
+    .toast-icon {
+      color: #ffffff;
+      font-size: 30px;
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
+    }
+    .toast-body { flex: 1; min-width: 0; }
+    .toast-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.3;
+    }
+    .toast-message {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.92);
+      line-height: 1.45;
+      margin-top: 3px;
+    }
+    .toast-close {
+      flex-shrink: 0;
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .toast-close mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    ::ng-deep .vm-appointment-success .mdc-snackbar__surface {
+      background: #0F6B3A;
+      border-radius: 10px;
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+    }
+    `,
+  ],
+  template: `
+    <div class="toast">
+      <mat-icon class="toast-icon" aria-hidden="true">check_circle</mat-icon>
+      <div class="toast-body">
+        <div class="toast-title">Appointment Submitted Successfully</div>
+        <div class="toast-message">Your appointment has been submitted successfully and is awaiting approval. A notification will be sent once your appointment is reviewed.</div>
+      </div>
+      <button mat-icon-button class="toast-close" aria-label="Close notification" (click)="dismiss()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  `,
+})
+export class AppointmentSubmissionSuccessToastComponent {
+  private snackBarRef = inject(MatSnackBarRef<AppointmentSubmissionSuccessToastComponent>);
+
+  dismiss(): void {
+    this.snackBarRef.dismiss();
+  }
+}
+
+const APPOINTMENT_SUBMISSION_SUCCESS_KEY = 'ecx_appointment_submission_success';
 
 @Component({
   selector: 'app-appointment-form',
@@ -54,6 +129,7 @@ interface PropertyRow {
     MatNativeDateModule,
     MatProgressSpinnerModule,
     MatProgressBarModule,
+    MatSnackBarModule,
   ],
   template: `
     <div class="appointment-form-page fade-in">
@@ -350,7 +426,7 @@ export class AppointmentFormComponent implements OnInit {
   private departmentService = inject(DepartmentService);
   private employeeService = inject(EmployeeService);
   private authService = inject(AuthService);
-  private router = inject(Router);
+  private snackBar = inject(MatSnackBar);
 
   form: AppointmentRequest = {
     employeeId: 0,
@@ -396,12 +472,28 @@ export class AppointmentFormComponent implements OnInit {
   propertyRows: PropertyRow[] = [];
 
   ngOnInit(): void {
+    this.showPostSubmissionToastIfNeeded();
     this.departmentService.getDepartments().subscribe({
       next: (depts) => (this.departments = depts),
       error: () => {
         this.errorMessage = 'Failed to load departments. Make sure you are logged in.';
       },
     });
+  }
+
+  private showPostSubmissionToastIfNeeded(): void {
+    try {
+      if (!sessionStorage.getItem(APPOINTMENT_SUBMISSION_SUCCESS_KEY)) return;
+      sessionStorage.removeItem(APPOINTMENT_SUBMISSION_SUCCESS_KEY);
+      this.snackBar.openFromComponent(AppointmentSubmissionSuccessToastComponent, {
+        duration: 4000,
+        panelClass: ['vm-appointment-success'],
+        verticalPosition: 'top',
+        horizontalPosition: 'center',
+      });
+    } catch {
+      // Storage access failed; the toast is a nice-to-have and should never block the form.
+    }
   }
 
   onMethodChange(): void {
@@ -435,12 +527,18 @@ export class AppointmentFormComponent implements OnInit {
   }
 
   onSubmit(): void {
+    if (this.submitting) return;
+
     if (!this.selectedDate) {
       this.errorMessage = 'Please select a visit date.';
       return;
     }
     if (!this.form.requestedStartTime) {
       this.errorMessage = 'Please select a start time.';
+      return;
+    }
+    if (!this.form.purpose?.trim()) {
+      this.errorMessage = 'Please enter a purpose for your visit.';
       return;
     }
 
@@ -510,20 +608,25 @@ export class AppointmentFormComponent implements OnInit {
           const res = event.body;
           if (res?.success) {
             this.uploadProgress = 100;
-            this.submitting = false;
-            this.successMessage = 'Appointment request submitted successfully!';
-            setTimeout(() => this.router.navigate(['/appointments']), 1500);
+            this.submitting = true;
+            this.successMessage = '';
+            try {
+              sessionStorage.setItem(APPOINTMENT_SUBMISSION_SUCCESS_KEY, '1');
+            } catch {
+              // Storage unavailable; the refresh still clears the form.
+            }
+            setTimeout(() => window.location.reload(), 1000);
           } else {
             this.submitting = false;
             this.uploadProgress = 0;
-            this.errorMessage = res?.message || 'Failed to submit appointment request.';
+            this.errorMessage = res?.message || 'Failed to submit appointment. Please try again.';
           }
         }
       },
       error: (err) => {
         this.submitting = false;
         this.uploadProgress = 0;
-        this.errorMessage = err.message || 'Failed to submit appointment request.';
+        this.errorMessage = err.message || 'Failed to submit appointment. Please try again.';
       },
     });
   }
