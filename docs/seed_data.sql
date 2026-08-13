@@ -1,305 +1,144 @@
 -- =============================================================================
--- ECX Visitor Management System — Comprehensive Seed Data
--- Run AFTER migration_v2.sql
--- Password for ALL users: Admin@123
+-- ECX Visitor Management System — Seed Data (reference)
+-- PostgreSQL 15+ | Run AFTER docs/visitor_management.sql
+-- =============================================================================
+--
+-- Mirrors the reference data used during development and testing (10
+-- departments, 15 employees, 15 visitors, 23 user accounts, Mon–Fri schedules).
+--
+-- PASSWORD NOTE
+-- -------------
+-- All accounts share the development password `Admin@123`. The BCrypt hash
+-- below is a PLACEHOLDER: replace it with a hash generated for `Admin@123`
+-- using the app's BCryptPasswordHasher before applying this script to a real
+-- environment (e.g. run `dotnet run` and register once, then copy the hash).
+-- Storing real hashes in a committed seed file is a security anti-pattern.
 -- =============================================================================
 
--- Departments (10) — no unique constraint on name, so we check manually
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Information Technology') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Information Technology', 'IT infrastructure, software, and support', 'Building A, 3rd Floor', '011-111-1001', 'it@ecx.et', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Human Resources') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Human Resources', 'Employee relations, hiring, and payroll', 'Building A, 2nd Floor', '011-111-1002', 'hr@ecx.et', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Finance') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Finance', 'Accounting, budgeting, and financial planning', 'Building B, 1st Floor', '011-111-1003', 'finance@ecx.et', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Operations') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Operations', 'Day-to-day business operations', 'Building B, 2nd Floor', '011-111-1004', 'ops@ecx.et', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Security') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Security', 'Physical and digital security', 'Building A, Ground Floor', '011-111-1005', 'security@ecx.et', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Administration') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Administration', 'Executive and administrative support', 'Building A, 4th Floor', '011-111-1006', 'admin@ecx.et', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Legal') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Legal', 'Legal affairs and compliance', 'Building B, 3rd Floor', '011-111-1007', 'legal@ecx.et', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Marketing') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Marketing', 'Brand, communications, and public relations', 'Building B, 4th Floor', '011-111-1008', 'marketing@ecx.et', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Research & Development') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Research & Development', 'Innovation and product development', 'Building C, 2nd Floor', '011-111-1009', 'randd@ecx.et', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Customer Service') THEN
-    INSERT INTO departments (name, description, location, phone, email, is_active, created_at)
-    VALUES ('Customer Service', 'Client support and relationship management', 'Building C, Ground Floor', '011-111-1010', 'cs@ecx.et', true, now());
-  END IF;
-END $$;
+BEGIN;
 
--- Employees (10, one per department)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'abebe.kebede@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Abebe Kebede', '+251-911-100001', 'abebe.kebede@ecx.et', 1, 'IT Manager', 'A301', 'Active', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'birtukan.lemma@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Birtukan Lemma', '+251-911-100002', 'birtukan.lemma@ecx.et', 2, 'HR Manager', 'A201', 'Active', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'chala.tadesse@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Chala Tadesse', '+251-911-100003', 'chala.tadesse@ecx.et', 3, 'Finance Manager', 'B101', 'Active', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'desta.hailu@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Desta Hailu', '+251-911-100004', 'desta.hailu@ecx.et', 4, 'Operations Manager', 'B201', 'Active', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'eleni.mamo@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Eleni Mamo', '+251-911-100005', 'eleni.mamo@ecx.et', 5, 'Security Manager', 'A101', 'Active', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'fikru.alemu@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Fikru Alemu', '+251-911-100006', 'fikru.alemu@ecx.et', 6, 'Admin Manager', 'A401', 'Active', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'genet.tesfaye@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Genet Tesfaye', '+251-911-100007', 'genet.tesfaye@ecx.et', 7, 'Legal Counsel', 'B301', 'Active', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'hailu.girma@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Hailu Girma', '+251-911-100008', 'hailu.girma@ecx.et', 8, 'Marketing Manager', 'B401', 'Active', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'idil.omar@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Idil Omar', '+251-911-100009', 'idil.omar@ecx.et', 9, 'R&D Manager', 'C201', 'Active', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM employees WHERE email = 'jemal.hussein@ecx.et') THEN
-    INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at)
-    VALUES ('Jemal Hussein', '+251-911-100010', 'jemal.hussein@ecx.et', 10, 'Customer Service Lead', 'C101', 'Active', now());
-  END IF;
-END $$;
+-- =============================================================================
+-- 1. DEPARTMENTS (10)
+-- =============================================================================
 
--- Visitors (6)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM visitors WHERE email = 'kebede.assefa@gmail.com') THEN
-    INSERT INTO visitors (full_name, phone, email, address, national_id, organization, gender, is_active, created_at)
-    VALUES ('Kebede Assefa', '+251-922-200001', 'kebede.assefa@gmail.com', 'Addis Ababa, Bole Subcity', 'ET-1234567', 'ABC Trading', 'Male', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visitors WHERE email = 'meron.bekele@yahoo.com') THEN
-    INSERT INTO visitors (full_name, phone, email, address, national_id, organization, gender, is_active, created_at)
-    VALUES ('Meron Bekele', '+251-922-200002', 'meron.bekele@yahoo.com', 'Addis Ababa, Kazanchis', 'ET-2345678', 'XYZ Consulting', 'Female', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visitors WHERE email = 'nebiyu.girma@outlook.com') THEN
-    INSERT INTO visitors (full_name, phone, email, address, national_id, organization, gender, is_active, created_at)
-    VALUES ('Nebiyu Girma', '+251-922-200003', 'nebiyu.girma@outlook.com', 'Addis Ababa, CMC Area', 'ET-3456789', 'Tech Solutions', 'Male', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visitors WHERE email = 'tsion.hai@gmail.com') THEN
-    INSERT INTO visitors (full_name, phone, email, address, national_id, organization, gender, is_active, created_at)
-    VALUES ('Tsion Hailemariam', '+251-922-200004', 'tsion.hai@gmail.com', 'Addis Ababa, Summit', 'ET-4567890', 'Green Energy', 'Female', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visitors WHERE email = 'yonas.ayele@ethionet.et') THEN
-    INSERT INTO visitors (full_name, phone, email, address, national_id, organization, gender, is_active, created_at)
-    VALUES ('Yonas Ayele', '+251-922-200005', 'yonas.ayele@ethionet.et', 'Addis Ababa, Mexico Square', 'ET-5678901', NULL, 'Male', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visitors WHERE email = 'yididiya19@gmail.com') THEN
-    INSERT INTO visitors (full_name, phone, email, address, national_id, organization, gender, is_active, created_at)
-    VALUES ('Yididiya Wondimu', '+251-922-200006', 'yididiya19@gmail.com', 'Addis Ababa, Bole', 'ET-6789012', 'ECX Trading', 'Male', true, now());
-  END IF;
-END $$;
+INSERT INTO departments (name, description, location, phone, email, is_active, created_at, updated_at) VALUES
+    ('Information Technology',  'IT infrastructure, software, and support',            'Building A, 3rd Floor',  '011-111-1001', 'it@ecx.et',         true,  now(), now()),
+    ('Human Resources',         'Employee relations, hiring, and payroll',             'Building A, 2nd Floor',  '011-111-1002', 'hr@ecx.et',         true,  now(), now()),
+    ('Finance',                 'Accounting, budgeting, and financial planning',       'Building B, 1st Floor',  '011-111-1003', 'finance@ecx.et',    true,  now(), now()),
+    ('Operations',              'Day-to-day business operations',                      'Building B, 2nd Floor',  '011-111-1004', 'ops@ecx.et',        true,  now(), now()),
+    ('Security',                'Physical and digital security',                       'Building A, Ground Floor', '011-111-1005', 'security@ecx.et', true, now(), now()),
+    ('Administration',          'Executive and administrative support',                'Building A, 4th Floor',  '011-111-1006', 'admin@ecx.et',      true,  now(), now()),
+    ('Legal',                   'Legal affairs and compliance',                        'Building B, 3rd Floor',  '011-111-1007', 'legal@ecx.et',      true,  now(), now()),
+    ('Marketing',               'Brand, communications, and public relations',         'Building B, 4th Floor',  '011-111-1008', 'marketing@ecx.et',  true,  now(), now()),
+    ('Research & Development',  'Innovation and product development',                  'Building C, 2nd Floor',  '011-111-1009', 'randd@ecx.et',      true,  now(), now()),
+    ('Customer Service',        'Client support and relationship management',          'Building C, Ground Floor', '011-111-1010', 'cs@ecx.et',      true,  now(), now());
 
--- Users — Password hash for "Admin@123" (BCrypt)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, created_at)
-    VALUES ('System Admin', 'admin@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Admin', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'ceo@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, created_at)
-    VALUES ('CEO Office', 'ceo@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'CEO', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'it.head@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, created_at)
-    VALUES ('IT Department Head', 'it.head@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'DepartmentHead', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'hr.head@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, created_at)
-    VALUES ('HR Department Head', 'hr.head@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'DepartmentHead', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'abebe.kebede@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, employee_id, created_at)
-    VALUES ('Abebe Kebede', 'abebe.kebede@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Employee', true, 1, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'birtukan.lemma@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, employee_id, created_at)
-    VALUES ('Birtukan Lemma', 'birtukan.lemma@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Employee', true, 2, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'chala.tadesse@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, employee_id, created_at)
-    VALUES ('Chala Tadesse', 'chala.tadesse@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Employee', true, 3, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'desta.hailu@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, employee_id, created_at)
-    VALUES ('Desta Hailu', 'desta.hailu@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Employee', true, 4, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'sara.wondimu@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, created_at)
-    VALUES ('Sara Wondimu', 'sara.wondimu@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Receptionist', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'tsegaye.berhan@ecx.et') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, created_at)
-    VALUES ('Tsegaye Berhan', 'tsegaye.berhan@ecx.et', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Security', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'yididiya19@gmail.com') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, visitor_id, created_at)
-    VALUES ('Yididiya Wondimu', 'yididiya19@gmail.com', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Visitor', true, 6, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'kebede.assefa@gmail.com') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, visitor_id, created_at)
-    VALUES ('Kebede Assefa', 'kebede.assefa@gmail.com', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Visitor', true, 1, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'meron.bekele@yahoo.com') THEN
-    INSERT INTO users (full_name, email, password_hash, role, is_active, visitor_id, created_at)
-    VALUES ('Meron Bekele', 'meron.bekele@yahoo.com', '$2a$12$LJ3m4yPn1z9x8v7c6b5a4e3d2c1b0a9z8y7x6w5v4u3t2s1r', 'Visitor', true, 2, now());
-  END IF;
-END $$;
+-- =============================================================================
+-- 2. EMPLOYEES (15) — one manager per department + dept heads + support staff
+--    (department_id resolved by name so explicit IDs are not required)
+-- =============================================================================
 
--- Employee schedules (Mon-Fri for all employees)
+INSERT INTO employees (full_name, phone, email, department_id, position, office_number, status, created_at, updated_at) VALUES
+    ('Abebe Kebede',    '+251-911-100001', 'abebe.kebede@ecx.et',    (SELECT id FROM departments WHERE name = 'Information Technology'), 'IT Manager',           'A301', 'Active', now(), now()),
+    ('Birtukan Lemma',  '+251-911-100002', 'birtukan.lemma@ecx.et',  (SELECT id FROM departments WHERE name = 'Human Resources'),        'HR Manager',           'A201', 'Active', now(), now()),
+    ('Chala Tadesse',   '+251-911-100003', 'chala.tadesse@ecx.et',   (SELECT id FROM departments WHERE name = 'Finance'),                'Finance Manager',      'B101', 'Active', now(), now()),
+    ('Desta Hailu',     '+251-911-100004', 'desta.hailu@ecx.et',     (SELECT id FROM departments WHERE name = 'Operations'),             'Operations Manager',   'B201', 'Active', now(), now()),
+    ('Eleni Mamo',      '+251-911-100005', 'eleni.mamo@ecx.et',      (SELECT id FROM departments WHERE name = 'Security'),               'Security Manager',     'A101', 'Active', now(), now()),
+    ('Fikru Alemu',     '+251-911-100006', 'fikru.alemu@ecx.et',     (SELECT id FROM departments WHERE name = 'Administration'),         'Admin Manager',        'A401', 'Active', now(), now()),
+    ('Genet Tesfaye',   '+251-911-100007', 'genet.tesfaye@ecx.et',   (SELECT id FROM departments WHERE name = 'Legal'),                  'Legal Counsel',        'B301', 'Active', now(), now()),
+    ('Hailu Girma',     '+251-911-100008', 'hailu.girma@ecx.et',     (SELECT id FROM departments WHERE name = 'Marketing'),              'Marketing Manager',    'B401', 'Active', now(), now()),
+    ('Idil Omar',       '+251-911-100009', 'idil.omar@ecx.et',       (SELECT id FROM departments WHERE name = 'Research & Development'), 'R&D Manager',          'C201', 'Active', now(), now()),
+    ('Jemal Hussein',   '+251-911-100010', 'jemal.hussein@ecx.et',   (SELECT id FROM departments WHERE name = 'Customer Service'),       'Customer Service Lead','C101', 'Active', now(), now()),
+    ('Reception Desk',  '0111112222',      'sara.wondimu@ecx.et',    (SELECT id FROM departments WHERE name = 'Administration'),         'Receptionist',         NULL,   'Active', now(), now()),
+    ('Tsegaye Berhan',  '+251-911-100012', 'tsegaye.berhan@ecx.et',  (SELECT id FROM departments WHERE name = 'Security'),               'Security Guard',       NULL,   'Active', now(), now()),
+    ('Abinet Tesfaye',  '+251900000101',   'it.head@ecx.et',         (SELECT id FROM departments WHERE name = 'Information Technology'), 'Department Head',      'A-101', 'Active', now(), now()),
+    ('Hanna Mekonnen',  '+251900000102',   'hr.head@ecx.et',         (SELECT id FROM departments WHERE name = 'Human Resources'),        'Department Head',      'A-102', 'Active', now(), now()),
+    ('Robel Assefa',    '+251900000103',   'finance.head@ecx.et',    (SELECT id FROM departments WHERE name = 'Finance'),                'Department Head',      'A-103', 'Active', now(), now());
+
+-- =============================================================================
+-- 3. VISITORS (15)
+-- =============================================================================
+
+INSERT INTO visitors (full_name, phone, email, address, national_id, organization, gender, is_active, created_at, updated_at) VALUES
+    ('Kebede Assefa',       '+251-922-200001', 'kebede.assefa@gmail.com',       'Addis Ababa',         'ET-1234567', 'ABC Trading',     'Male',   true, now(), now()),
+    ('Meron Bekele',        '+251-922-200002', 'meron.bekele@yahoo.com',        'Addis Ababa',         'ET-2345678', 'XYZ Consulting',   'Female', true, now(), now()),
+    ('Nebiyu Girma',        '+251-922-200003', 'nebiyu.girma@outlook.com',      'Addis Ababa',         'ET-3456789', 'Tech Solutions',   'Male',   true, now(), now()),
+    ('Tsion Hailemariam',   '+251-922-200004', 'tsion.hai@gmail.com',           'Addis Ababa',         'ET-4567890', 'Green Energy',     'Female', true, now(), now()),
+    ('Yonas Ayele',         '+251-922-200005', 'yonas.ayele@ethionet.et',       'Addis Ababa',         'ET-5678901', NULL,              'Male',   true, now(), now()),
+    ('Yididiya Wondimu',    '+251-922-200006', 'yididiya19@gmail.com',          'Addis Ababa',         'ET-6789012', 'ECX Trading',      'Male',   true, now(), now()),
+    ('Etsub michael',       '0924461793',      'etsubmichael58@gmail.com',      'Hawassa',             NULL,         'hawassa university','f',    true, now(), now()),
+    ('kiya tedi',           '0912963334',      'kiya58@gmail.com',              'Hawassa',             NULL,         'NB',               NULL,     true, now(), now()),
+    ('yididiya gebretsadik','0912963334',      'yididiyagtsadik@gmail.com',     'Hawassa',             NULL,         'NBank',            NULL,     true, now(), now()),
+    ('Test User',           '+251911111111',   'testuser9999@example.com',      'Addis Ababa',         NULL,         NULL,               NULL,     true, now(), now()),
+    ('Yanet Abrham',        '0933556687',      'yanabrha29@gmail.com',          'Addis Ababa',         NULL,         'adiss ababa university', NULL, true, now(), now()),
+    ('Hana Tadesse',        '0911223344',      'hanataddese057@gmail.com',      'Addis Ababa',         NULL,         NULL,               NULL,     true, now(), now()),
+    ('behilu',              '0911121314',      'behailu@gmail.com',              'Addis Ababa',         NULL,         'NB',               NULL,     true, now(), now()),
+    ('Book Test User',      '+251911111111',   'booktest1785830351877@example.com', 'Addis Ababa',     NULL,         'Test Org',         NULL,     true, now(), now()),
+    ('biruk mekonen',       '0999897866',      'buramok21@gmail.com',           'Hawassa',             NULL,         'Hawassa university', NULL,   true, now(), now());
+
+-- =============================================================================
+-- 4. USER ACCOUNTS (23) — staff roles link to employees, Visitor role to visitors
+-- =============================================================================
+
+-- Placeholder BCrypt hash for development password `Admin@123`.
+-- Replace before production use (see header note).
 DO $$
 DECLARE
-  emp RECORD;
-  day_data RECORD;
+    v_hash TEXT := '$2a$12$REPLACE_WITH_VALID_BCRYPT_HASH_FOR_Admin123';
 BEGIN
-  FOR emp IN SELECT id FROM employees LOOP
-    FOR day_data IN
-      SELECT * FROM (VALUES
-        ('Monday',    '08:00'::TIME, '17:00'::TIME),
-        ('Tuesday',   '08:00'::TIME, '17:00'::TIME),
-        ('Wednesday', '08:00'::TIME, '17:00'::TIME),
-        ('Thursday',  '08:00'::TIME, '17:00'::TIME),
-        ('Friday',    '08:00'::TIME, '13:00'::TIME)
-      ) AS t(day_name, start_time, end_time)
-    LOOP
-      IF NOT EXISTS (SELECT 1 FROM employee_schedules WHERE employee_id = emp.id AND day_of_week = day_data.day_name) THEN
-        INSERT INTO employee_schedules (employee_id, day_of_week, start_time, end_time, max_appointments, is_available, created_at)
-        VALUES (emp.id, day_data.day_name, day_data.start_time, day_data.end_time, 10, true, now());
-      END IF;
-    END LOOP;
-  END LOOP;
+
+    -- Staff accounts (13)
+    INSERT INTO users (full_name, email, password_hash, role, is_active, employee_id, created_at, updated_at) VALUES
+        ('System Admin',       'admin@ecx.et',           v_hash, 'Admin',           true, NULL, now(), now()),
+        ('CEO Office',         'ceo@ecx.et',             v_hash, 'CEO',             true, NULL, now(), now()),
+        ('IT Department Head', 'it.head@ecx.et',         v_hash, 'DepartmentHead',   true, (SELECT id FROM employees WHERE email = 'it.head@ecx.et'),      now(), now()),
+        ('HR Department Head', 'hr.head@ecx.et',         v_hash, 'DepartmentHead',   true, (SELECT id FROM employees WHERE email = 'hr.head@ecx.et'),      now(), now()),
+        ('Robel Assefa',       'finance.head@ecx.et',    v_hash, 'DepartmentHead',   true, (SELECT id FROM employees WHERE email = 'finance.head@ecx.et'), now(), now()),
+        ('Abebe Kebede',       'abebe.kebede@ecx.et',    v_hash, 'Employee',         true, (SELECT id FROM employees WHERE email = 'abebe.kebede@ecx.et'), now(), now()),
+        ('Birtukan Lemma',     'birtukan.lemma@ecx.et',  v_hash, 'Employee',         true, (SELECT id FROM employees WHERE email = 'birtukan.lemma@ecx.et'), now(), now()),
+        ('Chala Tadesse',      'chala.tadesse@ecx.et',   v_hash, 'Employee',         true, (SELECT id FROM employees WHERE email = 'chala.tadesse@ecx.et'),  now(), now()),
+        ('Desta Hailu',        'desta.hailu@ecx.et',     v_hash, 'Employee',         true, (SELECT id FROM employees WHERE email = 'desta.hailu@ecx.et'),    now(), now()),
+        ('Sara Wondimu',       'sara.wondimu@ecx.et',    v_hash, 'Receptionist',     true, (SELECT id FROM employees WHERE email = 'sara.wondimu@ecx.et'),  now(), now()),
+        ('Tsegaye Berhan',     'tsegaye.berhan@ecx.et',  v_hash, 'Security',         true, (SELECT id FROM employees WHERE email = 'tsegaye.berhan@ecx.et'), now(), now());
+
+    -- Visitor accounts (12) — the six reference visitors below have accounts;
+    -- remaining visitors are added by the system when booking or by staff.
+    INSERT INTO users (full_name, email, password_hash, role, is_active, visitor_id, created_at, updated_at) VALUES
+        ('Kebede Assefa',    'kebede.assefa@gmail.com',    v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'kebede.assefa@gmail.com'),    now(), now()),
+        ('Meron Bekele',     'meron.bekele@yahoo.com',     v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'meron.bekele@yahoo.com'),     now(), now()),
+        ('Yididiya Wondimu', 'yididiya19@gmail.com',       v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'yididiya19@gmail.com'),       now(), now()),
+        ('Etsub michael',    'etsubmichael58@gmail.com',   v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'etsubmichael58@gmail.com'),   now(), now()),
+        ('kiya tedi',        'kiya58@gmail.com',           v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'kiya58@gmail.com'),           now(), now()),
+        ('yididiya gebretsadik', 'yididiyagtsadik@gmail.com', v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'yididiyagtsadik@gmail.com'), now(), now()),
+        ('Test User',        'testuser9999@example.com',   v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'testuser9999@example.com'),   now(), now()),
+        ('Yanet Abrham',     'yanabrha29@gmail.com',       v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'yanabrha29@gmail.com'),       now(), now()),
+        ('Hana Tadesse',     'hanataddese057@gmail.com',   v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'hanataddese057@gmail.com'),   now(), now()),
+        ('behilu',           'behailu@gmail.com',          v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'behailu@gmail.com'),          now(), now()),
+        ('Book Test User',   'booktest1785830351877@example.com', v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'booktest1785830351877@example.com'), now(), now()),
+        ('biruk mekonen',    'buramok21@gmail.com',        v_hash, 'Visitor', true, (SELECT id FROM visitors WHERE email = 'buramok21@gmail.com'),        now(), now());
+
 END $$;
 
--- Appointments (8 mixed statuses)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM appointments WHERE visitor_id = 1 AND employee_id = 1 AND purpose = 'Software vendor demo') THEN
-    INSERT INTO appointments (visitor_id, employee_id, requested_date, requested_start_time, requested_end_time, purpose, status, reminder_email_sent, reminder_sms_sent, visitor_confirmed, check_in_allowed, is_confidential, created_at)
-    VALUES (1, 1, CURRENT_DATE + 1, (CURRENT_DATE + 1 + TIME '09:00')::TIMESTAMPTZ, (CURRENT_DATE + 1 + TIME '10:00')::TIMESTAMPTZ, 'Software vendor demo', 'Pending', false, false, false, false, false, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM appointments WHERE visitor_id = 2 AND employee_id = 2 AND purpose = 'Job interview follow-up') THEN
-    INSERT INTO appointments (visitor_id, employee_id, requested_date, requested_start_time, requested_end_time, purpose, status, reminder_email_sent, reminder_sms_sent, visitor_confirmed, check_in_allowed, is_confidential, created_at)
-    VALUES (2, 2, CURRENT_DATE + 1, (CURRENT_DATE + 1 + TIME '14:00')::TIMESTAMPTZ, (CURRENT_DATE + 1 + TIME '15:30')::TIMESTAMPTZ, 'Job interview follow-up', 'Pending', false, false, false, false, false, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM appointments WHERE visitor_id = 3 AND employee_id = 5 AND purpose = 'Security system upgrade proposal') THEN
-    INSERT INTO appointments (visitor_id, employee_id, requested_date, requested_start_time, requested_end_time, purpose, status, reminder_email_sent, reminder_sms_sent, visitor_confirmed, check_in_allowed, is_confidential, created_at)
-    VALUES (3, 5, CURRENT_DATE, (CURRENT_DATE + TIME '10:00')::TIMESTAMPTZ, (CURRENT_DATE + TIME '11:00')::TIMESTAMPTZ, 'Security system upgrade proposal', 'Approved', false, false, true, true, false, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM appointments WHERE visitor_id = 4 AND employee_id = 6 AND purpose = 'Partnership discussion') THEN
-    INSERT INTO appointments (visitor_id, employee_id, requested_date, requested_start_time, requested_end_time, purpose, status, reminder_email_sent, reminder_sms_sent, visitor_confirmed, check_in_allowed, is_confidential, created_at)
-    VALUES (4, 6, CURRENT_DATE, (CURRENT_DATE + TIME '11:00')::TIMESTAMPTZ, (CURRENT_DATE + TIME '12:00')::TIMESTAMPTZ, 'Partnership discussion', 'Approved', false, false, true, true, false, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM appointments WHERE visitor_id = 5 AND employee_id = 3 AND purpose = 'Audit preparation meeting') THEN
-    INSERT INTO appointments (visitor_id, employee_id, requested_date, requested_start_time, requested_end_time, purpose, status, reminder_email_sent, reminder_sms_sent, visitor_confirmed, check_in_allowed, is_confidential, created_at)
-    VALUES (5, 3, CURRENT_DATE, (CURRENT_DATE + TIME '15:00')::TIMESTAMPTZ, (CURRENT_DATE + TIME '16:00')::TIMESTAMPTZ, 'Audit preparation meeting', 'Rejected', false, false, false, false, false, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM appointments WHERE visitor_id = 1 AND employee_id = 4 AND purpose = 'Supply chain review') THEN
-    INSERT INTO appointments (visitor_id, employee_id, requested_date, requested_start_time, requested_end_time, purpose, status, reminder_email_sent, reminder_sms_sent, visitor_confirmed, check_in_allowed, is_confidential, created_at)
-    VALUES (1, 4, CURRENT_DATE - 1, (CURRENT_DATE - 1 + TIME '09:00')::TIMESTAMPTZ, (CURRENT_DATE - 1 + TIME '11:00')::TIMESTAMPTZ, 'Supply chain review', 'Completed', false, false, true, true, false, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM appointments WHERE visitor_id = 6 AND employee_id = 1 AND purpose = 'System integration review') THEN
-    INSERT INTO appointments (visitor_id, employee_id, requested_date, requested_start_time, requested_end_time, purpose, status, reminder_email_sent, reminder_sms_sent, visitor_confirmed, check_in_allowed, is_confidential, created_at)
-    VALUES (6, 1, CURRENT_DATE + 2, (CURRENT_DATE + 2 + TIME '10:00')::TIMESTAMPTZ, (CURRENT_DATE + 2 + TIME '11:00')::TIMESTAMPTZ, 'System integration review', 'Pending', false, false, false, false, false, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM appointments WHERE visitor_id = 6 AND employee_id = 8 AND purpose = 'Marketing partnership discussion') THEN
-    INSERT INTO appointments (visitor_id, employee_id, requested_date, requested_start_time, requested_end_time, purpose, status, reminder_email_sent, reminder_sms_sent, visitor_confirmed, check_in_allowed, is_confidential, created_at)
-    VALUES (6, 8, CURRENT_DATE + 3, (CURRENT_DATE + 3 + TIME '14:00')::TIMESTAMPTZ, (CURRENT_DATE + 3 + TIME '15:00')::TIMESTAMPTZ, 'Marketing partnership discussion', 'Pending', false, false, false, false, false, now());
-  END IF;
-END $$;
+-- =============================================================================
+-- 5. WEEKLY SCHEDULES (Mon–Fri, 08:00–17:00, Friday half-day 08:00–13:00)
+--    One 5-day set for each manager employee (1–10).
+-- =============================================================================
 
--- Visits (linked to approved/completed appointments)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM visits WHERE visitor_id = 3 AND employee_id = 5 AND purpose = 'Security system upgrade proposal') THEN
-    INSERT INTO visits (visitor_id, employee_id, appointment_id, purpose, visit_date, check_in_time, check_out_time, status, badge_number, security_officer, is_destination_known, created_at)
-    VALUES (3, 5, NULL, 'Security system upgrade proposal', CURRENT_DATE, (CURRENT_DATE + TIME '10:05')::TIMESTAMPTZ, NULL, 'CheckedIn', 'B-001', 'Tsegaye Berhan', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visits WHERE visitor_id = 4 AND employee_id = 6 AND purpose = 'Partnership discussion') THEN
-    INSERT INTO visits (visitor_id, employee_id, appointment_id, purpose, visit_date, check_in_time, check_out_time, status, badge_number, security_officer, is_destination_known, created_at)
-    VALUES (4, 6, NULL, 'Partnership discussion', CURRENT_DATE, (CURRENT_DATE + TIME '11:10')::TIMESTAMPTZ, NULL, 'CheckedIn', 'B-002', 'Tsegaye Berhan', true, now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visits WHERE visitor_id = 1 AND employee_id = 4 AND purpose = 'Supply chain review') THEN
-    INSERT INTO visits (visitor_id, employee_id, appointment_id, purpose, visit_date, check_in_time, check_out_time, status, badge_number, security_officer, is_destination_known, created_at)
-    VALUES (1, 4, NULL, 'Supply chain review', CURRENT_DATE - 1, (CURRENT_DATE - 1 + TIME '09:00')::TIMESTAMPTZ, (CURRENT_DATE - 1 + TIME '10:55')::TIMESTAMPTZ, 'CheckedOut', 'B-003', 'Eleni Mamo', true, now());
-  END IF;
-END $$;
+INSERT INTO employee_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_available, max_appointments, created_at, updated_at)
+SELECT e.id, d.day_of_week, d.start_time, d.end_time, d.break_start, d.break_end, true, 10, now(), now()
+FROM employees e
+CROSS JOIN (VALUES
+    ('Monday',   TIME '08:00', TIME '17:00', TIME '12:00', TIME '13:00'),
+    ('Tuesday',  TIME '08:00', TIME '17:00', TIME '12:00', TIME '13:00'),
+    ('Wednesday',TIME '08:00', TIME '17:00', TIME '12:00', TIME '13:00'),
+    ('Thursday', TIME '08:00', TIME '17:00', TIME '12:00', TIME '13:00'),
+    ('Friday',   TIME '08:00', TIME '13:00', NULL, NULL)
+) AS d(day_of_week, start_time, end_time, break_start, break_end)
+WHERE e.email IN (
+    'abebe.kebede@ecx.et', 'birtukan.lemma@ecx.et', 'chala.tadesse@ecx.et',
+    'desta.hailu@ecx.et', 'eleni.mamo@ecx.et', 'fikru.alemu@ecx.et',
+    'genet.tesfaye@ecx.et', 'hailu.girma@ecx.et', 'idil.omar@ecx.et',
+    'jemal.hussein@ecx.et'
+);
 
--- Notifications
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM notifications WHERE title = 'New Appointment Request' AND employee_id = 1) THEN
-    INSERT INTO notifications (employee_id, appointment_id, title, message, notification_type, priority, is_read, channel, created_at)
-    VALUES (1, 1, 'New Appointment Request', 'Visitor Kebede Assefa has requested a meeting on software vendor demo.', 'Info', 'Normal', false, 'InApp', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM notifications WHERE title = 'New Appointment Request' AND employee_id = 2) THEN
-    INSERT INTO notifications (employee_id, appointment_id, title, message, notification_type, priority, is_read, channel, created_at)
-    VALUES (2, 2, 'New Appointment Request', 'Visitor Meron Bekele has requested a job interview follow-up.', 'Info', 'Normal', false, 'InApp', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM notifications WHERE title = 'Appointment Approved' AND employee_id = 5) THEN
-    INSERT INTO notifications (employee_id, appointment_id, title, message, notification_type, priority, is_read, channel, created_at)
-    VALUES (5, 3, 'Appointment Approved', 'Your meeting with Nebiyu Girma has been confirmed for today at 10:00.', 'Reminder', 'High', false, 'InApp', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM notifications WHERE title = 'Appointment Approved' AND employee_id = 6) THEN
-    INSERT INTO notifications (employee_id, appointment_id, title, message, notification_type, priority, is_read, channel, created_at)
-    VALUES (6, 4, 'Appointment Approved', 'Your meeting with Tsion Hailemariam has been confirmed for today at 11:00.', 'Reminder', 'High', false, 'InApp', now());
-  END IF;
-END $$;
-
--- Visitor notifications
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM visitor_notifications WHERE visitor_id = 1 AND appointment_id = 1) THEN
-    INSERT INTO visitor_notifications (visitor_id, appointment_id, title, message, notification_type, is_read, channel, created_at)
-    VALUES (1, 1, 'Appointment Pending', 'Your appointment request with IT Department is pending approval.', 'Info', false, 'InApp', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visitor_notifications WHERE visitor_id = 2 AND appointment_id = 2) THEN
-    INSERT INTO visitor_notifications (visitor_id, appointment_id, title, message, notification_type, is_read, channel, created_at)
-    VALUES (2, 2, 'Appointment Pending', 'Your appointment request with HR Department is pending approval.', 'Info', false, 'InApp', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visitor_notifications WHERE visitor_id = 3 AND appointment_id = 3) THEN
-    INSERT INTO visitor_notifications (visitor_id, appointment_id, title, message, notification_type, is_read, channel, created_at)
-    VALUES (3, 3, 'Appointment Approved', 'Your appointment with Security Department has been approved. Please arrive on time.', 'Info', true, 'InApp', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visitor_notifications WHERE visitor_id = 6 AND appointment_id = 7) THEN
-    INSERT INTO visitor_notifications (visitor_id, appointment_id, title, message, notification_type, is_read, channel, created_at)
-    VALUES (6, 7, 'Appointment Pending', 'Your system integration review appointment request is pending.', 'Info', false, 'InApp', now());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM visitor_notifications WHERE visitor_id = 6 AND appointment_id = 8) THEN
-    INSERT INTO visitor_notifications (visitor_id, appointment_id, title, message, notification_type, is_read, channel, created_at)
-    VALUES (6, 8, 'Appointment Pending', 'Your marketing partnership appointment request is pending.', 'Info', false, 'InApp', now());
-  END IF;
-END $$;
+COMMIT;

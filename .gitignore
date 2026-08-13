@@ -45,6 +45,7 @@ Desktop.ini
 # =========================
 # IDE / Editor
 # =========================
+.vs/
 .vscode/
 .idea/
 *.code-workspace
@@ -59,11 +60,19 @@ Desktop.ini
 !.env.example
 
 # =========================
+# Runtime data
+# =========================
+backend/uploads/
+
+# =========================
 # Misc
 # =========================
 *.log
 *.tmp
 *.bak
+docs.zip
 docs/NewVisitorManagement/
 VisitorManagement.zip
 VisitorManagement/
+# Private study material (not part of the project)
+docs/PRESENTATION_GUIDE.pdf

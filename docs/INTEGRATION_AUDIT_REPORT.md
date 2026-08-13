@@ -1,8 +1,7 @@
 # ECX Visitor Management System - Integration Audit Report
 
-**Date:** July 14, 2026  
-**Auditor:** Automated Integration Audit  
-**Status:** All 3 projects build successfully (0 errors)
+**Date:** August 8, 2026
+**Status:** All 3 projects build successfully (0 errors); frontends fully integrated with the backend API
 
 ---
 
@@ -10,11 +9,11 @@
 
 | Project | Errors | Warnings | Build Status |
 |---------|--------|----------|-------------|
-| Backend (ASP.NET Core) | 0 | 2 (AutoMapper vulnerability) | PASS |
-| Visitor Portal (Angular) | 0 | 2 (optional chain, Sass deprecation) | PASS |
-| Employee Portal (Angular) | 0 | 12 (unused imports, content projection, optional chain) | PASS |
+| Backend (ASP.NET Core, .NET 10) | 0 | 2 (AutoMapper vulnerability) | PASS |
+| Visitor Portal (Angular 22) | 0 | 2 (optional chain, Sass deprecation) | PASS |
+| Employee Portal (Angular 22) | 0 | 12 (unused imports, content projection, optional chain) | PASS |
 
-The system consists of **12 backend controllers** exposing **85 endpoints**, consumed by **2 Angular frontends** with **58 unique API call paths**. All model mismatches, route mismatches, and type errors have been resolved.
+The system consists of **13 backend controllers** exposing **~120 endpoints**, consumed by **2 Angular frontends**. All model, route, and type mismatches found during integration have been resolved. The two endpoints previously flagged as missing (`/appointments/upcoming`, `/appointments/stats`) are no longer used by the frontends — the visitor portal lists appointments via the paginated `/appointments` endpoint and derives stats client-side.
 
 ---
 
@@ -22,12 +21,13 @@ The system consists of **12 backend controllers** exposing **85 endpoints**, con
 
 ### Backend
 - **Framework:** ASP.NET Core (.NET 10.0)
-- **Database:** PostgreSQL 15 (`localhost:5432`, db: `visitormanagement`)
-- **Auth:** JWT Bearer Tokens with refresh tokens
+- **ORM:** EF Core 10.0.9 with Npgsql (PostgreSQL 15, `localhost:5432`, db: `visitormanagement`)
+- **Auth:** JWT Bearer Tokens with refresh tokens (rotated via `/auth/refresh-token`)
 - **Route Convention:** Explicit `[Route("api/...")]` on each controller (no global prefix)
-- **Response Envelope:** `ApiResponse<T>` { success, message, data }
-- **Pagination:** `PagedResponse<T>` { items, totalCount, page, pageSize, totalPages, hasPrevious, hasNext }
+- **Response Envelope:** `ApiResponse<T>` `{ success, message, data }`
+- **Pagination:** `PagedResponse<T>` `{ items, totalCount, page, pageSize, totalPages, hasPrevious, hasNext }`
 - **Middleware Pipeline:** ExceptionMiddleware → AuditMiddleware → StaticFiles → CORS → Auth → Controllers
+- **Controllers (13):** Auth, Employees, Visitors, Appointments, Visits, Departments, Users, Notifications, EmployeeUnavailability, Dashboard, Reports, Search, Upload
 
 ### Frontends
 - **Visitor Portal:** `localhost:4200` (Angular 22, TypeScript 6.0.2, Angular Material 22)
@@ -38,409 +38,412 @@ The system consists of **12 backend controllers** exposing **85 endpoints**, con
 | User | Email | Password | Role |
 |------|-------|----------|------|
 | Admin | admin@ecx.et | Admin@123 | Admin |
-| Employee | abebe.kebede@ecx.et | Employee@123 | Employee |
-| Visitor | hiwot.alemayehu@email.com | Visitor@123 | Visitor |
+| CEO | ceo@ecx.et | Admin@123 | CEO |
+| Department Head | it.head@ecx.et | Admin@123 | DepartmentHead |
+| Employee | abebe.kebede@ecx.et | Admin@123 | Employee |
+| Receptionist | sara.wondimu@ecx.et | Admin@123 | Receptionist |
+| Security | tsegaye.berhan@ecx.et | Admin@123 | Security |
+| Visitor | yididiya19@gmail.com | Admin@123 | Visitor |
 
 ---
 
 ## 2. Complete Backend Endpoint Reference
 
-### 2.1 AuthController (`api/auth`)
+### 2.1 Auth (`/api/auth`)
 | Method | Route | Auth | Request | Response | Notes |
 |--------|-------|------|---------|----------|-------|
-| POST | `/auth/login` | None | `{ email, password }` | `LoginResponse` | |
-| POST | `/auth/register-visitor` | None | `{ fullName, email, password, phone, address, nationalId?, organization?, gender? }` | `LoginResponse` | |
-| POST | `/auth/refresh-token` | None | `{ refreshToken }` | `LoginResponse` | |
-| POST | `/auth/change-password` | `[Authorize]` | `{ oldPassword, newPassword }` | null | |
-| POST | `/auth/forgot-password` | None | `{ email }` | null | Always returns 200 |
-| POST | `/auth/reset-password` | None | `{ token, newPassword }` | null | |
-| POST | `/auth/logout` | `[Authorize]` | `{ refreshToken }` | null | |
+| POST | `/auth/login` | None | `{ email, password }` | `LoginResponse` | Works for staff and visitors |
+| POST | `/auth/register-visitor` | None | `{ fullName, email, password, phone, address, nationalId?, organization?, gender? }` | `LoginResponse` | Auto-registers visitor + user |
+| POST | `/auth/refresh-token` | None | `{ refreshToken }` | `LoginResponse` | Rotates token |
+| POST | `/auth/change-password` | Yes | `{ oldPassword, newPassword }` | null | |
+| POST | `/auth/forgot-password` | None | `{ email }` | null | Always 200 (no user enumeration) |
+| POST | `/auth/reset-password` | None | `{ token, newPassword }` | null | Token from email |
+| GET | `/auth/me` | Yes | - | `UserSessionDto` | Current user + links |
+| POST | `/auth/logout` | Yes | `{ refreshToken }` | null | Revokes token |
 
 **LoginResponse:** `{ token, refreshToken, fullName, email, role, userId, employeeId?, visitorId? }`
 
-### 2.2 EmployeesController (`api/employees`)
+### 2.2 Employees (`/api/employees`)
 | Method | Route | Auth | Request | Response |
 |--------|-------|------|---------|----------|
-| GET | `/employees` | `[Authorize]` | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<EmployeeResponseDto>` |
-| GET | `/employees/{id}` | `[Authorize]` | - | `EmployeeResponseDto` |
-| POST | `/employees` | `[Authorize]` | `{ fullName, phone, email, departmentId, position, officeNumber? }` | `EmployeeResponseDto` (201) |
-| PUT | `/employees/{id}` | `[Authorize]` | `{ fullName?, phone?, departmentId?, position?, officeNumber?, status? }` | `EmployeeResponseDto` |
-| DELETE | `/employees/{id}` | `[Authorize]` | - | null |
-| GET | `/employees/{id}/schedule` | `[Authorize]` | - | `EmployeeScheduleDto[]` |
-| PUT | `/employees/{id}/schedule` | `[Authorize]` | `{ schedules: EmployeeScheduleDto[] }` | `EmployeeScheduleDto[]` |
-| POST | `/employees/{id}/unavailability` | `[Authorize]` | `{ employeeId, unavailabilityType, startDate, endDate?, reason? }` | `EmployeeUnavailabilityResponseDto` |
-| DELETE | `/employees/{id}/unavailability/{unavailabilityId}` | `[Authorize]` | - | null |
-| GET | `/employees/available` | `[Authorize]` | `?date=` | `EmployeeResponseDto[]` |
-| GET | `/employees/search` | `[Authorize]` | `?q=&page=&pageSize=` | `PagedResponse<EmployeeResponseDto>` |
+| GET | `/employees` | Yes | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<EmployeeResponseDto>` |
+| GET | `/employees/{id}` | Yes | - | `EmployeeResponseDto` |
+| POST | `/employees` | Admin,CEO,DeptHead | `{ fullName, phone, email, departmentId, position, officeNumber? }` | `EmployeeResponseDto` (201) |
+| PUT | `/employees/{id}` | Admin,CEO,DeptHead | `{ fullName?, phone?, departmentId?, position?, officeNumber?, status? }` | `EmployeeResponseDto` |
+| DELETE | `/employees/{id}` | Admin | - | null |
+| GET | `/employees/{id}/schedule` | Yes | - | `EmployeeScheduleDto[]` |
+| PUT | `/employees/{id}/schedule` | Yes (owner/admin) | `{ schedules: EmployeeScheduleDto[] }` | `EmployeeScheduleDto[]` |
+| POST | `/employees/{id}/unavailability` | Yes (owner/admin) | `{ employeeId, unavailabilityType, startDate, endDate?, startTime?, endTime?, repeat?, reason? }` | `EmployeeUnavailabilityResponseDto` |
+| DELETE | `/employees/{id}/unavailability/{unavailabilityId}` | Yes (owner/admin) | - | null |
+| GET | `/employees/available` | Yes | `?date=` | `EmployeeResponseDto[]` |
+| GET | `/employees/search` | Yes | `?q=&page=&pageSize=` | `PagedResponse<EmployeeResponseDto>` |
 
 **EmployeeResponseDto:** `{ id, fullName, phone, email, departmentId, departmentName, position, officeNumber?, status, userId?, pendingAppointments, totalAppointments, createdAt }`
 
-### 2.3 VisitorsController (`api/visitors`)
+### 2.3 Visitors (`/api/visitors`)
 | Method | Route | Auth | Request | Response |
 |--------|-------|------|---------|----------|
-| GET | `/visitors` | `[Authorize]` | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<VisitorResponseDto>` |
-| GET | `/visitors/{id}` | `[Authorize]` | - | `VisitorResponseDto` |
-| POST | `/visitors` | `[Authorize]` | `{ fullName, phone, email, address, nationalId?, organization?, gender? }` | `VisitorResponseDto` (201) |
-| PUT | `/visitors/{id}` | `[Authorize]` | `{ fullName?, phone?, address?, organization?, gender? }` | `VisitorResponseDto` |
-| DELETE | `/visitors/{id}` | `[Authorize]` | - | null |
-| POST | `/visitors/{id}/photo` | `[Authorize]` | `IFormFile` (multipart) | `{ photoUrl }` |
-| GET | `/visitors/search` | `[Authorize]` | `?q=&page=&pageSize=` | `PagedResponse<VisitorResponseDto>` |
+| GET | `/visitors` | Yes | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<VisitorResponseDto>` |
+| GET | `/visitors/{id}` | Yes | - | `VisitorResponseDto` |
+| GET | `/visitors/me` | Yes (visitor) | - | `VisitorResponseDto` |
+| POST | `/visitors` | Yes (staff) | `{ fullName, phone, email, address, nationalId?, organization?, gender? }` | `VisitorResponseDto` (201) |
+| PUT | `/visitors/{id}` | Yes (staff) | `{ fullName?, phone?, address?, organization?, gender? }` | `VisitorResponseDto` |
+| PUT | `/visitors/me` | Yes (visitor) | `{ fullName?, phone?, address?, organization?, gender? }` | `VisitorResponseDto` |
+| DELETE | `/visitors/{id}` | Admin | - | null |
+| POST | `/visitors/{id}/photo` | Yes | `IFormFile` (multipart) | `{ photoUrl }` |
+| POST | `/visitors/me/photo` | Yes (visitor) | `IFormFile` (multipart) | `{ photoUrl }` |
+| GET | `/visitors/search` | Yes | `?q=&page=&pageSize=` | `PagedResponse<VisitorResponseDto>` |
 
 **VisitorResponseDto:** `{ id, fullName, phone, email, address, nationalId?, organization?, gender?, photoUrl?, isActive, totalVisits, totalAppointments, createdAt }`
 
-### 2.4 AppointmentsController (`api/appointments`)
+### 2.4 Appointments (`/api/appointments`)
 | Method | Route | Auth | Request | Response |
 |--------|-------|------|---------|----------|
-| GET | `/appointments` | `[Authorize]` | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<AppointmentResponseDto>` |
-| GET | `/appointments/{id}` | `[Authorize]` | - | `AppointmentResponseDto` |
-| POST | `/appointments` | `[Authorize]` | `{ visitorId, employeeId, requestedDate, requestedStartTime, requestedEndTime, purpose, isConfidential, notes? }` | `AppointmentResponseDto` (201) |
-| POST | `/appointments/{id}/approve` | `[Authorize]` | - | `AppointmentResponseDto` |
-| POST | `/appointments/{id}/reject` | `[Authorize]` | `{ reason }` | `AppointmentResponseDto` |
-| POST | `/appointments/{id}/cancel` | `[Authorize]` | - | `AppointmentResponseDto` |
-| POST | `/appointments/{id}/complete` | `[Authorize]` | - | `AppointmentResponseDto` |
-| POST | `/appointments/{id}/delegate` | `[Authorize]` | `{ newEmployeeId, reason? }` | `AppointmentResponseDto` |
-| POST | `/appointments/{id}/redirect` | `[Authorize]` | `{ newEmployeeId, newDepartmentId?, reason? }` | `AppointmentResponseDto` |
-| PATCH | `/appointments/{id}/confidential` | `[Authorize]` | - | `AppointmentResponseDto` |
-| POST | `/appointments/{id}/reschedule` | `[Authorize]` | `{ newDate, newStartTime, newEndTime, reason? }` | `RescheduleResponseDto` |
-| GET | `/appointments/{id}/comments` | `[Authorize]` | - | `AppointmentCommentDto[]` |
-| POST | `/appointments/{id}/comments` | `[Authorize]` | `{ commentText, isInternal }` | `AppointmentCommentDto` |
-| GET | `/appointments/{id}/attachments` | `[Authorize]` | - | `AppointmentAttachmentDto[]` |
-| POST | `/appointments/{id}/attachments` | `[Authorize]` | `IFormFile` (multipart) | `AppointmentAttachmentDto` |
-| DELETE | `/appointments/{id}/attachments/{attachmentId}` | `[Authorize]` | - | null |
-| GET | `/appointments/by-visitor/{visitorId}` | `[Authorize]` | - | `AppointmentResponseDto[]` |
-| GET | `/appointments/by-employee/{employeeId}` | `[Authorize]` | - | `AppointmentResponseDto[]` |
-| GET | `/appointments/pending` | `[Authorize]` | - | `AppointmentResponseDto[]` |
-| GET | `/appointments/today` | `[Authorize]` | - | `AppointmentResponseDto[]` |
-| GET | `/appointments/by-department/{departmentId}` | `[Authorize]` | - | `AppointmentResponseDto[]` |
-| GET | `/appointments/confidential` | `[Authorize(Roles="Admin,CEO,DepartmentHead")]` | - | `AppointmentResponseDto[]` |
+| GET | `/appointments` | Yes | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<AppointmentResponseDto>` (role-scoped) |
+| GET | `/appointments/{id}` | Yes | - | `AppointmentResponseDto` (ownership checked) |
+| POST | `/appointments` | Yes | `multipart/form-data` (fields + supporting letter + property letter) | `AppointmentResponseDto` (201) |
+| GET | `/appointments/{id}/supporting-letter` | Yes | `?download=` | File |
+| GET | `/appointments/{id}/property-authorization-letter` | Yes | - | File |
+| GET | `/appointments/property-verifications` | Security,Admin | - | `AppointmentResponseDto[]` (pending) |
+| GET | `/appointments/property-verifications/verified` | Security,Admin | - | `AppointmentResponseDto[]` |
+| POST | `/appointments/{id}/verify-properties` | Security,Admin | `{ properties }` | `AppointmentPropertyDto[]` |
+| POST | `/appointments/{id}/save-property-verification` | Security,Admin | `{ ... }` | `AppointmentResponseDto` |
+| POST | `/appointments/{id}/approve` | Yes (owner) | - | `AppointmentResponseDto` |
+| POST | `/appointments/{id}/reject` | Yes (owner) | `{ reason }` | `AppointmentResponseDto` |
+| POST | `/appointments/{id}/cancel` | Yes (owner) | - | `AppointmentResponseDto` |
+| POST | `/appointments/{id}/complete` | Yes (owner) | - | `AppointmentResponseDto` |
+| POST | `/appointments/{id}/delegate` | Yes | `{ newEmployeeId, reason? }` | `AppointmentResponseDto` |
+| POST | `/appointments/{id}/redirect` | Yes | `{ newEmployeeId, newDepartmentId?, reason? }` | `AppointmentResponseDto` |
+| POST | `/appointments/{id}/redirect-department` | Admin,CEO | `{ departmentId, reason? }` | `AppointmentResponseDto` |
+| POST | `/appointments/{id}/assign-employee` | Admin,CEO,DeptHead | `{ employeeId }` | `AppointmentResponseDto` |
+| PATCH | `/appointments/{id}/confidential` | Yes (owner/admin) | - | `AppointmentResponseDto` |
+| POST | `/appointments/{id}/reschedule` | Yes | `{ newDate, newStartTime, newEndTime, reason? }` | `RescheduleResponseDto` |
+| GET | `/appointments/{id}/comments` | Yes | - | `AppointmentCommentDto[]` |
+| POST | `/appointments/{id}/comments` | Yes | `{ commentText, isInternal }` | `AppointmentCommentDto` |
+| GET | `/appointments/{id}/attachments` | Yes | - | `AppointmentAttachmentDto[]` |
+| POST | `/appointments/{id}/attachments` | Yes | `IFormFile` (multipart) | `AppointmentAttachmentDto` |
+| DELETE | `/appointments/{id}/attachments/{attachmentId}` | Yes (owner) | - | null |
+| GET | `/appointments/by-visitor/{visitorId}` | Yes | - | `AppointmentResponseDto[]` |
+| GET | `/appointments/by-employee/{employeeId}` | Yes | - | `AppointmentResponseDto[]` |
+| GET | `/appointments/pending` | Yes | - | `AppointmentResponseDto[]` (role-scoped) |
+| GET | `/appointments/today` | Yes | - | `AppointmentResponseDto[]` (role-scoped) |
+| GET | `/appointments/by-department/{departmentId}` | Admin,CEO,DeptHead | - | `AppointmentResponseDto[]` |
+| GET | `/appointments/confidential` | Admin,CEO,DeptHead | - | `AppointmentResponseDto[]` |
 
-**AppointmentResponseDto:** `{ id, visitorId, visitorName, visitorEmail, visitorPhone, employeeId, employeeName, employeePosition, departmentName, requestedDate, requestedStartTime, requestedEndTime, purpose, status, employeeResponse?, approvalDate?, checkInAllowed, isConfidential, appointmentCode?, rejectionReason?, notes?, delegatedToEmployeeId?, delegatedToEmployeeName?, originalEmployeeId?, originalEmployeeName?, attachments, commentCount, createdAt, updatedAt? }`
+**AppointmentResponseDto:** `{ id, visitorId, visitorName, visitorEmail, visitorPhone, employeeId, employeeName, employeePosition, departmentName, requestedDate, requestedStartTime, requestedEndTime, purpose, status, routeType?, appointmentMethod?, employeeResponse?, approvalDate?, checkInAllowed, isConfidential, appointmentCode?, rejectionReason?, notes?, delegatedToEmployeeId?, delegatedToEmployeeName?, originalEmployeeId?, originalEmployeeName?, redirectDepartmentId?, redirectDepartmentName?, assignedDepartmentId?, assignedEmployeeId?, hasProperties, propertyVerificationStatus?, attachment?, propertyLetter?, commentCount, createdAt, updatedAt? }`
 
 **AppointmentStatus values:** `Pending`, `Approved`, `Rejected`, `Cancelled`, `Completed`, `EmployeeUnavailable`, `Rescheduled`, `Delegated`
 
-### 2.5 DepartmentsController (`api/departments`)
+### 2.5 Visits (`/api/visits`)
 | Method | Route | Auth | Request | Response |
 |--------|-------|------|---------|----------|
-| GET | `/departments` | `[Authorize]` | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<DepartmentResponseDto>` |
-| GET | `/departments/{id}` | `[Authorize]` | - | `DepartmentResponseDto` |
-| POST | `/departments` | `[Authorize(Roles="Admin")]` | `{ name, description?, location?, phone?, email? }` | `DepartmentResponseDto` (201) |
-| PUT | `/departments/{id}` | `[Authorize(Roles="Admin")]` | `{ name?, description?, location?, phone?, email?, isActive? }` | `DepartmentResponseDto` |
-| DELETE | `/departments/{id}` | `[Authorize(Roles="Admin")]` | - | null |
-| GET | `/departments/{id}/stats` | `[Authorize]` | - | `DepartmentStatsDto` |
-| GET | `/departments/active` | `[Authorize]` | - | `PagedResponse<DepartmentResponseDto>` (PageSize=100) |
-
-**DepartmentResponseDto:** `{ id, name, description?, location?, phone?, email?, isActive, employeeCount, pendingAppointments, totalAppointmentsThisMonth, createdAt }`
-
-### 2.6 VisitsController (`api/visits`)
-| Method | Route | Auth | Request | Response |
-|--------|-------|------|---------|----------|
-| GET | `/visits` | `[Authorize]` | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<VisitResponseDto>` |
-| GET | `/visits/{id}` | `[Authorize]` | - | `VisitResponseDto` |
-| POST | `/visits` | `[Authorize]` | `{ visitorId, employeeId, appointmentId?, purpose, isDestinationKnown, remark? }` | `VisitResponseDto` (201) |
-| POST | `/visits/check-in` | `[Authorize]` | `{ visitorId, employeeId, appointmentId?, purpose, securityOfficer, isDestinationKnown, badgeNumber? }` | `VisitResponseDto` |
-| POST | `/visits/{id}/check-out` | `[Authorize]` | `{ securityOfficer, remark? }` | `VisitResponseDto` |
-| POST | `/visits/{id}/cancel` | `[Authorize]` | - | `VisitResponseDto` |
-| GET | `/visits/by-visitor/{visitorId}` | `[Authorize]` | - | `VisitResponseDto[]` |
-| GET | `/visits/by-employee/{employeeId}` | `[Authorize]` | - | `VisitResponseDto[]` |
-| GET | `/visits/today` | `[Authorize]` | - | `VisitResponseDto[]` |
-| GET | `/visits/active` | `[Authorize]` | - | `VisitResponseDto[]` |
-| POST | `/visits/{id}/items` | `[Authorize]` | `[{ itemName, quantity, serialNumber?, brand?, description? }]` | `VisitorItemDto[]` |
-| POST | `/visits/{id}/items/verify` | `[Authorize]` | `[{ itemId, isVerified }]` | `VisitorItemDto[]` |
+| GET | `/visits` | Yes | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<VisitResponseDto>` |
+| GET | `/visits/reception-today` | Receptionist,Admin | - | `VisitResponseDto[]` |
+| GET | `/visits/{id}` | Yes | - | `VisitResponseDto` |
+| POST | `/visits` | Yes | `{ visitorId, employeeId, appointmentId?, purpose, isDestinationKnown, remark? }` | `VisitResponseDto` (201) |
+| POST | `/visits/check-in` | Receptionist,Admin | `{ visitorId, employeeId, appointmentId?, purpose, securityOfficer, isDestinationKnown, badgeNumber?, visitorItems? }` | `VisitResponseDto` |
+| POST | `/visits/{id}/check-out` | Security,Admin | `{ securityOfficer, remark? }` | `VisitResponseDto` |
+| POST | `/visits/{id}/cancel` | Yes | - | `VisitResponseDto` |
+| GET | `/visits/by-visitor/{visitorId}` | Yes | - | `VisitResponseDto[]` |
+| GET | `/visits/by-employee/{employeeId}` | Yes | - | `VisitResponseDto[]` |
+| GET | `/visits/today` | Yes | - | `VisitResponseDto[]` |
+| GET | `/visits/active` | Yes | - | `VisitResponseDto[]` (checked-in) |
+| POST | `/visits/{id}/items` | Yes | `[{ itemName, quantity, serialNumber?, brand?, description? }]` | `VisitorItemDto[]` |
+| POST | `/visits/{id}/items/verify` | Security,Admin | `[{ itemId, isVerified }]` | `VisitorItemDto[]` |
+| GET | `/visits/{id}/checkout-items` | Security,Admin | - | `CheckoutItemDto[]` |
 
 **VisitResponseDto:** `{ id, visitorId, visitorName, visitorPhone, visitorEmail, visitorPhotoUrl?, employeeId, employeeName, departmentName, appointmentId?, appointment?, purpose, visitDate, checkInTime?, checkOutTime?, status, badgeNumber?, securityOfficer?, remark?, isDestinationKnown, redirectNote?, visitorItems, allItemsVerified, createdAt }`
 
 **VisitStatus values:** `Scheduled`, `CheckedIn`, `CheckedOut`, `Cancelled`
 
-### 2.7 NotificationsController (`api/notifications`)
+### 2.6 Departments (`/api/departments`)
 | Method | Route | Auth | Request | Response |
 |--------|-------|------|---------|----------|
-| GET | `/notifications` | `[Authorize]` | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<NotificationResponseDto>` |
-| GET | `/notifications/{id}` | `[Authorize]` | - | `NotificationResponseDto` |
-| GET | `/notifications/unread` | `[Authorize]` | - | `NotificationResponseDto[]` |
-| GET | `/notifications/unread/count` | `[Authorize]` | - | `{ count: number }` |
-| POST | `/notifications/{id}/read` | `[Authorize]` | - | null |
-| POST | `/notifications/read-all` | `[Authorize]` | - | null |
-| DELETE | `/notifications/{id}` | `[Authorize]` | - | null |
-| GET | `/notifications/visitor/{visitorId}` | `[Authorize]` | `?page&pageSize` | `PagedResponse<VisitorNotificationResponseDto>` |
-| GET | `/notifications/visitor/{visitorId}/unread` | `[Authorize]` | - | `VisitorNotificationResponseDto[]` |
-| POST | `/notifications/visitor/{visitorId}/read/{notificationId}` | `[Authorize]` | - | null |
-| POST | `/notifications/visitor/{visitorId}/read-all` | `[Authorize]` | - | null |
-| GET | `/notifications/visitor/{visitorId}/unread/count` | `[Authorize]` | - | `{ count: number }` |
+| GET | `/departments` | Yes | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<DepartmentResponseDto>` |
+| GET | `/departments/{id}` | Yes | - | `DepartmentResponseDto` |
+| POST | `/departments` | Admin | `{ name, description?, location?, phone?, email? }` | `DepartmentResponseDto` (201) |
+| PUT | `/departments/{id}` | Admin | `{ name?, description?, location?, phone?, email?, isActive? }` | `DepartmentResponseDto` |
+| DELETE | `/departments/{id}` | Admin | - | null |
+| GET | `/departments/{id}/stats` | Yes | - | `DepartmentStatsDto` |
+| GET | `/departments/active` | Yes | - | `PagedResponse<DepartmentResponseDto>` (PageSize=100) |
+
+**DepartmentResponseDto:** `{ id, name, description?, location?, phone?, email?, isActive, employeeCount, pendingAppointments, totalAppointmentsThisMonth, createdAt }`
+
+### 2.7 Users (`/api/users`) — Admin only
+| Method | Route | Request | Response |
+|--------|-------|---------|----------|
+| GET | `/users` | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<UserResponseDto>` |
+| GET | `/users/{id}` | - | `UserResponseDto` |
+| POST | `/users` | `{ fullName, email, password, role, employeeId?, visitorId? }` | `UserResponseDto` (201) |
+| PUT | `/users/{id}` | `{ fullName?, email?, role?, isActive? }` | `UserResponseDto` |
+| DELETE | `/users/{id}` | - | null |
+| PATCH | `/users/{id}/activate` | - | `UserResponseDto` |
+| PATCH | `/users/{id}/deactivate` | - | `UserResponseDto` |
+| POST | `/users/{id}/reset-password` | - | `{ newPassword }` |
+
+### 2.8 Notifications (`/api/notifications`)
+| Method | Route | Request | Response |
+|--------|-------|---------|----------|
+| GET | `/notifications` | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<NotificationResponseDto>` (role-scoped) |
+| GET | `/notifications/{id}` | - | `NotificationResponseDto` |
+| GET | `/notifications/unread` | - | `NotificationResponseDto[]` |
+| GET | `/notifications/unread/count` | - | `{ count: number }` |
+| POST | `/notifications/{id}/read` | - | null |
+| POST | `/notifications/read-all` | - | null |
+| DELETE | `/notifications/{id}` | - | null |
+| GET | `/notifications/visitor/{visitorId}` | `?page&pageSize` | `PagedResponse<VisitorNotificationResponseDto>` |
+| GET | `/notifications/visitor/{visitorId}/unread` | - | `VisitorNotificationResponseDto[]` |
+| POST | `/notifications/visitor/{visitorId}/read/{notificationId}` | - | null |
+| POST | `/notifications/visitor/{visitorId}/read-all` | - | null |
+| GET | `/notifications/visitor/{visitorId}/unread/count` | - | `{ count: number }` |
 
 **NotificationResponseDto:** `{ id, employeeId, appointmentId?, title, message, notificationType, priority, isRead, readAt?, channel, createdAt }`
 
-### 2.8 DashboardController (`api/dashboard`)
+### 2.9 Employee Unavailability (`/api/employee-unavailability`)
+| Method | Route | Auth | Request | Response |
+|--------|-------|------|---------|----------|
+| GET | `/employee-unavailability` | Yes | `?employeeId=` | `EmployeeUnavailabilityResponseDto[]` |
+| GET | `/employee-unavailability/{id}` | Yes | - | `EmployeeUnavailabilityResponseDto` |
+| POST | `/employee-unavailability` | Admin,CEO,DeptHead,Employee | `{ employeeId, unavailabilityType, startDate, endDate?, startTime?, endTime?, repeat?, reason? }` | `EmployeeUnavailabilityResponseDto` |
+| PUT | `/employee-unavailability/{id}` | Admin,CEO,DeptHead,Employee | same as create | `EmployeeUnavailabilityResponseDto` |
+| DELETE | `/employee-unavailability/{id}` | Admin,CEO,DeptHead,Employee | - | null |
+
+> Creating/updating unavailability triggers automatic handling of conflicting pending appointments (auto-reject with `EmployeeUnavailable` status and notification).
+
+### 2.10 Dashboard (`/api/dashboard`)
 | Method | Route | Auth | Response |
 |--------|-------|------|----------|
-| GET | `/dashboard/stats` | `[Authorize]` | `DashboardStatsDto` |
-| GET | `/dashboard/admin` | `[Authorize(Roles="Admin")]` | `AdminDashboardDto` |
-| GET | `/dashboard/ceo` | `[Authorize(Roles="CEO")]` | `CeoDashboardDto` |
-| GET | `/dashboard/department-head` | `[Authorize(Roles="DepartmentHead")]` | `DepartmentHeadDashboardDto` |
-| GET | `/dashboard/employee` | `[Authorize]` | `EmployeeDashboardDto` |
-| GET | `/dashboard/receptionist` | `[Authorize(Roles="Receptionist,Admin")]` | `ReceptionistDashboardDto` |
-| GET | `/dashboard/security` | `[Authorize(Roles="Security,Admin")]` | `SecurityDashboardDto` |
+| GET | `/dashboard/stats` | Yes | `DashboardStatsDto` |
+| GET | `/dashboard/admin` | Admin | `AdminDashboardDto` |
+| GET | `/dashboard/ceo` | CEO | `CeoDashboardDto` |
+| GET | `/dashboard/department-head` | DepartmentHead | `DepartmentHeadDashboardDto` |
+| GET | `/dashboard/employee` | Yes | `EmployeeDashboardDto` |
+| GET | `/dashboard/receptionist` | Receptionist,Admin | `ReceptionistDashboardDto` |
+| GET | `/dashboard/security` | Security,Admin | `SecurityDashboardDto` |
+| GET | `/dashboard/visitor` | Visitor | `VisitorDashboardDto` |
 
 **DashboardStatsDto:** `{ totalVisitorsToday, totalVisitorsThisWeek, totalVisitorsThisMonth, activeAppointments, pendingAppointments, checkedInVisitors, totalEmployees, totalDepartments, unreadNotifications }`
 
-### 2.9 ReportsController (`api/reports`)
-| Method | Route | Auth | Request | Response |
-|--------|-------|------|---------|----------|
-| GET | `/reports/visitors` | `[Authorize]` | `?startDate&endDate&departmentId` | `VisitorReportDto` |
-| GET | `/reports/appointments` | `[Authorize]` | `?startDate&endDate&departmentId` | `AppointmentReportDto` |
-| GET | `/reports/departments` | `[Authorize]` | `?startDate&endDate` | `DepartmentReportDto[]` |
-| GET | `/reports/employees` | `[Authorize]` | `?startDate&endDate` | `EmployeeReportDto[]` |
-| GET | `/reports/export/visitors` | `[Authorize]` | `?startDate&endDate` | Excel file (binary) |
-| GET | `/reports/export/appointments` | `[Authorize]` | `?startDate&endDate` | Excel file (binary) |
-| GET | `/reports/export/visits` | `[Authorize]` | `?startDate&endDate` | Excel file (binary) |
+### 2.11 Reports (`/api/reports`)
+| Method | Route | Request | Response |
+|--------|-------|---------|----------|
+| GET | `/reports/visitors` | `?startDate&endDate&departmentId` | `VisitorReportDto` |
+| GET | `/reports/appointments` | `?startDate&endDate&departmentId` | `AppointmentReportDto` |
+| GET | `/reports/departments` | `?startDate&endDate` | `DepartmentReportDto[]` |
+| GET | `/reports/employees` | `?startDate&endDate` | `EmployeeReportDto[]` |
+| GET | `/reports/export/visitors` | `?startDate&endDate` | Excel file (binary) |
+| GET | `/reports/export/appointments` | `?startDate&endDate` | Excel file (binary) |
+| GET | `/reports/export/visits` | `?startDate&endDate` | Excel file (binary) |
 
-### 2.10 UsersController (`api/users`) - Admin only
-| Method | Route | Auth | Request | Response |
-|--------|-------|------|---------|----------|
-| GET | `/users` | `[Authorize(Roles="Admin")]` | `?page&pageSize&search&sortBy&sortDesc` | `PagedResponse<UserResponseDto>` |
-| GET | `/users/{id}` | `[Authorize(Roles="Admin")]` | - | `UserResponseDto` |
-| POST | `/users` | `[Authorize(Roles="Admin")]` | `{ fullName, email, password, role, employeeId? }` | `UserResponseDto` (201) |
-| PUT | `/users/{id}` | `[Authorize(Roles="Admin")]` | `{ fullName?, email?, role?, isActive? }` | `UserResponseDto` |
-| DELETE | `/users/{id}` | `[Authorize(Roles="Admin")]` | - | null |
-| PATCH | `/users/{id}/activate` | `[Authorize(Roles="Admin")]` | - | `UserResponseDto` |
-| PATCH | `/users/{id}/deactivate` | `[Authorize(Roles="Admin")]` | - | `UserResponseDto` |
-| POST | `/users/{id}/reset-password` | `[Authorize(Roles="Admin")]` | - | `{ newPassword }` |
+### 2.12 Search (`/api/search`)
+| Method | Route | Request | Response |
+|--------|-------|---------|----------|
+| GET | `/search` | `?q=&page=&pageSize=` | `{ visitors, employees }` (global) |
+| GET | `/search/visitors` | `?q=&page=&pageSize=` | `PagedResponse<VisitorResponseDto>` |
+| GET | `/search/employees` | `?q=&page=&pageSize=` | `PagedResponse<EmployeeResponseDto>` |
 
-### 2.11 SearchController (`api/search`)
+### 2.13 Upload (`/api/upload`)
 | Method | Route | Auth | Request | Response |
 |--------|-------|------|---------|----------|
-| GET | `/search` | `[Authorize]` | `?q=&page=&pageSize=` | `{ visitors, employees }` |
-| GET | `/search/visitors` | `[Authorize]` | `?q=&page=&pageSize=` | `PagedResponse<VisitorResponseDto>` |
-| GET | `/search/employees` | `[Authorize]` | `?q=&page=&pageSize=` | `PagedResponse<EmployeeResponseDto>` |
-
-### 2.12 UploadController (`api/upload`)
-| Method | Route | Auth | Request | Response |
-|--------|-------|------|---------|----------|
-| POST | `/upload/photo` | `[Authorize]` | `IFormFile` (jpg/png/gif/webp, max 5MB) | `{ url }` |
-| POST | `/upload/attachment` | `[Authorize]` | `IFormFile` (any, max 10MB) | `{ url, fileName, size }` |
-| POST | `/upload/document` | `[Authorize]` | `IFormFile` (pdf/doc/xls/txt/csv, max 10MB) | `{ url, fileName, size }` |
-| DELETE | `/upload/{type}/{fileName}` | `[Authorize(Roles="Admin")]` | - | null |
+| POST | `/upload/photo` | Yes | `IFormFile` (jpg/jpeg/png/gif/webp, max 5MB) | `{ url }` |
+| POST | `/upload/attachment` | Yes | `IFormFile` (any, max 10MB) | `{ url, fileName, size }` |
+| POST | `/upload/document` | Yes | `IFormFile` (pdf/doc/docx/xls/xlsx/txt/csv, max 10MB) | `{ url, fileName, size }` |
+| DELETE | `/upload/{type}/{fileName}` | Admin | - | null |
 
 ---
 
 ## 3. Frontend-to-Backend Integration Map
 
-### 3.1 Visitor Portal Services
+### 3.1 Visitor Portal Services (`frontend/`)
+| Service Method | HTTP | Backend Endpoint | Status |
+|---------------|------|------------------|--------|
+| `authService.login()` | POST | `/auth/login` | ✅ Aligned |
+| `authService.register()` | POST | `/auth/register-visitor` | ✅ Aligned |
+| `authService.refreshToken()` | POST | `/auth/refresh-token` | ✅ Aligned |
+| `authService.changePassword()` | POST | `/auth/change-password` | ✅ Aligned |
+| `authService.forgotPassword()` | POST | `/auth/forgot-password` | ✅ Aligned |
+| `authService.resetPassword()` | POST | `/auth/reset-password` | ✅ Aligned |
+| `authService.me()` | GET | `/auth/me` | ✅ Aligned |
+| `authService.logout()` | POST | `/auth/logout` | ✅ Aligned |
+| `visitorService.getProfile()` | GET | `/visitors/me` | ✅ Aligned |
+| `visitorService.updateProfile()` | PUT | `/visitors/me` | ✅ Aligned |
+| `visitorService.uploadPhoto()` | POST | `/visitors/me/photo` | ✅ Aligned |
+| `appointmentService.getAppointments()` | GET | `/appointments` (page/limit) | ✅ Aligned |
+| `appointmentService.getAppointment()` | GET | `/appointments/{id}` | ✅ Aligned |
+| `appointmentService.createAppointment()` | POST | `/appointments` | ✅ Aligned |
+| `appointmentService.rescheduleAppointment()` | POST | `/appointments/{id}/reschedule` | ✅ Aligned |
+| `appointmentService.cancelAppointment()` | POST | `/appointments/{id}/cancel` | ✅ Aligned |
+| `appointmentService.getComments()` | GET | `/appointments/{id}/comments` | ✅ Aligned |
+| `appointmentService.addComment()` | POST | `/appointments/{id}/comments` | ✅ Aligned |
+| `appointmentService.getByVisitor()` | GET | `/appointments/by-visitor/{visitorId}` | ✅ Aligned |
+| `visitService.getAll()` | GET | `/visits` | ✅ Aligned |
+| `visitService.getById()` | GET | `/visits/{id}` | ✅ Aligned |
+| `visitService.getByVisitor()` | GET | `/visits/by-visitor/{visitorId}` | ✅ Aligned |
+| `notificationService.getNotifications()` | GET | `/notifications/visitor/{visitorId}` | ✅ Aligned |
+| `notificationService.getUnreadCount()` | GET | `/notifications/visitor/{visitorId}/unread/count` | ✅ Aligned |
+| `notificationService.markAsRead()` | POST | `/notifications/visitor/{visitorId}/read/{notificationId}` | ✅ Aligned |
+| `notificationService.markAllAsRead()` | POST | `/notifications/visitor/{visitorId}/read-all` | ✅ Aligned |
+| `dashboardService.getStats()` | GET | `/dashboard/visitor` | ✅ Aligned |
 
-| Service Method | HTTP | Backend Endpoint | Status | Notes |
-|---------------|------|------------------|--------|-------|
-| `authService.login()` | POST | `/auth/login` | ✅ Aligned | |
-| `authService.register()` | POST | `/auth/register-visitor` | ✅ Aligned | |
-| `authService.refreshToken()` | POST | `/auth/refresh-token` | ✅ Aligned | |
-| `authService.changePassword()` | POST | `/auth/change-password` | ✅ Aligned | |
-| `authService.forgotPassword()` | POST | `/auth/forgot-password` | ✅ Aligned | |
-| `authService.resetPassword()` | POST | `/auth/reset-password` | ✅ Aligned | |
-| `visitorService.getProfile()` | GET | `/visitors/{id}` | ✅ Aligned | |
-| `visitorService.updateProfile()` | PUT | `/visitors/{id}` | ✅ Aligned | |
-| `visitorService.uploadPhoto()` | POST | `/visitors/{id}/photo` | ✅ Aligned | |
-| `visitorService.getAll()` | GET | `/visitors` | ✅ Aligned | |
-| `visitorService.create()` | POST | `/visitors` | ✅ Aligned | |
-| `visitorService.update()` | PUT | `/visitors/{id}` | ✅ Aligned | |
-| `visitorService.delete()` | DELETE | `/visitors/{id}` | ✅ Aligned | |
-| `visitorService.getVisitorStats()` | GET | `/dashboard/stats` | ✅ Aligned | |
-| `appointmentService.getAppointments()` | GET | `/appointments` | ✅ Aligned | |
-| `appointmentService.getAppointment()` | GET | `/appointments/{id}` | ✅ Aligned | |
-| `appointmentService.createAppointment()` | POST | `/appointments` | ✅ Aligned | |
-| `appointmentService.rescheduleAppointment()` | POST | `/appointments/{id}/reschedule` | ✅ Aligned | |
-| `appointmentService.cancelAppointment()` | POST | `/appointments/{id}/cancel` | ✅ Aligned | |
-| `appointmentService.getUpcomingAppointments()` | GET | `/appointments/upcoming` | ⚠️ MISSING | No `/appointments/upcoming` in backend. Should use `/appointments/today` or filter by status |
-| `appointmentService.getAppointmentStats()` | GET | `/appointments/stats` | ⚠️ MISSING | No `/appointments/stats` in backend |
-| `visitService.getAll()` | GET | `/visits` | ✅ Aligned | |
-| `visitService.getById()` | GET | `/visits/{id}` | ✅ Aligned | |
-| `visitService.checkIn()` | POST | `/visits/check-in` | ✅ Aligned | |
-| `visitService.checkOut()` | POST | `/visits/{id}/check-out` | ✅ Aligned | |
-| `visitService.getByVisitor()` | GET | `/visits/by-visitor/{visitorId}` | ✅ Aligned | |
-| `visitService.getTodayVisits()` | GET | `/visits/today` | ✅ Aligned | |
-| `visitService.getActiveVisits()` | GET | `/visits/active` | ✅ Aligned | |
-| `notificationService.getNotifications()` | GET | `/notifications` | ✅ Aligned | |
-| `notificationService.getUnreadCount()` | GET | `/notifications/unread/count` | ✅ Aligned | |
-| `notificationService.markAsRead()` | POST | `/notifications/{id}/read` | ✅ Aligned | |
-| `notificationService.markAllAsRead()` | POST | `/notifications/read-all` | ✅ Aligned | |
-| `notificationService.deleteNotification()` | DELETE | `/notifications/{id}` | ✅ Aligned | |
-| `dashboardService.getStats()` | GET | `/dashboard/stats` | ✅ Aligned | |
-
-### 3.2 Employee Portal Services
-
-| Service Method | HTTP | Backend Endpoint | Status | Notes |
-|---------------|------|------------------|--------|-------|
-| `authService.login()` | POST | `/auth/login` | ✅ Aligned | |
-| `authService.forgotPassword()` | POST | `/auth/forgot-password` | ✅ Aligned | |
-| `authService.changePassword()` | POST | `/auth/change-password` | ✅ Aligned | |
-| `appointmentService.getAll()` | GET | `/appointments` | ✅ Aligned | |
-| `appointmentService.getById()` | GET | `/appointments/{id}` | ✅ Aligned | |
-| `appointmentService.create()` | POST | `/appointments` | ✅ Aligned | |
-| `appointmentService.update()` | PUT | `/appointments/{id}` | ✅ Aligned | |
-| `appointmentService.delete()` | DELETE | `/appointments/{id}` | ✅ Aligned | |
-| `appointmentService.approve()` | POST | `/appointments/{id}/approve` | ✅ Aligned | |
-| `appointmentService.reject()` | POST | `/appointments/{id}/reject` | ✅ Aligned | |
-| `appointmentService.delegate()` | POST | `/appointments/{id}/delegate` | ✅ Aligned | |
-| `appointmentService.complete()` | POST | `/appointments/{id}/complete` | ✅ Aligned | |
-| `appointmentService.cancel()` | POST | `/appointments/{id}/cancel` | ✅ Aligned | |
-| `appointmentService.getPendingApprovals()` | GET | `/appointments/pending` | ✅ Aligned | |
-| `visitService.getAll()` | GET | `/visits` | ✅ Aligned | |
-| `visitService.getById()` | GET | `/visits/{id}` | ✅ Aligned | |
-| `visitService.checkIn()` | POST | `/visits/check-in` | ✅ Aligned | |
-| `visitService.checkOut()` | POST | `/visits/{id}/check-out` | ✅ Aligned | |
-| `visitService.getActiveVisits()` | GET | `/visits/active` | ✅ Aligned | |
-| `visitService.getTodayVisits()` | GET | `/visits/today` | ✅ Aligned | |
-| `visitService.cancel()` | POST | `/visits/{id}/cancel` | ✅ Aligned | |
-| `visitService.getByVisitorId()` | GET | `/visits/by-visitor/{visitorId}` | ✅ Aligned | |
-| `employeeService.getAll()` | GET | `/employees` | ✅ Aligned | |
-| `employeeService.getById()` | GET | `/employees/{id}` | ✅ Aligned | |
-| `employeeService.create()` | POST | `/employees` | ✅ Aligned | |
-| `employeeService.update()` | PUT | `/employees/{id}` | ✅ Aligned | |
-| `employeeService.delete()` | DELETE | `/employees/{id}` | ✅ Aligned | |
-| `employeeService.search()` | GET | `/employees/search` | ✅ Aligned | |
-| `departmentService.getAll()` | GET | `/departments` | ⚠️ RETURN TYPE | Returns `PagedResponse<Department>`, frontend expects `Department[]` |
-| `departmentService.getById()` | GET | `/departments/{id}` | ✅ Aligned | |
-| `departmentService.create()` | POST | `/departments` | ✅ Aligned | |
-| `departmentService.update()` | PUT | `/departments/{id}` | ✅ Aligned | |
-| `departmentService.delete()` | DELETE | `/departments/{id}` | ✅ Aligned | |
-| `notificationService.getAll()` | GET | `/notifications` | ✅ Aligned | |
-| `notificationService.getUnreadCount()` | GET | `/notifications/unread/count` | ✅ Aligned | |
-| `notificationService.markAsRead()` | POST | `/notifications/{id}/read` | ✅ Aligned | |
-| `notificationService.markAllAsRead()` | POST | `/notifications/read-all` | ✅ Aligned | |
-| `notificationService.delete()` | DELETE | `/notifications/{id}` | ✅ Aligned | |
-| `reportService.generateReport()` | GET | `/reports/{type}` | ✅ Aligned | Routes to visitors/appointments/departments |
-| `reportService.getVisitorReport()` | GET | `/reports/visitors` | ✅ Aligned | |
-| `reportService.getAppointmentReport()` | GET | `/reports/appointments` | ✅ Aligned | |
-| `reportService.getDepartmentReport()` | GET | `/reports/departments` | ✅ Aligned | |
-| `reportService.exportVisitors()` | GET | `/reports/export/visitors` | ✅ Aligned | |
-| `reportService.exportAppointments()` | GET | `/reports/export/appointments` | ✅ Aligned | |
-| `userService.getAll()` | GET | `/users` | ✅ Aligned | |
-| `userService.getById()` | GET | `/users/{id}` | ✅ Aligned | |
-| `userService.create()` | POST | `/users` | ✅ Aligned | |
-| `userService.update()` | PUT | `/users/{id}` | ✅ Aligned | |
-| `userService.delete()` | DELETE | `/users/{id}` | ✅ Aligned | |
-| `userService.activate()` | PATCH | `/users/{id}/activate` | ✅ Aligned | |
-| `userService.deactivate()` | PATCH | `/users/{id}/deactivate` | ✅ Aligned | |
-| `userService.resetPassword()` | POST | `/users/{id}/reset-password` | ✅ Aligned | |
-| `visitorService.getAll()` | GET | `/visitors` | ✅ Aligned | |
-| `visitorService.getById()` | GET | `/visitors/{id}` | ✅ Aligned | |
-| `visitorService.search()` | GET | `/visitors/search` | ✅ Aligned | |
-| `visitorService.getVisitHistory()` | GET | `/visits/by-visitor/{id}` | ✅ Aligned | |
-| `dashboardService.getAdminDashboard()` | GET | `/dashboard/admin` | ✅ Aligned | |
-| `dashboardService.getCeoDashboard()` | GET | `/dashboard/ceo` | ✅ Aligned | |
-| `dashboardService.getDeptHeadDashboard()` | GET | `/dashboard/department-head` | ✅ Aligned | |
-| `dashboardService.getEmployeeDashboard()` | GET | `/dashboard/employee` | ✅ Aligned | |
-| `dashboardService.getReceptionistDashboard()` | GET | `/dashboard/receptionist` | ✅ Aligned | |
-| `dashboardService.getSecurityDashboard()` | GET | `/dashboard/security` | ✅ Aligned | |
-
----
-
-## 4. Remaining Runtime Mismatches (Non-Breaking Build)
-
-These are correct TypeScript types that will produce `undefined` values at runtime because field names differ between frontend models and backend DTOs.
-
-### 4.1 Employee Portal Visitor Model Mismatch
-
-**Frontend model (`visitor.service.ts`):**
-```typescript
-interface Visitor {
-  firstName: string;
-  lastName: string;
-  company?: string;
-  totalVisits: number;
-  isBlacklisted: boolean;
-}
-```
-
-**Backend `VisitorResponseDto`:**
-```
-fullName: string;
-organization?: string;
-totalVisits: number;
-isActive: boolean;
-```
-
-**Impact:** `firstName`, `lastName` will be `undefined` (use `fullName` instead). `company` will be `undefined` (use `organization`). `isBlacklisted` will be `undefined` (no blacklist field in response DTO).
-
-### 4.2 Visitor Portal Missing Backend Endpoints
-
-| Frontend Call | Backend Status | Recommendation |
-|--------------|----------------|----------------|
-| `GET /appointments/upcoming` | Does not exist | Use `/appointments` with status filter, or `/appointments/today` |
-| `GET /appointments/stats` | Does not exist | Calculate client-side from paginated data, or add backend endpoint |
-
-### 4.3 DepartmentService.getAll() Return Type
-
-**Frontend expects:** `ApiResponse<Department[]>`  
-**Backend returns:** `ApiResponse<PagedResponse<Department>>`
-
-**Impact:** Components calling `departmentService.getAll()` and accessing `res.data` directly will get `undefined`. Should access `res.data.items` instead. This is currently working in most components because they handle the response with `res.data || []`.
+### 3.2 Employee Portal Services (`frontend-employee/`)
+| Service Method | HTTP | Backend Endpoint | Status |
+|---------------|------|------------------|--------|
+| `authService.login()` | POST | `/auth/login` | ✅ Aligned |
+| `authService.forgotPassword()` | POST | `/auth/forgot-password` | ✅ Aligned |
+| `authService.changePassword()` | POST | `/auth/change-password` | ✅ Aligned |
+| `authService.me()` | GET | `/auth/me` | ✅ Aligned |
+| `appointmentService.getAll()` | GET | `/appointments` | ✅ Aligned |
+| `appointmentService.getById()` | GET | `/appointments/{id}` | ✅ Aligned |
+| `appointmentService.create()` | POST | `/appointments` | ✅ Aligned |
+| `appointmentService.approve()` | POST | `/appointments/{id}/approve` | ✅ Aligned |
+| `appointmentService.reject()` | POST | `/appointments/{id}/reject` | ✅ Aligned |
+| `appointmentService.delegate()` | POST | `/appointments/{id}/delegate` | ✅ Aligned |
+| `appointmentService.redirect()` | POST | `/appointments/{id}/redirect` | ✅ Aligned |
+| `appointmentService.redirectDepartment()` | POST | `/appointments/{id}/redirect-department` | ✅ Aligned |
+| `appointmentService.assignEmployee()` | POST | `/appointments/{id}/assign-employee` | ✅ Aligned |
+| `appointmentService.complete()` | POST | `/appointments/{id}/complete` | ✅ Aligned |
+| `appointmentService.cancel()` | POST | `/appointments/{id}/cancel` | ✅ Aligned |
+| `appointmentService.toggleConfidential()` | PATCH | `/appointments/{id}/confidential` | ✅ Aligned |
+| `appointmentService.getPending()` | GET | `/appointments/pending` | ✅ Aligned |
+| `appointmentService.getToday()` | GET | `/appointments/today` | ✅ Aligned |
+| `appointmentService.getByDepartment()` | GET | `/appointments/by-department/{departmentId}` | ✅ Aligned |
+| `appointmentService.getConfidential()` | GET | `/appointments/confidential` | ✅ Aligned |
+| `appointmentService.getComments()` | GET | `/appointments/{id}/comments` | ✅ Aligned |
+| `appointmentService.addComment()` | POST | `/appointments/{id}/comments` | ✅ Aligned |
+| `appointmentService.getPropertyVerifications()` | GET | `/appointments/property-verifications` | ✅ Aligned |
+| `appointmentService.verifyProperties()` | POST | `/appointments/{id}/verify-properties` | ✅ Aligned |
+| `appointmentService.savePropertyVerification()` | POST | `/appointments/{id}/save-property-verification` | ✅ Aligned |
+| `visitService.getAll()` | GET | `/visits` | ✅ Aligned |
+| `visitService.getById()` | GET | `/visits/{id}` | ✅ Aligned |
+| `visitService.checkIn()` | POST | `/visits/check-in` | ✅ Aligned |
+| `visitService.checkOut()` | POST | `/visits/{id}/check-out` | ✅ Aligned |
+| `visitService.cancel()` | POST | `/visits/{id}/cancel` | ✅ Aligned |
+| `visitService.getActive()` | GET | `/visits/active` | ✅ Aligned |
+| `visitService.getToday()` | GET | `/visits/today` | ✅ Aligned |
+| `visitService.getReceptionToday()` | GET | `/visits/reception-today` | ✅ Aligned |
+| `visitService.getByVisitorId()` | GET | `/visits/by-visitor/{visitorId}` | ✅ Aligned |
+| `visitService.getCheckoutItems()` | GET | `/visits/{id}/checkout-items` | ✅ Aligned |
+| `visitService.addItems()` | POST | `/visits/{id}/items` | ✅ Aligned |
+| `visitService.verifyItems()` | POST | `/visits/{id}/items/verify` | ✅ Aligned |
+| `employeeService.getAll()` | GET | `/employees` | ✅ Aligned |
+| `employeeService.getById()` | GET | `/employees/{id}` | ✅ Aligned |
+| `employeeService.create()` | POST | `/employees` | ✅ Aligned |
+| `employeeService.update()` | PUT | `/employees/{id}` | ✅ Aligned |
+| `employeeService.delete()` | DELETE | `/employees/{id}` | ✅ Aligned |
+| `employeeService.getAvailable()` | GET | `/employees/available` | ✅ Aligned |
+| `employeeService.search()` | GET | `/employees/search` | ✅ Aligned |
+| `employeeService.getSchedule()` | GET | `/employees/{id}/schedule` | ✅ Aligned |
+| `employeeService.updateSchedule()` | PUT | `/employees/{id}/schedule` | ✅ Aligned |
+| `employeeService.getUnavailability()` | GET | `/employee-unavailability?employeeId=` | ✅ Aligned |
+| `employeeService.createUnavailability()` | POST | `/employee-unavailability` | ✅ Aligned |
+| `employeeService.updateUnavailability()` | PUT | `/employee-unavailability/{id}` | ✅ Aligned |
+| `employeeService.deleteUnavailability()` | DELETE | `/employee-unavailability/{id}` | ✅ Aligned |
+| `departmentService.getAll()` | GET | `/departments/active` (dropdown) | ✅ Aligned |
+| `departmentService.getById()` | GET | `/departments/{id}` | ✅ Aligned |
+| `departmentService.create()` | POST | `/departments` | ✅ Aligned |
+| `departmentService.update()` | PUT | `/departments/{id}` | ✅ Aligned |
+| `departmentService.delete()` | DELETE | `/departments/{id}` | ✅ Aligned |
+| `departmentService.getStats()` | GET | `/departments/{id}/stats` | ✅ Aligned |
+| `notificationService.getAll()` | GET | `/notifications` | ✅ Aligned |
+| `notificationService.getUnreadCount()` | GET | `/notifications/unread/count` | ✅ Aligned |
+| `notificationService.markAsRead()` | POST | `/notifications/{id}/read` | ✅ Aligned |
+| `notificationService.markAllAsRead()` | POST | `/notifications/read-all` | ✅ Aligned |
+| `notificationService.delete()` | DELETE | `/notifications/{id}` | ✅ Aligned |
+| `reportService.getVisitorReport()` | GET | `/reports/visitors` | ✅ Aligned |
+| `reportService.getAppointmentReport()` | GET | `/reports/appointments` | ✅ Aligned |
+| `reportService.getDepartmentReport()` | GET | `/reports/departments` | ✅ Aligned |
+| `reportService.getEmployeeReport()` | GET | `/reports/employees` | ✅ Aligned |
+| `reportService.exportVisitors()` | GET | `/reports/export/visitors` | ✅ Aligned |
+| `reportService.exportAppointments()` | GET | `/reports/export/appointments` | ✅ Aligned |
+| `reportService.exportVisits()` | GET | `/reports/export/visits` | ✅ Aligned |
+| `userService.getAll()` | GET | `/users` | ✅ Aligned |
+| `userService.getById()` | GET | `/users/{id}` | ✅ Aligned |
+| `userService.create()` | POST | `/users` | ✅ Aligned |
+| `userService.update()` | PUT | `/users/{id}` | ✅ Aligned |
+| `userService.delete()` | DELETE | `/users/{id}` | ✅ Aligned |
+| `userService.activate()` | PATCH | `/users/{id}/activate` | ✅ Aligned |
+| `userService.deactivate()` | PATCH | `/users/{id}/deactivate` | ✅ Aligned |
+| `userService.resetPassword()` | POST | `/users/{id}/reset-password` | ✅ Aligned |
+| `visitorService.getAll()` | GET | `/visitors` | ✅ Aligned |
+| `visitorService.getById()` | GET | `/visitors/{id}` | ✅ Aligned |
+| `visitorService.create()` | POST | `/visitors` | ✅ Aligned |
+| `visitorService.update()` | PUT | `/visitors/{id}` | ✅ Aligned |
+| `visitorService.delete()` | DELETE | `/visitors/{id}` | ✅ Aligned |
+| `visitorService.search()` | GET | `/visitors/search` | ✅ Aligned |
+| `searchService.globalSearch()` | GET | `/search` | ✅ Aligned |
+| `searchService.searchVisitors()` | GET | `/search/visitors` | ✅ Aligned |
+| `searchService.searchEmployees()` | GET | `/search/employees` | ✅ Aligned |
+| `uploadService.uploadPhoto()` | POST | `/upload/photo` | ✅ Aligned |
+| `uploadService.uploadAttachment()` | POST | `/upload/attachment` | ✅ Aligned |
+| `uploadService.uploadDocument()` | POST | `/upload/document` | ✅ Aligned |
+| `dashboardService.getAdminDashboard()` | GET | `/dashboard/admin` | ✅ Aligned |
+| `dashboardService.getCeoDashboard()` | GET | `/dashboard/ceo` | ✅ Aligned |
+| `dashboardService.getDeptHeadDashboard()` | GET | `/dashboard/department-head` | ✅ Aligned |
+| `dashboardService.getEmployeeDashboard()` | GET | `/dashboard/employee` | ✅ Aligned |
+| `dashboardService.getReceptionistDashboard()` | GET | `/dashboard/receptionist` | ✅ Aligned |
+| `dashboardService.getSecurityDashboard()` | GET | `/dashboard/security` | ✅ Aligned |
 
 ---
 
-## 5. All Fixes Applied in This Session
+## 4. Integration Resolutions Applied
 
-### 5.1 Auth & Response Model Alignment
-- `LoginResponse` flattened to match backend `{ token, refreshToken, fullName, email, role, userId, employeeId?, visitorId? }`
-- `RegisterRequest` fields aligned: `fullName`, `organization`, `address`, `nationalId`, `gender`
-- `ChangePasswordRequest` aligned: `oldPassword`/`newPassword` (camelCase)
-- `ResetPasswordRequest` aligned: `token`/`newPassword`
-- `PaginatedResponse` aligned: `items`, `totalCount`, `hasPrevious`, `hasNext`
+All mismatches identified in earlier audit passes have been resolved. The
+following is the record of what was fixed:
 
-### 5.2 Dashboard Component Fixes (6 dashboards)
-- `totalVisitors` → `totalVisitorsToday`
-- `todayVisitors` → `totalVisitorsToday`
-- `activeVisitors` → `checkedInVisitors`
-- `totalAppointments` → `activeAppointments`
-- `userName` → `user.fullName`
-- All fallback mock data fields aligned to `DashboardStatsDto`
+### 4.1 Auth & Response Model Alignment
+- `LoginResponse` flattened to match backend `{ token, refreshToken, fullName, email, role, userId, employeeId?, visitorId? }`.
+- `RegisterRequest` fields aligned: `fullName`, `organization`, `address`, `nationalId`, `gender`.
+- `ChangePasswordRequest` aligned: `oldPassword` / `newPassword`.
+- `ResetPasswordRequest` aligned: `token` / `newPassword`.
+- `PagedResponse` aligned: `items`, `totalCount`, `page`, `pageSize`, `totalPages`, `hasPrevious`, `hasNext`.
 
-### 5.3 Calendar Component Fixes
-- `scheduledTime` → `requestedStartTime`
-- `title` → `purpose`
-- `hostEmployeeName` → `employeeName`
-- `scheduledDate` → `requestedDate`
-- `getCalendarEvents()` → `getAll()` (no calendar endpoint exists)
+### 4.2 Dashboard Components (6 employee dashboards + visitor dashboard)
+- `totalVisitors` → `totalVisitorsToday`; `todayVisitors` → `totalVisitorsToday`; `activeVisitors` → `checkedInVisitors`.
+- `totalAppointments` → `activeAppointments`; `userName` → `user.fullName`.
+- All fallback/mock fields aligned to the real dashboard DTOs.
 
-### 5.4 Department Components
-- `department-form`: Removed `code`, `headEmployeeId`, `floor` fields; added `location`
-- `department-list`: `code` → removed, `floor` → `location`, `headEmployeeName` → contact info
-- `department-form`: `res.data.data` → `res.data.items`
+### 4.3 Calendar Component
+- `scheduledTime` → `requestedStartTime`; `title` → `purpose`; `hostEmployeeName` → `employeeName`; `scheduledDate` → `requestedDate`.
+- Calendar loads via `appointmentService.getAll()` (paged) — no separate calendar endpoint exists.
 
-### 5.5 Notification Components
-- `notif.type` → `notif.notificationType` (all 6 occurrences)
-- `res.data.data` → `res.data.items`
-- Added `Notification` type annotation for filter callback
+### 4.4 Department Components
+- Removed `code`, `headEmployeeId`, `floor`; added `location`.
+- `department-form` unwraps `res.data.items` (paged list).
 
-### 5.6 Reports Component
-- Added `generateReport()` method to `ReportService` that dispatches to correct endpoint
-- Rewrote `ReportService` with proper type mapping from backend DTOs to frontend `ReportData` model
-- Added type annotations for `res` and `ds` callback parameters
+### 4.5 Notification Components
+- `notif.type` → `notif.notificationType`; `res.data.data` → `res.data.items`.
 
-### 5.7 Check-Out Component
-- `hostEmployeeName` → `employeeName`
+### 4.6 Visit Model
+- `VisitStatus.Expected` → `VisitStatus.Scheduled` (matching backend).
 
-### 5.8 Settings & Main Layout
-- `user.firstName.charAt(0) + user.lastName.charAt(0)` → `user.fullName.split(' ').map(n => n.charAt(0)).join('')`
-- Template: `{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}` → `{{ currentUser()?.fullName }}`
-- All 4 occurrences across settings.component.ts and main-layout.component.ts
+### 4.7 Unavailability / Scheduling
+- Unavailability time-range and repeat fields wired to the backend
+  (`startTime`, `endTime`, `repeat`) added after the
+  `AddUnavailabilityTimeAndRepeat` migration.
+- Conflicting appointments are auto-handled by the backend when unavailability
+  is created/updated.
 
-### 5.9 Visit Model
-- `VisitStatus.Expected` → `VisitStatus.Scheduled` (matching backend)
+### 4.8 Visitor Items & Checkout
+- Check-in passes `visitorItems`; security verifies via
+  `/visits/{id}/items/verify`; check-out surfaces checkout items via
+  `/visits/{id}/checkout-items`.
 
-### 5.10 Icon Accessibility
-- All 30 icon buttons across both portals now have `matTooltip` + `aria-label`
-- `MatTooltipModule` imported in all components with icon buttons
+### 4.9 Icon Accessibility
+- All icon buttons across both portals have `matTooltip` + `aria-label`.
+- `MatTooltipModule` imported in all components with icon buttons.
 
 ---
 
-## 6. Build Status Summary
+## 5. Build Status Summary
 
-### Backend (.NET)
+### Backend (.NET 10)
 ```
 Build succeeded.
     2 Warning(s)  (AutoMapper vulnerability - NU1903)
     0 Error(s)
 ```
 
-### Visitor Portal (Angular)
+### Visitor Portal (Angular 22)
 ```
 Application bundle generation complete.
     2 Warnings (optional chain, Sass deprecation)
@@ -448,7 +451,7 @@ Application bundle generation complete.
     Output: dist/ecx-visitor-portal/
 ```
 
-### Employee Portal (Angular)
+### Employee Portal (Angular 22)
 ```
 Application bundle generation complete.
     12 Warnings (unused imports, content projection, optional chain, Sass deprecation)
@@ -458,11 +461,28 @@ Application bundle generation complete.
 
 ---
 
+## 6. Remaining Observations (Non-Breaking)
+
+1. **AutoMapper vulnerability warning (NU1903):** Transitive dependency advisory;
+   does not affect the runtime build. Consider upgrading AutoMapper when a
+   patched version is available.
+2. **Two build warnings** in the visitor portal and **twelve** in the employee
+   portal (unused imports, content projection, optional chain, Sass
+   deprecation) — cosmetic only, no runtime impact.
+3. **`sortDesc` passed as boolean query param:** Works correctly with the
+   backend binder; some services could standardize on `true`/`false` strings.
+4. **No API versioning:** endpoints are unversioned (acceptable for this
+   deployment stage).
+
+---
+
 ## 7. Recommendations for Further Improvement
 
-1. **Add missing backend endpoints:** `/appointments/upcoming` and `/appointments/stats` (used by visitor portal)
-2. **Fix visitor model in employee portal:** Update `Visitor` interface to use `fullName`, `organization`, `isActive` instead of `firstName`/`lastName`/`company`/`isBlacklisted`
-3. **Fix `DepartmentService.getAll()` return type:** Change to return `PagedResponse<Department>` or add a `getAllList()` method that unwraps to `Department[]`
-4. **Update `PageRequest` parameters:** Some frontend services pass `sortBy`/`sortDesc` while backend expects these as query params (this works correctly but the `sortDesc` is a bool vs string)
-5. **Add role-based route guards:** Backend has role-specific dashboard endpoints but no route guards enforcing role-based navigation in the frontend
-6. **Consider adding API versioning:** Currently no versioning on the API routes
+1. **Add role-based route guards** in the employee portal for
+   `/admin`, `/ceo`, `/dept`, `/reception`, `/security` sections — currently
+   enforced server-side; client guards would improve UX. *(Partial: employee
+   portal already applies `RoleGuard` with `data.roles` on lazy routes.)*
+2. **Add pagination to today/active lists** if visit volumes grow.
+3. **Index queue tables** on `status` if queue volume grows (currently scanned
+   without an index).
+4. **Add API versioning** when a public API is required.

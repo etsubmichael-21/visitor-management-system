@@ -1,144 +1,375 @@
-============================================================================
+================================================================================
 ECX VISITOR MANAGEMENT SYSTEM — ENTITY RELATIONSHIP DIAGRAM
-============================================================================
-                        PostgreSQL 15+ | July 2026
+================================================================================
+                         PostgreSQL 15+ | EF Core 10.0.9 | August 8, 2026
 
-                        ┌─────────────────────────────────┐
-                        │             users               │
-                        │─────────────────────────────────│
-                        │ PK id              integer      │──────┐
-                        │    full_name        varchar(100)│      │
-                        │    email            varchar(100)│      │
-                        │    password_hash    varchar(255)│      │
-                        │    role             user_role   │      │
-                        │    is_active        boolean      │      │
-                        │    last_login       timestamptz  │      │
-                        │    created_at       timestamptz  │      │
-                        │    updated_at       timestamptz  │      │
-                        └─────────────────────────────────┘      │
-                                                                  │ 1
-                                                                  │
-                        ┌─────────────────────────────────┐      │
-                        │          audit_logs             │      │
-                        │─────────────────────────────────│      │
-                        │ PK id              integer      │      │
-                        │ FK user_id         integer      │──────┘
-                        │    action           varchar(100)│
-                        │    entity_name      varchar(100)│
-                        │    entity_id        integer      │
-                        │    old_values       jsonb       │
-                        │    new_values       jsonb       │
-                        │    ip_address       varchar(45) │
-                        │    user_agent       text         │
-                        │    created_at       timestamptz  │
-                        └─────────────────────────────────┘
+21 data tables (plus __EFMigrationsHistory). All status/type/role columns are
+varchar validated in the application layer (no native enums). Line widths are
+for readability; the authoritative relationship list is below.
+
+--------------------------------------------------------------------------------
+IDENTITY & AUDIT
+--------------------------------------------------------------------------------
+
+   ┌──────────────────────────────────┐         ┌──────────────────────────────────┐
+   │              users               │         │            audit_logs            │
+   │──────────────────────────────────│         │──────────────────────────────────│
+   │ PK id            integer        │──┐      │ PK id           integer         │
+   │    full_name     varchar(100)   │  │      │ FK user_id      integer         │
+   │    email         varchar(100)   │  │      │    action       varchar(100)    │
+   │    password_hash varchar(255)   │  └──────│    entity_name  varchar(100)    │
+   │    role          varchar(50)    │         │    entity_id    integer         │
+   │    is_active     boolean        │         │    old_values   text            │
+   │    last_login    timestamptz    │         │    new_values   text            │
+   │    employee_id   integer        │         │    ip_address   varchar(45)     │
+   │    visitor_id    integer        │         │    user_agent   text            │
+   │    created_at    timestamptz    │         │    created_at   timestamptz     │
+   │    updated_at    timestamptz    │         └──────────────────────────────────┘
+   └──────────────────────────────────┘
+        │        │
+        │1:1      │1:1
+        │         │
+   ┌────┴─────┐ ┌─┴───────────────┐
+   │ employees │ │    visitors     │
+   └──────────┘ └─────────────────┘
+
+--------------------------------------------------------------------------------
+CORE REFERENCE: DEPARTMENTS / EMPLOYEES / VISITORS
+--------------------------------------------------------------------------------
+
+   ┌──────────────────────────────────┐
+   │           departments            │
+   │──────────────────────────────────│
+   │ PK id            integer        │──┐
+   │    name         varchar(100)    │  │
+   │    description  text            │  │
+   │    location     varchar(100)    │  │
+   │    phone        varchar(20)     │  │
+   │    email        varchar(100)    │  │
+   │    is_active    boolean         │  │
+   │    created_at   timestamptz     │  │
+   │    updated_at   timestamptz     │  │
+   └──────────────────────────────────┘  │
+      1:M                                │
+                                         │
+   ┌──────────────────────────────────┐  │
+   │            employees             │  │
+   │──────────────────────────────────│  │
+   │ PK id            integer        │  │
+   │    full_name     varchar(100)   │  │
+   │    phone         varchar(20)    │  │
+   │    email         varchar(100)   │  │
+   │ FK department_id integer        │──┘
+   │    position      varchar(100)   │
+   │    office_number varchar(20)    │
+   │    status        varchar(20)    │
+   │    user_id       integer        │── (1:1 to users.employee_id)
+   │    created_at    timestamptz    │
+   │    updated_at    timestamptz    │
+   └──────────────────────────────────┘
+        │           │           │
+        │ 1:M        │ 1:M       │ 1:M
+        │            │           │
+        ▼            ▼           ▼
+   employee_    employee_     appointments
+   schedules    unavailability
+
+   ┌──────────────────────────────────┐
+   │            visitors              │
+   │──────────────────────────────────│
+   │ PK id            integer        │
+   │    full_name     varchar(100)   │
+   │    phone         varchar(20)    │
+   │    email         varchar(100)   │
+   │    address       text           │
+   │    national_id   varchar(50)    │
+   │    organization  varchar(100)   │
+   │    gender        varchar(10)    │
+   │    photo_url     text           │
+   │    is_active     boolean        │
+   │    created_at    timestamptz    │
+   │    updated_at    timestamptz    │
+   └──────────────────────────────────┘
+        │                     │
+        │ 1:M                 │ 1:M
+        ▼                     ▼
+   visits                appointments
+
+--------------------------------------------------------------------------------
+CORE TRANSACTIONAL: APPOINTMENTS / VISITS
+--------------------------------------------------------------------------------
+
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │                            appointments                                 │
+   │──────────────────────────────────────────────────────────────────────────│
+   │ PK id                   integer         FK delegated_to_employee_id  int │
+   │ FK visitor_id           integer         FK original_employee_id      int │
+   │ FK employee_id          integer         FK redirect_department_id     int │
+   │    requested_date       date            FK redirected_from_department_id │
+   │    requested_start_time timestamptz     FK assigned_department_id     int│
+   │    requested_end_time   timestamptz     FK assigned_employee_id       int│
+   │    purpose              varchar(500)       assigned_at    timestamptz    │
+   │    status               varchar(30)        assigned_by   integer        │
+   │    route_type           varchar(30)        redirect_reason text         │
+   │    appointment_method   varchar(30)        has_properties boolean       │
+   │    employee_response    timestamptz        attachment_* (file_name,     │
+   │    approval_date        timestamptz        original_name, content_type, │
+   │    rejection_reason     text               path, size, uploaded_at)     │
+   │    reminder_email_sent  boolean            property_letter_* (same set) │
+   │    reminder_sms_sent    boolean        FK visitor_id (above)            │
+   │    visitor_confirmed    boolean           appointment_code varchar(20)  │
+   │    check_in_allowed     boolean           is_confidential boolean       │
+   │    notes                text              created_at timestamptz        │
+   │                                          updated_at timestamptz         │
+   └──────────────────────────────────────────────────────────────────────────┘
+        │                    │                      │              │
+        │ 1:M                │ 1:M                  │ 1:M          │ 1:M
+        ▼                    ▼                      ▼              ▼
+   appointment_        appointment_           appointment_    reschedule_
+   properties          comments               attachments     requests
+   (CASCADE)           (CASCADE)              (CASCADE)       (CASCADE)
+
+        │ 1:M (SET NULL)
+        ▼
+   ┌──────────────────────────────────┐
+   │             visits               │
+   │──────────────────────────────────│
+   │ PK id            integer        │
+   │ FK visitor_id    integer        │
+   │ FK employee_id   integer        │
+   │ FK appointment_id integer       │
+   │    purpose       varchar(500)   │
+   │    visit_date    date           │
+   │    check_in_time timestamptz    │
+   │    check_out_time timestamptz   │
+   │    status        varchar(20)    │
+   │    badge_number  varchar(50)    │
+   │    security_officer varchar(100)│
+   │    remark        text           │
+   │    is_destination_known boolean │
+   │    redirect_note text           │
+   │    created_at    timestamptz    │
+   │    updated_at    timestamptz    │
+   └──────────────────────────────────┘
+        │                     │
+        │ 1:M (CASCADE)       │ 1:M (CASCADE)
+        ▼                     ▼
+   visitor_items         checkout_items ── (M:1, SET NULL) ─► appointment_properties
+
+--------------------------------------------------------------------------------
+NOTIFICATIONS
+--------------------------------------------------------------------------------
+
+   ┌──────────────────────────────────┐
+   │          notifications           │
+   │──────────────────────────────────│
+   │ PK id            integer        │
+   │ FK employee_id   integer        │
+   │ FK appointment_id integer       │
+   │ FK visitor_id    integer        │
+   │    title         varchar(200)   │
+   │    message       text           │
+   │    notification_type varchar(20)│
+   │    priority      varchar(10)    │
+   │    channel       varchar(10)    │
+   │    is_read       boolean        │
+   │    read_at       timestamptz    │
+   │    created_at    timestamptz    │
+   └──────────────────────────────────┘
+
+   ┌──────────────────────────────────┐
+   │      visitor_notifications       │
+   │──────────────────────────────────│
+   │ PK id            integer        │
+   │ FK visitor_id    integer        │
+   │ FK appointment_id integer       │
+   │    title         varchar(200)   │
+   │    message       text           │
+   │    notification_type varchar(20)│
+   │    channel       varchar(10)    │
+   │    is_read       boolean        │
+   │    read_at       timestamptz    │
+   │    created_at    timestamptz    │
+   └──────────────────────────────────┘
+
+--------------------------------------------------------------------------------
+SCHEDULING
+--------------------------------------------------------------------------------
+
+   ┌──────────────────────────────────┐         ┌──────────────────────────────────┐
+   │        employee_schedules        │         │     employee_unavailability     │
+   │──────────────────────────────────│         │──────────────────────────────────│
+   │ PK id            integer        │         │ PK id            integer        │
+   │ FK employee_id   integer        │         │ FK employee_id   integer        │
+   │    day_of_week   varchar(9)     │         │    unavailability_type varchar(50)│
+   │    start_time    time           │         │    start_date     date           │
+   │    end_time      time           │         │    end_date       date           │
+   │    break_start   time           │         │    start_time     time           │
+   │    break_end     time           │         │    end_time       time           │
+   │    is_available  boolean        │         │    repeat         varchar(20)    │
+   │    max_appointments integer     │         │    reason         text           │
+   │    notes         text           │         │ FK created_by    integer        │
+   │    created_at    timestamptz    │         │    created_at     timestamptz    │
+   │    updated_at    timestamptz    │         │    updated_at     timestamptz    │
+   └──────────────────────────────────┘         └──────────────────────────────────┘
+   UNIQUE (employee_id, day_of_week)            created_by ──► users.id
+
+--------------------------------------------------------------------------------
+QUEUES & SECURITY
+--------------------------------------------------------------------------------
+
+   ┌──────────────────────────────────┐         ┌──────────────────────────────────┐
+   │           email_queue            │         │            sms_queue            │
+   │──────────────────────────────────│         │──────────────────────────────────│
+   │ PK id            integer        │         │ PK id            integer        │
+   │    appointment_id integer (no FK)│        │    appointment_id integer (no FK)│
+   │    recipient_email varchar(255) │         │    recipient_phone varchar(20)   │
+   │    subject        varchar(255)  │         │    message        text           │
+   │    body           text          │         │    status         varchar(20)    │
+   │    status         varchar(20)   │         │    retry_count    integer        │
+   │    retry_count    integer       │         │    sent_at        timestamptz    │
+   │    sent_at        timestamptz   │         │    error_message  text           │
+   │    error_message  text          │         │    created_at     timestamptz    │
+   │    created_at     timestamptz   │         └──────────────────────────────────┘
+   └──────────────────────────────────┘
+
+   ┌──────────────────────────────────┐         ┌──────────────────────────────────┐
+   │          refresh_tokens          │         │      password_reset_tokens       │
+   │──────────────────────────────────│         │──────────────────────────────────│
+   │ PK id            integer        │         │ PK id            integer        │
+   │ FK user_id       integer        │         │    email         varchar(100)   │
+   │    token         varchar(500)   │         │    token         varchar(500)   │
+   │    expires_at    timestamptz    │         │    expires_at    timestamptz    │
+   │    created_at    timestamptz    │         │    is_used       boolean        │
+   │    is_revoked    boolean        │         │    created_at    timestamptz    │
+   └──────────────────────────────────┘         └──────────────────────────────────┘
+   user_id ──► users.id (CASCADE)
+
+--------------------------------------------------------------------------------
+APPOINTMENT CHILD TABLES (DETAIL)
+--------------------------------------------------------------------------------
+
+   ┌──────────────────────────────────┐         ┌──────────────────────────────────┐
+   │     appointment_properties       │         │      appointment_comments        │
+   │──────────────────────────────────│         │──────────────────────────────────│
+   │ PK id            integer        │         │ PK id            integer        │
+   │ FK appointment_id integer       │         │ FK appointment_id integer       │
+   │    property_type varchar(100)   │         │ FK user_id       integer        │
+   │    property_name varchar(255)   │         │    comment_text  text           │
+   │    brand         varchar(100)   │         │    is_internal   boolean        │
+   │    model         varchar(100)   │         │    created_at    timestamptz    │
+   │    serial_number varchar(100)   │         │    updated_at    timestamptz    │
+   │    asset_tag_number varchar(100)│         └──────────────────────────────────┘
+   │    quantity      integer        │
+   │    description   text           │         ┌──────────────────────────────────┐
+   │    is_verified   boolean        │         │    appointment_attachments       │
+   │    verification_status vc(50)   │         │──────────────────────────────────│
+   │    verified_at   timestamptz    │         │ PK id            integer        │
+   │ FK verified_by_user_id integer  │         │ FK appointment_id integer       │
+   │    created_at    timestamptz    │         │ FK uploaded_by   integer        │
+   │    updated_at    timestamptz    │         │    file_name     varchar(255)   │
+   └──────────────────────────────────┘         │    file_path     text           │
+                                                │    file_size     integer        │
+   ┌──────────────────────────────────┐         │    content_type  varchar(100)   │
+   │       reschedule_requests        │         │    created_at    timestamptz    │
+   │──────────────────────────────────│         └──────────────────────────────────┘
+   │ PK id            integer        │
+   │ FK appointment_id integer       │         ┌──────────────────────────────────┐
+   │ FK requested_by_user_id integer │         │          checkout_items          │
+   │    new_date      date           │         │──────────────────────────────────│
+   │    new_start_time timestamptz   │         │ PK id            integer        │
+   │    new_end_time  timestamptz    │         │ FK visit_id      integer        │
+   │    reason        text           │         │ FK appointment_property_id integer│
+   │    status        varchar(20)    │         │    item_name     varchar(255)   │
+   │ FK responded_by_user_id integer │         │    description   text           │
+   │    responded_at  timestamptz    │         │    quantity      integer        │
+   │    created_at    timestamptz    │         │    return_status varchar(30)    │
+   └──────────────────────────────────┘         │    remarks       text           │
+                                                │    created_at    timestamptz    │
+   ┌──────────────────────────────────┐         │    updated_at    timestamptz    │
+   │          visitor_items           │         └──────────────────────────────────┘
+   │──────────────────────────────────│
+   │ PK id            integer        │         ┌──────────────────────────────────┐
+   │ FK visit_id      integer        │         │       __EFMigrationsHistory      │
+   │    item_name     varchar(200)   │         │──────────────────────────────────│
+   │    quantity      integer        │         │ PK MigrationId varchar(150)     │
+   │    serial_number varchar(100)   │         │    ProductVersion varchar(32)   │
+   │    brand         varchar(100)   │         └──────────────────────────────────┘
+   │    description   text           │
+   │    is_verified   boolean        │
+   │    verified_at   timestamptz    │
+   │    created_at    timestamptz    │
+   │    updated_at    timestamptz    │
+   └──────────────────────────────────┘
 
 
-   ┌─────────────────────────┐         ┌──────────────────────────┐
-   │       departments       │         │       employees          │
-   │─────────────────────────│         │──────────────────────────│
-   │ PK id        integer    │──┐      │ PK id         integer    │
-   │    name      varchar(100)│  │      │    full_name  varchar(100)│
-   │    description text      │  │      │    phone      varchar(20) │
-   │    location  varchar(100)│  │      │    email      varchar(100)│
-   │    phone     varchar(20) │  │   ┌──│ FK department_id integer  │
-   │    email     varchar(100)│  │   │  │    position   varchar(100)│
-   │    is_active boolean     │  │   │  │    office_number varchar(20)
-   │    created_at timestamptz│  │   │  │    status     employee_status
-   │    updated_at timestamptz│  │   │  │    created_at timestamptz │
-   └─────────────────────────┘  │   │  │    updated_at timestamptz │
-                                │   │  └──────────────────────────┘
-                                │   │         │ 1         1 │
-                                │   │         │             │
-                                │   │         │             │
-                                │   └─────────┘     ┌───────┘
-                                │                   │
-                                │                   │
-   ┌─────────────────────────┐  │  ┌────────────────┴──────────┐
-   │    employee_schedules   │  │  │         visits            │
-   │─────────────────────────│  │  │───────────────────────────│
-   │ PK id        integer    │  │  │ PK id          integer    │
-   │ FK employee_id integer  │──┘  │ FK visitor_id  integer    │
-   │    day_of_week varchar(9)│     │ FK employee_id integer    │
-   │    start_time time      │      │    purpose     varchar(500)
-   │    end_time   time      │      │    visit_date  date       │
-   │    break_start time     │      │    check_in_time timestamptz
-   │    break_end   time     │      │    check_out_time timestamptz
-   │    is_available boolean  │      │    status      visit_status
-   │    max_appointments int │      │    badge_number varchar(50)
-   │    notes       text     │      │    security_officer vc(100)
-   │    created_at timestamptz│     │    remark      text       │
-   │    updated_at timestamptz│     │    created_at  timestamptz │
-   └─────────────────────────┘      │    updated_at  timestamptz │
-                                    └───────────────────────────┘
-                                        │              │
-                                        │ M            │ M
-                                        │              │
-                              ┌─────────┘              └─────────┐
-                              │                                  │
-                    ┌─────────┴──────────┐            ┌──────────┴─────────┐
-                    │      visitors      │            │   appointments     │
-                    │────────────────────│            │────────────────────│
-                    │ PK id   integer    │            │ PK id    integer   │
-                    │    full_name vc(100)│           │ FK visitor_id int  │
-                    │    phone  varchar(20)│          │ FK employee_id int │
-                    │    email  varchar(100)│          │    requested_date date
-                    │    address text     │            │    requested_start_time timetz
-                    │    national_id vc(50)│           │    requested_end_time timetz
-                    │    organization vc(100)│         │    purpose vc(500)│
-                    │    gender varchar(10)│           │    status appointment_status
-                    │    photo_url text   │            │    employee_response timestamptz
-                    │    is_active boolean│            │    approval_date timestamptz
-                    │    created_at timestamptz│       │    reminder_email_sent boolean
-                    │    updated_at timestamptz│       │    reminder_sms_sent boolean
-                    └────────────────────┘            │    visitor_confirmed boolean
-                                                      │    check_in_allowed boolean
-                                                      │    appointment_code varchar(20)
-                                                      │    created_at timestamptz
-                                                      │    updated_at timestamptz
-                                                      └────────────────────────┘
-                                                              │
-                                                              │ 1
-                                                              │
-                                       ┌──────────────────────┼──────────────────────┐
-                                       │                      │                      │
-                              ┌────────┴────────┐   ┌─────────┴────────┐   ┌────────┴────────┐
-                              │  notifications  │   │   email_queue   │   │    sms_queue    │
-                              │─────────────────│   │─────────────────│   │─────────────────│
-                              │ PK id  integer  │   │ PK id  integer  │   │ PK id  integer  │
-                              │ FK emp_id int   │   │ FK app_id int   │   │ FK app_id int   │
-                              │ FK app_id int   │   │  recipient_email │   │  recipient_phone│
-                              │  title vc(200)  │   │  subject vc(255) │   │  message text   │
-                              │  message text   │   │  body text       │   │  status queue_st│
-                              │  type notif_type│   │  status queue_st │   │  retry_count int│
-                              │  priority n_pri │   │  retry_count int │   │  sent_at timestp│
-                              │  is_read boolean│   │  sent_at timestp │   │  error_msg text │
-                              │  read_at timest │   │  error_msg text  │   │  created_at tim │
-                              │  created_at tim │   │  created_at tim  │   └────────────────┘
-                              └────────────────┘   └─────────────────┘
-
-
-============================================================================
+================================================================================
 RELATIONSHIP LEGEND
-============================================================================
+================================================================================
 
     ─── 1       One
     ─── M       Many
-    ─── FK      Foreign Key
+    FK          Foreign Key
     PK          Primary Key
+    (no FK)     Application-level reference only; no database constraint
 
-============================================================================
+================================================================================
 RELATIONSHIP LIST
-============================================================================
+================================================================================
 
-    1.  departments(1) ────M employees           (department has many employees)
-    2.  employees(1) ──────M visits               (employee hosts many visits)
-    3.  visitors(1) ───────M visits               (visitor makes many visits)
-    4.  employees(1) ──────M employee_schedules   (employee has many schedule entries)
-    5.  visitors(1) ───────M appointments         (visitor makes many appointments)
-    6.  employees(1) ──────M appointments         (employee receives many appointments)
-    7.  appointments(1) ───M notifications        (appointment triggers notifications)
-    8.  employees(1) ──────M notifications        (employee receives notifications)
-    9.  appointments(1) ───M email_queue          (appointment triggers emails)
-    10. appointments(1) ───M sms_queue            (appointment triggers SMS)
-    11. users(1) ──────────M audit_logs           (user creates audit entries)
+  1.   users(1) ────────M audit_logs                 (user creates audit entries)
+  2.   users(1) ────────1 employees                  (staff account links an employee; employees.user_id)
+  3.   users(1) ────────1 visitors                   (visitor account links a visitor; users.visitor_id)
+  4.   users(1) ────────M refresh_tokens             (user owns refresh tokens)
+  5.   users(1) ────────M appointment_attachments    (uploaded_by)
+  6.   users(1) ────────M appointment_comments       (user_id, author)
+  7.   users(1) ────────M appointment_properties      (verified_by_user_id)
+  8.   users(1) ────────M employee_unavailability    (created_by)
+  9.   users(1) ────────M reschedule_requests        (requested_by_user_id)
+  10.  users(1) ────────M reschedule_requests        (responded_by_user_id)
+  11.  users(1) ────────M appointments               (assigned_by, NO FK)
+  12.  departments(1) ──M employees                  (department has many employees)
+  13.  departments(1) ──M appointments               (redirect_department_id)
+  14.  departments(1) ──M appointments               (assigned_department_id)
+  15.  departments(1) ──M appointments               (redirected_from_department_id)
+  16.  employees(1) ────M visits                     (employee hosts many visits)
+  17.  employees(1) ────M appointments               (employee receives appointments)
+  18.  employees(1) ────M appointments               (original_employee_id)
+  19.  employees(1) ────M appointments               (delegated_to_employee_id)
+  20.  employees(1) ────M appointments               (assigned_employee_id)
+  21.  employees(1) ────M notifications              (employee receives notifications)
+  22.  employees(1) ────M employee_schedules         (weekly availability)
+  23.  employees(1) ────M employee_unavailability    (leave / travel windows)
+  24.  visitors(1) ─────M visits                     (visitor makes visits)
+  25.  visitors(1) ─────M appointments               (visitor requests appointments)
+  26.  visitors(1) ─────M notifications              (visitor context notifications)
+  27.  visitors(1) ─────M visitor_notifications      (visitor receives notifications)
+  28.  appointments(1) ─M appointment_properties     (declared property items)
+  29.  appointments(1) ─M appointment_comments       (discussion thread)
+  30.  appointments(1) ─M appointment_attachments    (attached documents)
+  31.  appointments(1) ─M reschedule_requests        (reschedule workflow)
+  32.  appointments(1) ─M visits                     (approved appointment becomes a visit)
+  33.  appointments(1) ─M notifications              (appointment triggers notifications)
+  34.  appointments(1) ─M visitor_notifications      (appointment notifies visitor)
+  35.  appointments(1) ─M email_queue                (appointment triggers emails, NO FK)
+  36.  appointments(1) ─M sms_queue                  (appointment triggers SMS, NO FK)
+  37.  visits(1) ────────M visitor_items             (items brought in at check-in)
+  38.  visits(1) ────────M checkout_items            (item returns at check-out)
+  39.  appointment_properties(1) ─M checkout_items   (return links to declared property)
+
+================================================================================
+KEY RELATIONSHIP RULES
+================================================================================
+
+  - RESTRICT: visitors / employees / departments cannot be deleted while they
+    have visits, appointments, or audit records referencing them.
+  - CASCADE: deleting an appointment removes its properties, comments,
+    attachments and reschedule requests; deleting a user removes their
+    refresh_tokens; deleting an employee removes schedules, unavailability and
+    notifications.
+  - SET NULL: deleting an appointment clears appointment_id on visits,
+    notifications and visitor_notifications; deleting a property clears
+    checkout_items.appointment_property_id; deleting a user clears
+    reschedule_requests.responded_by_user_id.
+  - email_queue / sms_queue / appointments.assigned_by carry no FK — they are
+    application-managed references to keep queue jobs independent of cleanup.
